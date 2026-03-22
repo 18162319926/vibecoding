@@ -43,6 +43,8 @@
               <option value="帽子">帽子</option>
               <option value="披肩">披肩</option>
               <option value="毯子">毯子</option>
+              <option value="玩偶">玩偶</option>
+              <option value="娃衣">娃衣</option>
               <option value="其他">其他</option>
             </select>
           </label>
@@ -87,6 +89,14 @@
             文字图解
             <textarea id="textDiagram" rows="5"></textarea>
           </label>
+          <label class="full-span">
+            导出卡片风格
+            <select id="exportStyle">
+              <option value="classic">经典卡片</option>
+              <option value="journal">手帐拼贴</option>
+              <option value="minimal">极简留白</option>
+            </select>
+          </label>
           <button class="btn primary" type="submit">保存项目</button>
         </form>
       </section>
@@ -100,6 +110,7 @@
             <button class="btn primary" data-action="incRow">+1</button>
           </div>
           <p class="project-meta" id="progressText">进度 0%</p>
+          <p class="project-meta" id="projectTimeSpent">累计用时 00:00:00</p>
           <div class="counter-tools">
             <label>
               步进值
@@ -112,7 +123,8 @@
 
         <section class="panel notes-panel reveal">
           <h2>随手记</h2>
-          <textarea id="notes" rows="8"></textarea>
+          <label for="notes" hidden>随手记内容</label>
+          <textarea id="notes" rows="8" placeholder="记录今天的编织想法与进度..." title="随手记内容"></textarea>
         </section>
 
         <section class="panel export-image-panel reveal">
@@ -130,6 +142,7 @@
     <aside class="floating-timer" id="floatingTimer">
       <h3>全局计时器</h3>
       <p class="helper-text">跨项目共享</p>
+      <div class="floating-timer-handle" id="floatingTimerHandle" aria-label="拖动计时器">拖动浮窗</div>
       <div class="timer" id="globalTimerDisplay">25:00</div>
       <div class="timer-controls">
         <button class="btn primary" id="globalStartBtn" type="button">开始</button>

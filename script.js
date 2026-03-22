@@ -7,6 +7,12 @@ const STATUS_MAP = {
   done: { label: "已完成", icon: "✅" },
 };
 
+const EXPORT_STYLE_OPTIONS = [
+  { value: "classic", label: "经典卡片" },
+  { value: "journal", label: "手帐拼贴" },
+  { value: "minimal", label: "极简留白" },
+];
+
 const state = {
   projects: [],
   dashboardFilter: "all",
@@ -19,6 +25,21 @@ const timerState = {
 };
 
 let timerId = null;
+let pendingExportProjectId = "";
+
+function closeExportChoiceDialog() {
+  if (!refs.exportChoiceDialog) return;
+  refs.exportChoiceDialog.hidden = true;
+  pendingExportProjectId = "";
+  if (refs.exportPreviewImage) {
+    refs.exportPreviewImage.classList.remove("show");
+    refs.exportPreviewImage.removeAttribute("src");
+  }
+  if (refs.exportPreviewDownloadLink) {
+    refs.exportPreviewDownloadLink.classList.remove("show");
+    refs.exportPreviewDownloadLink.href = "#";
+  }
+}
 
 const refs = {
   projectCards: document.getElementById("projectCards"),
@@ -33,6 +54,12 @@ const refs = {
   createFromTextOption: document.getElementById("createFromTextOption"),
   diagramImageInput: document.getElementById("diagramImageInput"),
   dashboardExportCanvas: document.getElementById("dashboardExportCanvas"),
+  exportChoiceDialog: document.getElementById("exportChoiceDialog"),
+  exportPreviewBtn: document.getElementById("exportPreviewBtn"),
+  exportDirectDownloadBtn: document.getElementById("exportDirectDownloadBtn"),
+  exportCloseBtn: document.getElementById("exportCloseBtn"),
+  exportPreviewImage: document.getElementById("exportPreviewImage"),
+  exportPreviewDownloadLink: document.getElementById("exportPreviewDownloadLink"),
   globalTimerDisplay: document.getElementById("globalTimerDisplay"),
   globalTimerMinutes: document.getElementById("globalTimerMinutes"),
   globalStartBtn: document.getElementById("globalStartBtn"),
@@ -59,7 +86,7 @@ function createProject(name = "我的新作品") {
     id: makeId(),
     projectName: name,
     projectType: "围巾",
-    status: "active",
+    status: "paused",
     yarnType: "",
     yarnRef: "",
     tools: "",
@@ -72,23 +99,75 @@ function createProject(name = "我的新作品") {
     todayRows: 0,
     materials: [],
     notes: "",
+    spentSeconds: 0,
+    exportStyle: "classic",
     lastDate: getToday(),
   };
 }
 
 function normalizeProject(project) {
-  return {
+  const normalized = {
     ...createProject(project.projectName || "未命名作品"),
     ...project,
     id: project.id || makeId(),
     projectType: project.projectType || "围巾",
-    status: project.status || "active",
+    status: project.status || "paused",
     totalRows: Math.max(0, Number(project.totalRows) || 0),
     rows: Math.max(0, Number(project.rows) || 0),
     todayRows: Math.max(0, Number(project.todayRows) || 0),
+    spentSeconds: Math.max(0, Number(project.spentSeconds) || 0),
     materials: Array.isArray(project.materials) ? project.materials : [],
     lastDate: project.lastDate || getToday(),
   };
+  applyProgressStatus(normalized);
+  return normalized;
+}
+
+function applyProgressStatus(project) {
+  const total = Math.max(0, Number(project.totalRows) || 0);
+  const rows = Math.max(0, Number(project.rows) || 0);
+  if (total > 0 && rows >= total) {
+    project.status = "done";
+  }
+}
+
+function getExportTheme(style) {
+  const themes = {
+    classic: {
+      bgA: "#fff8ef",
+      bgB: "#fff3e4",
+      panelFill: "rgba(255, 255, 255, 0.82)",
+      panelStroke: "#e7cfb2",
+      titleColor: "#25303b",
+      sectionColor: "#a04825",
+      labelColor: "#7e523b",
+      textColor: "#25303b",
+      subtitleColor: "#6d7481",
+    },
+    journal: {
+      bgA: "#f4faf6",
+      bgB: "#eef7ff",
+      panelFill: "rgba(255, 255, 255, 0.9)",
+      panelStroke: "#bed7cf",
+      titleColor: "#1f3f4c",
+      sectionColor: "#2f7d6b",
+      labelColor: "#4a616b",
+      textColor: "#1f2f37",
+      subtitleColor: "#56717d",
+    },
+    minimal: {
+      bgA: "#f8f8f8",
+      bgB: "#f1f2f4",
+      panelFill: "rgba(255, 255, 255, 0.96)",
+      panelStroke: "#d8dce2",
+      titleColor: "#1f2329",
+      sectionColor: "#30363d",
+      labelColor: "#5a6472",
+      textColor: "#1f2329",
+      subtitleColor: "#6b7280",
+    },
+  };
+  return themes[style] || themes.classic;
 }
 
 function parseDiagramText(rawText) {
@@ -126,73 +205,94 @@ function parseMaterialsToList(rawMaterials) {
     .map((text) => ({ id: makeId(), text, done: false }));
 }
 
-function buildExportImageLines(project) {
-  const status = STATUS_MAP[project.status] || STATUS_MAP.active;
-  const lines = [
-    "织伴 | 项目导出",
-    `项目名称：${project.projectName || "未命名作品"}`,
-    `类型：${project.projectType || "未填写"}`,
-    `状态：${status.label}`,
-    `线材：${project.yarnType || "未填写"}`,
-    `品牌/色号：${project.yarnRef || "未填写"}`,
-    `工具：${project.tools || "未填写"}`,
-    `针号：${project.needleSize || "未填写"}`,
-    `花样：${project.patternName || "未填写"}`,
-    `进度：${getProjectProgress(project)}%（${project.rows || 0}/${project.totalRows || 0} 行）`,
-    "------------------------------",
-    "文字图解：",
-  ];
-
-  String(project.textDiagram || "未填写").split(/\r?\n/).forEach((row) => {
-    const text = row.trim();
-    if (!text) {
-      lines.push(" ");
+function wrapTextLines(text, maxChars = 24) {
+  const source = String(text || "").trim();
+  if (!source) return [];
+  const rows = [];
+  source.split(/\r?\n/).forEach((line) => {
+    const part = line.trim();
+    if (!part) {
+      rows.push(" ");
       return;
     }
-    for (let i = 0; i < text.length; i += 28) {
-      lines.push(text.slice(i, i + 28));
+    for (let i = 0; i < part.length; i += maxChars) {
+      rows.push(part.slice(i, i + maxChars));
     }
   });
-
-  return lines;
+  return rows;
 }
 
-function drawExportBackground(ctx, width, height) {
+function buildExportSections(project) {
+  const status = STATUS_MAP[project.status] || STATUS_MAP.active;
+  const rows = Math.max(0, Number(project.rows) || 0);
+  const totalRows = Math.max(0, Number(project.totalRows) || 0);
+  const progressValue = totalRows > 0 ? `${getProjectProgress(project)}%（${rows}/${totalRows} 行）` : rows > 0 ? `已织 ${rows} 行` : "";
+
+  const projectInfo = [
+    ["项目名称", project.projectName],
+    ["类型", project.projectType],
+    ["状态", status.label],
+    ["进度", progressValue],
+  ].filter((item) => String(item[1] || "").trim());
+
+  const craftInfo = [
+    ["线材", project.yarnType],
+    ["品牌/色号", project.yarnRef],
+    ["工具", project.tools],
+    ["针号", project.needleSize],
+    ["花样", project.patternName],
+  ].filter((item) => String(item[1] || "").trim());
+
+  const diagramLines = wrapTextLines(project.textDiagram, 24);
+  const sections = [];
+  if (projectInfo.length) sections.push({ title: "项目信息", entries: projectInfo });
+  if (craftInfo.length) sections.push({ title: "编织信息", entries: craftInfo });
+  if (diagramLines.length) sections.push({ title: "文字图解", lines: diagramLines });
+  return sections;
+}
+
+function drawExportBackground(ctx, width, height, theme, style) {
   const bg = ctx.createLinearGradient(0, 0, width, height);
-  bg.addColorStop(0, "#fff8ef");
-  bg.addColorStop(1, "#fff3e4");
+  bg.addColorStop(0, theme.bgA);
+  bg.addColorStop(1, theme.bgB);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
 
-  ctx.globalAlpha = 0.45;
-  ctx.fillStyle = "#ffd3b0";
-  ctx.beginPath();
-  ctx.arc(140, 120, 150, 0, Math.PI * 2);
-  ctx.fill();
+  if (style === "journal") {
+    ctx.globalAlpha = 0.24;
+    ctx.fillStyle = "#8fb6a8";
+    for (let i = 0; i < 8; i += 1) {
+      ctx.fillRect(0, i * 170 + 40, width, 72);
+    }
+  } else if (style === "minimal") {
+    ctx.globalAlpha = 0.2;
+    ctx.strokeStyle = "#cfd6df";
+    ctx.lineWidth = 1;
+    for (let x = 80; x < width; x += 80) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+  } else {
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = "#ffd3b0";
+    ctx.beginPath();
+    ctx.arc(140, 120, 150, 0, Math.PI * 2);
+    ctx.fill();
 
-  ctx.fillStyle = "#cfeadb";
-  ctx.beginPath();
-  ctx.arc(width - 120, 110, 180, 0, Math.PI * 2);
-  ctx.fill();
+    ctx.fillStyle = "#cfeadb";
+    ctx.beginPath();
+    ctx.arc(width - 120, 110, 180, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   ctx.globalAlpha = 1;
 }
 
-function exportProjectImage(project) {
-  const lines = buildExportImageLines(project);
-  const canvas = refs.dashboardExportCanvas;
-  const ctx = canvas.getContext("2d");
-  const width = 1200;
-  const lineHeight = 42;
-  const height = Math.max(1500, 200 + lines.length * lineHeight);
-
-  canvas.width = width;
-  canvas.height = height;
-
-  drawExportBackground(ctx, width, height);
-
-  ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
-  ctx.strokeStyle = "#ead6bf";
+function drawClassicLayout(ctx, width, height, theme, sections, project, styleLabel) {
+  ctx.fillStyle = theme.panelFill;
+  ctx.strokeStyle = theme.panelStroke;
   ctx.lineWidth = 2;
   ctx.beginPath();
   if (typeof ctx.roundRect === "function") {
@@ -203,17 +303,263 @@ function exportProjectImage(project) {
   ctx.fill();
   ctx.stroke();
 
-  ctx.fillStyle = "#25303b";
-  ctx.font = "30px sans-serif";
-  lines.forEach((line, index) => {
-    ctx.fillText(line, 80, 100 + index * lineHeight);
+  ctx.fillStyle = theme.titleColor;
+  ctx.font = "600 46px serif";
+  ctx.fillText(project.projectName || "我的编织项目", 76, 112);
+
+  ctx.fillStyle = theme.subtitleColor;
+  ctx.font = "500 22px sans-serif";
+  ctx.fillText(`织伴项目卡(${styleLabel})  ·  ${getToday()}`, 76, 144);
+
+  ctx.strokeStyle = theme.panelStroke;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(76, 174);
+  ctx.lineTo(width - 76, 174);
+  ctx.stroke();
+
+  let y = 214;
+  sections.forEach((section) => {
+    ctx.fillStyle = theme.sectionColor;
+    ctx.font = "700 25px sans-serif";
+    ctx.fillText(section.title, 76, y);
+    y += 36;
+
+    if (section.entries) {
+      section.entries.forEach(([label, value]) => {
+        ctx.fillStyle = theme.labelColor;
+        ctx.font = "600 21px sans-serif";
+        ctx.fillText(`${label}：`, 76, y);
+
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 21px sans-serif";
+        ctx.fillText(String(value), 214, y);
+        y += 33;
+      });
+    }
+
+    if (section.lines) {
+      section.lines.forEach((line) => {
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 20px sans-serif";
+        ctx.fillText(line, 76, y);
+        y += 31;
+      });
+    }
+
+    y += 8;
+  });
+}
+
+function drawJournalLayout(ctx, width, height, theme, sections, project, styleLabel) {
+  ctx.save();
+  ctx.translate(width / 2, 112);
+  ctx.rotate(-0.03);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+  ctx.strokeStyle = theme.panelStroke;
+  ctx.lineWidth = 2;
+  ctx.fillRect(-506, -60, 1012, 154);
+  ctx.strokeRect(-506, -60, 1012, 154);
+  ctx.restore();
+
+  ctx.fillStyle = theme.titleColor;
+  ctx.font = "700 44px serif";
+  ctx.fillText(project.projectName || "我的编织项目", 86, 120);
+  ctx.fillStyle = theme.subtitleColor;
+  ctx.font = "500 21px sans-serif";
+  ctx.fillText(`织伴项目卡(${styleLabel})  ·  ${getToday()}`, 86, 152);
+
+  const noteColors = ["#fff4d7", "#e9f8f0", "#f6ebff", "#ffe8e2"];
+  let x = 78;
+  let y = 206;
+  const noteW = 470;
+
+  sections.forEach((section, index) => {
+    const rows = (section.entries ? section.entries.length : 0) + (section.lines ? section.lines.length : 0);
+    const noteH = Math.max(160, 82 + rows * 30);
+
+    ctx.save();
+    ctx.translate(x + noteW / 2, y + noteH / 2);
+    ctx.rotate(index % 2 === 0 ? -0.018 : 0.018);
+    ctx.fillStyle = noteColors[index % noteColors.length];
+    ctx.strokeStyle = "rgba(138, 123, 100, 0.25)";
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(-noteW / 2, -noteH / 2, noteW, noteH);
+    ctx.strokeRect(-noteW / 2, -noteH / 2, noteW, noteH);
+    ctx.fillStyle = "rgba(240, 221, 179, 0.85)";
+    ctx.fillRect(-36, -noteH / 2 - 9, 72, 16);
+    ctx.restore();
+
+    let ly = y + 38;
+    ctx.fillStyle = theme.sectionColor;
+    ctx.font = "700 23px sans-serif";
+    ctx.fillText(section.title, x + 16, ly);
+    ly += 28;
+
+    if (section.entries) {
+      section.entries.forEach(([label, value]) => {
+        ctx.fillStyle = theme.labelColor;
+        ctx.font = "600 19px sans-serif";
+        ctx.fillText(`${label}：`, x + 16, ly);
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 19px sans-serif";
+        ctx.fillText(String(value), x + 136, ly);
+        ly += 26;
+      });
+    }
+
+    if (section.lines) {
+      section.lines.forEach((line) => {
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 18px sans-serif";
+        ctx.fillText(line, x + 16, ly);
+        ly += 24;
+      });
+    }
+
+    if (x > 100) {
+      x = width - noteW - 78;
+    } else {
+      x = 78;
+      y += noteH + 22;
+    }
+  });
+}
+
+function drawMinimalLayout(ctx, width, height, theme, sections, project, styleLabel) {
+  ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
+  ctx.fillRect(60, 60, width - 120, height - 120);
+
+  ctx.fillStyle = theme.titleColor;
+  ctx.font = "700 42px sans-serif";
+  ctx.fillText(project.projectName || "我的编织项目", 92, 128);
+
+  ctx.fillStyle = theme.subtitleColor;
+  ctx.font = "500 20px sans-serif";
+  ctx.fillText(`织伴项目卡(${styleLabel})`, 92, 156);
+
+  ctx.strokeStyle = theme.panelStroke;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(92, 186);
+  ctx.lineTo(92, height - 92);
+  ctx.stroke();
+
+  let y = 222;
+  sections.forEach((section) => {
+    ctx.fillStyle = theme.sectionColor;
+    ctx.font = "700 23px sans-serif";
+    ctx.fillText(section.title, 120, y);
+    y += 32;
+
+    if (section.entries) {
+      section.entries.forEach(([label, value]) => {
+        ctx.fillStyle = theme.labelColor;
+        ctx.font = "600 18px sans-serif";
+        ctx.fillText(label.toUpperCase(), 120, y);
+        y += 22;
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 20px sans-serif";
+        ctx.fillText(String(value), 120, y);
+        y += 30;
+      });
+    }
+
+    if (section.lines) {
+      section.lines.forEach((line) => {
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 19px sans-serif";
+        ctx.fillText(line, 120, y);
+        y += 28;
+      });
+    }
+
+    y += 8;
+  });
+}
+
+function computeExportHeight(style, contentRows, sectionCount) {
+  if (style === "journal") {
+    return Math.max(900, 250 + contentRows * 42 + sectionCount * 24);
+  }
+  if (style === "minimal") {
+    return Math.max(860, 230 + contentRows * 38 + sectionCount * 22);
+  }
+  return Math.max(920, 240 + contentRows * 40 + sectionCount * 24);
+}
+
+function buildExportImageData(project, options = {}) {
+  const preview = Boolean(options.preview);
+  const sections = buildExportSections(project);
+  const style = project.exportStyle || "classic";
+  const theme = getExportTheme(style);
+  const canvas = refs.dashboardExportCanvas;
+  const ctx = canvas.getContext("2d");
+  const width = preview ? 920 : 1200;
+
+  let contentRows = 0;
+  sections.forEach((section) => {
+    if (section.entries) contentRows += section.entries.length;
+    if (section.lines) contentRows += section.lines.length;
   });
 
-  const dataUrl = canvas.toDataURL("image/png");
+  const height = computeExportHeight(style, contentRows, sections.length);
+
+  canvas.width = width;
+  canvas.height = height;
+
+  const styleLabel = style === "journal" ? "手帐" : style === "minimal" ? "极简" : "经典";
+
+  drawExportBackground(ctx, width, height, theme, style);
+
+  if (style === "journal") {
+    drawJournalLayout(ctx, width, height, theme, sections, project, styleLabel);
+  } else if (style === "minimal") {
+    drawMinimalLayout(ctx, width, height, theme, sections, project, styleLabel);
+  } else {
+    drawClassicLayout(ctx, width, height, theme, sections, project, styleLabel);
+  }
+
+  return canvas.toDataURL("image/png");
+}
+
+function triggerImageDownload(dataUrl, projectName) {
   const a = document.createElement("a");
   a.href = dataUrl;
-  a.download = `${project.projectName || "knit-project"}-${getToday()}.png`;
+  a.download = `${projectName || "knit-project"}-${getToday()}.png`;
   a.click();
+}
+
+function celebrateProjectCompletion(projectName) {
+  const layer = document.createElement("div");
+  layer.className = "celebration-layer";
+
+  const badge = document.createElement("div");
+  badge.className = "celebration-badge";
+  badge.textContent = `🎉 恭喜完成：${projectName || "编织项目"}`;
+  layer.appendChild(badge);
+
+  const colors = ["#f39c6b", "#ffd97d", "#86d2bf", "#9fc3ff", "#f7a8b8"];
+  for (let i = 0; i < 36; i += 1) {
+    const piece = document.createElement("span");
+    piece.className = "celebration-piece";
+    piece.style.left = `${Math.random() * 100}%`;
+    piece.style.background = colors[i % colors.length];
+    piece.style.setProperty("--fall-duration", `${1.4 + Math.random() * 1.1}s`);
+    piece.style.setProperty("--fall-delay", `${Math.random() * 0.4}s`);
+    piece.style.setProperty("--drift", `${(Math.random() - 0.5) * 180}px`);
+    layer.appendChild(piece);
+  }
+
+  document.body.appendChild(layer);
+  setTimeout(() => {
+    layer.remove();
+  }, 2600);
+}
+
+function exportProjectImage(project) {
+  const dataUrl = buildExportImageData(project, { preview: false });
+  triggerImageDownload(dataUrl, project.projectName);
 }
 
 function getProjectProgress(project) {
@@ -241,12 +587,18 @@ function loadProjects() {
     state.projects = [createProject("我的第一件作品")];
   }
   if (!state.projects.length) state.projects = [createProject("我的第一件作品")];
+  let changed = false;
   state.projects.forEach((project) => {
     if (project.lastDate !== getToday()) {
       project.todayRows = 0;
       project.lastDate = getToday();
+      changed = true;
     }
+    const before = project.status;
+    applyProgressStatus(project);
+    if (before !== project.status) changed = true;
   });
+  if (changed) saveProjects();
 }
 
 function renderDashboard() {
@@ -298,6 +650,21 @@ function renderDashboard() {
 
     const actions = document.createElement("div");
     actions.className = "project-card-actions";
+
+    const exportStyleSelect = document.createElement("select");
+    exportStyleSelect.className = "export-style-select";
+    EXPORT_STYLE_OPTIONS.forEach((option) => {
+      const opt = document.createElement("option");
+      opt.value = option.value;
+      opt.textContent = `导出风格：${option.label}`;
+      exportStyleSelect.appendChild(opt);
+    });
+    exportStyleSelect.value = project.exportStyle || "classic";
+    exportStyleSelect.addEventListener("change", () => {
+      project.exportStyle = exportStyleSelect.value;
+      saveProjects();
+    });
+
     const openBtn = document.createElement("a");
     openBtn.className = "btn ghost";
     openBtn.href = `project.html?id=${encodeURIComponent(project.id)}`;
@@ -307,16 +674,26 @@ function renderDashboard() {
     statusBtn.className = "btn primary";
     statusBtn.textContent = "切换状态";
     statusBtn.addEventListener("click", () => {
+      const before = project.status;
       project.status = project.status === "active" ? "paused" : project.status === "paused" ? "done" : "active";
+      applyProgressStatus(project);
       saveProjects();
       renderDashboard();
+      if (before !== "done" && project.status === "done") {
+        celebrateProjectCompletion(project.projectName);
+      }
     });
 
     const exportBtn = document.createElement("button");
     exportBtn.className = "btn ghost";
     exportBtn.textContent = "导出图片";
     exportBtn.addEventListener("click", () => {
-      exportProjectImage(project);
+      pendingExportProjectId = project.id;
+      refs.exportPreviewImage.classList.remove("show");
+      refs.exportPreviewImage.removeAttribute("src");
+      refs.exportPreviewDownloadLink.classList.remove("show");
+      refs.exportPreviewDownloadLink.href = "#";
+      refs.exportChoiceDialog.hidden = false;
     });
 
     const deleteBtn = document.createElement("button");
@@ -332,7 +709,7 @@ function renderDashboard() {
       renderDashboard();
     });
 
-    actions.append(openBtn, statusBtn, exportBtn, deleteBtn);
+    actions.append(exportStyleSelect, openBtn, statusBtn, exportBtn, deleteBtn);
     card.append(cover, title, meta, track, progressText, actions);
     refs.projectCards.appendChild(card);
   });
@@ -358,11 +735,13 @@ function loadTimerState() {
 }
 
 function renderTimerState() {
+  if (!refs.globalTimerMinutes || !refs.globalTimerDisplay) return;
   refs.globalTimerMinutes.value = String(timerState.minutes);
   refs.globalTimerDisplay.textContent = formatTime(timerState.left);
 }
 
 function bindGlobalTimer() {
+  if (!refs.globalTimerMinutes || !refs.globalStartBtn || !refs.globalPauseBtn || !refs.globalResetBtn) return;
   refs.globalTimerMinutes.addEventListener("change", () => {
     timerState.minutes = Math.max(1, Number(refs.globalTimerMinutes.value) || 25);
     if (!timerState.running) timerState.left = timerState.minutes * 60;
@@ -511,6 +890,49 @@ function bindActions() {
     event.preventDefault();
     refs.projectCards.scrollBy({ left: event.deltaY, behavior: "auto" });
   }, { passive: false });
+
+  if (refs.exportChoiceDialog) {
+    const dialogCard = refs.exportChoiceDialog.querySelector(".dialog-card");
+    const handleDialogAction = (event) => {
+      const actionButton = event.target.closest("#exportPreviewBtn, #exportDirectDownloadBtn, #exportCloseBtn");
+      if (!actionButton) return;
+
+      if (actionButton.id === "exportCloseBtn") {
+        closeExportChoiceDialog();
+        return;
+      }
+
+      const project = state.projects.find((item) => item.id === pendingExportProjectId);
+      if (!project) {
+        alert("未找到项目，请重试。");
+        closeExportChoiceDialog();
+        return;
+      }
+
+      if (actionButton.id === "exportPreviewBtn") {
+        const dataUrl = buildExportImageData(project, { preview: true });
+        refs.exportPreviewImage.src = dataUrl;
+        refs.exportPreviewImage.classList.add("show");
+        refs.exportPreviewDownloadLink.href = dataUrl;
+        refs.exportPreviewDownloadLink.download = `${project.projectName || "knit-project"}-${getToday()}.png`;
+        refs.exportPreviewDownloadLink.classList.add("show");
+        return;
+      }
+
+      exportProjectImage(project);
+      closeExportChoiceDialog();
+    };
+
+    if (dialogCard) {
+      dialogCard.addEventListener("click", handleDialogAction);
+    }
+
+    refs.exportChoiceDialog.addEventListener("click", (event) => {
+      if (event.target === refs.exportChoiceDialog) {
+        closeExportChoiceDialog();
+      }
+    });
+  }
 }
 
 function init() {
