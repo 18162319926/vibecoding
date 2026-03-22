@@ -26,15 +26,12 @@ const refs = {
   projectCount: document.getElementById("projectCount"),
   activeCount: document.getElementById("activeCount"),
   createProjectBtn: document.getElementById("createProjectBtn"),
-  exportProjectsBtn: document.getElementById("exportProjectsBtn"),
-  importProjectsBtn: document.getElementById("importProjectsBtn"),
-  importProjectsInput: document.getElementById("importProjectsInput"),
-  parseDiagramBtn: document.getElementById("parseDiagramBtn"),
-  diagramImportText: document.getElementById("diagramImportText"),
-  pickDiagramImageBtn: document.getElementById("pickDiagramImageBtn"),
-  ocrDiagramImageBtn: document.getElementById("ocrDiagramImageBtn"),
+  createMenuWrap: document.getElementById("createMenuWrap"),
+  createProjectMenu: document.getElementById("createProjectMenu"),
+  createBlankOption: document.getElementById("createBlankOption"),
+  createFromImageOption: document.getElementById("createFromImageOption"),
+  createFromTextOption: document.getElementById("createFromTextOption"),
   diagramImageInput: document.getElementById("diagramImageInput"),
-  diagramImageStatus: document.getElementById("diagramImageStatus"),
   dashboardExportCanvas: document.getElementById("dashboardExportCanvas"),
   globalTimerDisplay: document.getElementById("globalTimerDisplay"),
   globalTimerMinutes: document.getElementById("globalTimerMinutes"),
@@ -407,13 +404,7 @@ function bindGlobalTimer() {
 
 async function ocrImageFile(file) {
   if (!window.Tesseract) throw new Error("OCR库未加载，请检查网络后重试。");
-  const result = await window.Tesseract.recognize(file, "chi_sim+eng", {
-    logger: (message) => {
-      if (message.status === "recognizing text") {
-        refs.diagramImageStatus.textContent = `识别中 ${(message.progress * 100).toFixed(0)}%`;
-      }
-    },
-  });
+  const result = await window.Tesseract.recognize(file, "chi_sim+eng");
   return String(result?.data?.text || "").trim();
 }
 
@@ -426,88 +417,100 @@ function bindActions() {
     renderDashboard();
   });
 
-  refs.createProjectBtn.addEventListener("click", () => {
-    const created = createProject(`新作品 ${state.projects.length + 1}`);
-    state.projects.push(created);
-    saveProjects();
-    window.location.href = `project.html?id=${encodeURIComponent(created.id)}`;
-  });
+  const closeCreateMenu = () => {
+    refs.createProjectMenu.hidden = true;
+    refs.createProjectBtn.setAttribute("aria-expanded", "false");
+  };
 
-  refs.exportProjectsBtn.addEventListener("click", () => {
-    if (!state.projects.length) {
-      alert("没有可导出的项目。");
+  const openCreateMenu = () => {
+    refs.createProjectMenu.hidden = false;
+    refs.createProjectBtn.setAttribute("aria-expanded", "true");
+  };
+
+  const createAndOpenProject = (project) => {
+    state.projects.push(project);
+    saveProjects();
+    window.location.href = `project.html?id=${encodeURIComponent(project.id)}`;
+  };
+
+  const createFromParsedText = (rawText) => {
+    const raw = String(rawText || "").trim();
+    if (!raw) {
+      alert("请先输入或粘贴文字图解。\n格式示例：项目名称：奶油围巾");
       return;
     }
-    const target = state.projects.find((project) => project.status === "active") || state.projects[0];
-    exportProjectImage(target);
-  });
-
-  refs.importProjectsBtn.addEventListener("click", () => refs.importProjectsInput.click());
-  refs.importProjectsInput.addEventListener("change", async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    try {
-      const parsed = JSON.parse(await file.text());
-      const list = Array.isArray(parsed) ? parsed : parsed.projects;
-      if (!Array.isArray(list) || !list.length) return alert("导入失败：JSON 中没有可用作品。");
-      state.projects = state.projects.concat(list.map((item) => normalizeProject(item)));
-      saveProjects();
-      renderDashboard();
-      alert(`导入成功：新增 ${list.length} 个作品。`);
-    } catch {
-      alert("导入失败：请确认文件是合法 JSON。");
-    } finally {
-      refs.importProjectsInput.value = "";
-    }
-  });
-
-  refs.parseDiagramBtn.addEventListener("click", () => {
-    const raw = refs.diagramImportText.value.trim();
-    if (!raw) return alert("请先粘贴图解文本。");
     const parsed = parseDiagramText(raw);
     const created = createProject(parsed.projectName);
     created.tools = parsed.tools;
     created.materials = parseMaterialsToList(parsed.materials);
     created.textDiagram = parsed.textDiagram;
-    state.projects.push(created);
-    refs.diagramImportText.value = "";
-    saveProjects();
-    renderDashboard();
-    alert("图解解析成功，已新建项目。点击卡片进入项目页。");
+    createAndOpenProject(created);
+  };
+
+  refs.createProjectBtn.addEventListener("click", () => {
+    if (refs.createProjectMenu.hidden) {
+      openCreateMenu();
+    } else {
+      closeCreateMenu();
+    }
   });
 
-  refs.pickDiagramImageBtn.addEventListener("click", () => refs.diagramImageInput.click());
-  refs.diagramImageInput.addEventListener("change", (event) => {
+  // Ensure the options menu is hidden when the homepage first loads.
+  closeCreateMenu();
+
+  refs.createBlankOption.addEventListener("click", () => {
+    closeCreateMenu();
+    const created = createProject(`新作品 ${state.projects.length + 1}`);
+    createAndOpenProject(created);
+  });
+
+  refs.createFromTextOption.addEventListener("click", () => {
+    closeCreateMenu();
+    const raw = window.prompt("请粘贴文字图解（可包含 项目名称/工具/材料/文字图解 字段）：", "");
+    if (raw === null) return;
+    createFromParsedText(raw);
+  });
+
+  refs.createFromImageOption.addEventListener("click", () => {
+    closeCreateMenu();
+    refs.diagramImageInput.click();
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!refs.createMenuWrap.contains(event.target)) {
+      closeCreateMenu();
+    }
+  });
+
+  refs.diagramImageInput.addEventListener("change", async (event) => {
     const file = event.target.files?.[0];
-    refs.diagramImageStatus.textContent = file ? `已选择：${file.name}` : "未选择图片";
-  });
+    if (!file) return;
 
-  refs.ocrDiagramImageBtn.addEventListener("click", async () => {
-    const file = refs.diagramImageInput.files?.[0];
-    if (!file) return alert("请先选择图解图片。");
     try {
-      refs.diagramImageStatus.textContent = "开始识别...";
       const text = await ocrImageFile(file);
       if (!text) {
-        refs.diagramImageStatus.textContent = "识别完成，未提取到文字";
-        return alert("识别完成，但未提取到文字。请换更清晰图片。");
+        alert("识别完成，但未提取到文字。请换更清晰图片。");
+        return;
       }
-      refs.diagramImportText.value = text;
+
       const parsed = parseDiagramText(text);
       const created = createProject(parsed.projectName);
       created.tools = parsed.tools;
       created.materials = parseMaterialsToList(parsed.materials);
       created.textDiagram = parsed.textDiagram || text;
-      state.projects.push(created);
-      saveProjects();
-      renderDashboard();
-      refs.diagramImageStatus.textContent = "识别完成，已自动新建项目";
-      alert("图片识别成功，已自动新建项目。");
+      createAndOpenProject(created);
     } catch (error) {
-      refs.diagramImageStatus.textContent = "识别失败";
       alert(`图片识别失败：${error.message || "请稍后重试"}`);
+    } finally {
+      refs.diagramImageInput.value = "";
     }
   });
+
+  refs.projectCards.addEventListener("wheel", (event) => {
+    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    event.preventDefault();
+    refs.projectCards.scrollBy({ left: event.deltaY, behavior: "auto" });
+  }, { passive: false });
 }
 
 function init() {

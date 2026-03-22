@@ -27,7 +27,7 @@
       </div>
     </header>
 
-    <main class="layout">
+    <main class="layout project-detail-layout">
       <section class="panel project-panel reveal">
         <h2>项目信息</h2>
         <form id="projectForm" class="grid-form">
@@ -91,47 +91,40 @@
         </form>
       </section>
 
-      <section class="panel counter-panel reveal">
-        <h2>行数计数器</h2>
-        <div class="counter-wrap">
-          <button class="btn ghost" data-action="decRow">-1</button>
-          <div class="counter-display" id="rowCounter">0</div>
-          <button class="btn primary" data-action="incRow">+1</button>
-        </div>
-        <p class="project-meta" id="progressText">进度 0%</p>
-        <div class="counter-tools">
-          <label>
-            步进值
-            <input id="stepInput" type="number" min="1" value="1" />
-          </label>
-          <button class="btn ghost" data-action="addStep">增加步进</button>
-          <button class="btn danger" data-action="resetRows">行数清零</button>
-        </div>
-      </section>
+      <div class="project-right-column">
+        <section class="panel counter-panel reveal">
+          <h2>行数计数器</h2>
+          <div class="counter-wrap">
+            <button class="btn ghost" data-action="decRow">-1</button>
+            <div class="counter-display" id="rowCounter">0</div>
+            <button class="btn primary" data-action="incRow">+1</button>
+          </div>
+          <p class="project-meta" id="progressText">进度 0%</p>
+          <div class="counter-tools">
+            <label>
+              步进值
+              <input id="stepInput" type="number" min="1" value="1" />
+            </label>
+            <button class="btn ghost" data-action="addStep">增加步进</button>
+            <button class="btn danger" data-action="resetRows">行数清零</button>
+          </div>
+        </section>
 
-      <section class="panel materials-panel reveal">
-        <h2>材料清单</h2>
-        <form id="materialForm" class="inline-form">
-          <input id="materialInput" type="text" placeholder="添加材料" required />
-          <button class="btn primary" type="submit">添加</button>
-        </form>
-        <ul id="materialList" class="checklist"></ul>
-      </section>
+        <section class="panel notes-panel reveal">
+          <h2>随手记</h2>
+          <textarea id="notes" rows="8"></textarea>
+        </section>
 
-      <section class="panel notes-panel reveal">
-        <h2>编织笔记</h2>
-        <textarea id="notes" rows="8"></textarea>
-      </section>
-
-      <section class="panel export-image-panel reveal">
-        <h2>导出当前项目图片</h2>
-        <div class="export-image-actions">
-          <button class="btn ghost" id="exportCurrentImageBtn" type="button">生成项目图片</button>
-          <a class="btn primary" id="downloadCurrentImageLink" href="#" download="knit-project.png">下载图片</a>
-        </div>
-        <canvas id="exportCanvas" width="1100" height="1400" hidden></canvas>
-        <img id="exportImagePreview" alt="项目导出预览" />
-      </section>
+        <section class="panel export-image-panel reveal">
+          <h2>导出当前项目图片</h2>
+          <div class="export-image-actions">
+            <button class="btn ghost" id="exportCurrentImageBtn" type="button">生成项目图片</button>
+            <a class="btn primary" id="downloadCurrentImageLink" href="#" download="knit-project.png">下载图片</a>
+          </div>
+          <canvas id="exportCanvas" width="1100" height="1400" hidden></canvas>
+          <img id="exportImagePreview" alt="项目导出预览" />
+        </section>
+      </div>
     </main>
 
     <aside class="floating-timer" id="floatingTimer">

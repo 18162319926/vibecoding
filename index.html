@@ -12,7 +12,7 @@
     />
     <link rel="stylesheet" href="styles.css" />
   </head>
-  <body>
+  <body class="homepage">
     <div class="bg-shape bg-shape-a"></div>
     <div class="bg-shape bg-shape-b"></div>
 
@@ -45,32 +45,24 @@
             <button class="btn ghost" type="button" data-filter="done">已完成</button>
           </div>
           <div class="import-export-actions">
-            <button class="btn primary" id="createProjectBtn" type="button">新建空白项目</button>
-            <button class="btn ghost" id="exportProjectsBtn" type="button">导出项目图片</button>
-            <button class="btn ghost" id="importProjectsBtn" type="button">导入项目</button>
-            <input id="importProjectsInput" type="file" accept="application/json" hidden />
+            <div class="create-menu-wrap" id="createMenuWrap">
+              <button class="btn primary" id="createProjectBtn" type="button" aria-haspopup="true" aria-expanded="false">新建项目</button>
+              <div class="create-menu" id="createProjectMenu" hidden>
+                <button class="btn ghost" id="createBlankOption" type="button">空白项目</button>
+                <button class="btn ghost" id="createFromImageOption" type="button">导入图片图解</button>
+                <button class="btn ghost" id="createFromTextOption" type="button">导入文字图解</button>
+              </div>
+            </div>
           </div>
         </div>
-        <p class="helper-text">点击卡片“进入项目”跳转到独立项目页管理详情。</p>
+        <p class="helper-text">支持鼠标滚轮上下滚动来横向浏览项目；点击卡片“进入项目”查看详情。</p>
         <div id="projectCards" class="project-cards"></div>
-      </section>
-
-      <section class="panel diagram-import-panel reveal">
-        <h2>图解导入并新建项目</h2>
-        <p class="helper-text">支持粘贴带字段的图解文本，自动识别项目名称、工具、材料、文字图解。</p>
-        <div class="import-export-actions">
-          <button class="btn ghost" id="pickDiagramImageBtn" type="button">选择图解图片</button>
-          <button class="btn ghost" id="ocrDiagramImageBtn" type="button">识别图片并新建项目</button>
-          <input id="diagramImageInput" type="file" accept="image/*" hidden />
-        </div>
-        <p class="helper-text" id="diagramImageStatus">未选择图片</p>
-        <textarea id="diagramImportText" rows="7" placeholder="项目名称：奶油围巾\n工具：4.0mm 棒针\n材料：羊毛线2团、记号扣6个\n文字图解：起针40针，2上2下...\n第9行开始每6行两侧各加1针"></textarea>
-        <button class="btn primary" id="parseDiagramBtn" type="button">解析图解并新建</button>
       </section>
 
     </main>
 
     <canvas id="dashboardExportCanvas" width="1200" height="1600" hidden></canvas>
+    <input id="diagramImageInput" type="file" accept="image/*" hidden />
 
     <aside class="floating-timer" id="floatingTimer">
       <h3>全局计时器</h3>
