@@ -64,20 +64,19 @@
     <canvas id="dashboardExportCanvas" width="1200" height="1600" hidden></canvas>
     <input id="diagramImageInput" type="file" accept="image/*" hidden />
 
-    <aside class="floating-timer" id="floatingTimer">
-      <h3>全局计时器</h3>
-      <p class="helper-text">跨项目共享</p>
-      <div class="timer" id="globalTimerDisplay">25:00</div>
-      <div class="timer-controls">
-        <button class="btn primary" id="globalStartBtn" type="button">开始</button>
-        <button class="btn ghost" id="globalPauseBtn" type="button">暂停</button>
-        <button class="btn danger" id="globalResetBtn" type="button">重置</button>
+    <div class="dialog-backdrop" id="exportChoiceDialog" hidden>
+      <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="exportChoiceTitle">
+        <h3 id="exportChoiceTitle">导出项目图片</h3>
+        <p class="helper-text">选择导出方式：先预览确认，或直接下载。</p>
+        <div class="dialog-actions">
+          <button class="btn ghost" id="exportPreviewBtn" type="button">预览图片</button>
+          <button class="btn primary" id="exportDirectDownloadBtn" type="button">直接下载</button>
+          <button class="btn danger" id="exportCloseBtn" type="button">取消</button>
+        </div>
+        <img id="exportPreviewImage" alt="导出预览" />
+        <a class="btn primary" id="exportPreviewDownloadLink" href="#" download="knit-project.png">下载当前预览</a>
       </div>
-      <label>
-        分钟
-        <input id="globalTimerMinutes" type="number" min="1" value="25" />
-      </label>
-    </aside>
+    </div>
 
     <footer class="footer">愿你的每一针，都织进生活的温度。</footer>
 

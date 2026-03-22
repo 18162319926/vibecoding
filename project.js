@@ -1,5 +1,6 @@
 const STORAGE_KEY = "knit-helper-state";
 const GLOBAL_TIMER_KEY = "knit-global-timer";
+const FLOATING_TIMER_POS_KEY = "knit-floating-timer-pos";
 
 const STATUS_MAP = {
   active: { label: "进行中", icon: "🧶" },
@@ -20,10 +21,12 @@ const refs = {
   needleSize: document.getElementById("needleSize"),
   patternName: document.getElementById("patternName"),
   textDiagram: document.getElementById("textDiagram"),
+  exportStyle: document.getElementById("exportStyle"),
   projectCoverInput: document.getElementById("projectCoverInput"),
   projectCoverPreview: document.getElementById("projectCoverPreview"),
   rowCounter: document.getElementById("rowCounter"),
   progressText: document.getElementById("progressText"),
+  projectTimeSpent: document.getElementById("projectTimeSpent"),
   stepInput: document.getElementById("stepInput"),
   materialForm: document.getElementById("materialForm"),
   materialInput: document.getElementById("materialInput"),
@@ -33,6 +36,8 @@ const refs = {
   downloadCurrentImageLink: document.getElementById("downloadCurrentImageLink"),
   exportCanvas: document.getElementById("exportCanvas"),
   exportImagePreview: document.getElementById("exportImagePreview"),
+  floatingTimer: document.getElementById("floatingTimer"),
+  floatingTimerHandle: document.getElementById("floatingTimerHandle"),
   globalTimerDisplay: document.getElementById("globalTimerDisplay"),
   globalTimerMinutes: document.getElementById("globalTimerMinutes"),
   globalStartBtn: document.getElementById("globalStartBtn"),
@@ -48,6 +53,7 @@ const timerState = {
 };
 
 let globalTimerId = null;
+let projectTimeTick = 0;
 
 function makeId() {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -68,7 +74,7 @@ function createProject(name = "我的新作品") {
     id: makeId(),
     projectName: name,
     projectType: "围巾",
-    status: "active",
+    status: "paused",
     yarnType: "",
     yarnRef: "",
     tools: "",
@@ -81,21 +87,81 @@ function createProject(name = "我的新作品") {
     todayRows: 0,
     materials: [],
     notes: "",
+    spentSeconds: 0,
+    exportStyle: "classic",
     lastDate: getToday(),
   };
 }
 
 function normalizeProject(project) {
-  return {
+  const normalized = {
     ...createProject(project.projectName || "未命名作品"),
     ...project,
     id: project.id || makeId(),
     totalRows: Math.max(0, Number(project.totalRows) || 0),
     rows: Math.max(0, Number(project.rows) || 0),
     todayRows: Math.max(0, Number(project.todayRows) || 0),
+    spentSeconds: Math.max(0, Number(project.spentSeconds) || 0),
     materials: Array.isArray(project.materials) ? project.materials : [],
     lastDate: project.lastDate || getToday(),
   };
+  applyProgressStatus(normalized);
+  return normalized;
+}
+
+function applyProgressStatus(project) {
+  const total = Math.max(0, Number(project.totalRows) || 0);
+  const rows = Math.max(0, Number(project.rows) || 0);
+  if (total > 0 && rows >= total) {
+    project.status = "done";
+  }
+}
+
+function formatDuration(seconds) {
+  const safe = Math.max(0, Number(seconds) || 0);
+  const hh = Math.floor(safe / 3600).toString().padStart(2, "0");
+  const mm = Math.floor((safe % 3600) / 60).toString().padStart(2, "0");
+  const ss = Math.floor(safe % 60).toString().padStart(2, "0");
+  return `${hh}:${mm}:${ss}`;
+}
+
+function getExportTheme(style) {
+  const themes = {
+    classic: {
+      bgA: "#fff8ef",
+      bgB: "#fff3e4",
+      panelFill: "rgba(255, 255, 255, 0.82)",
+      panelStroke: "#e7cfb2",
+      titleColor: "#25303b",
+      sectionColor: "#a04825",
+      labelColor: "#7e523b",
+      textColor: "#25303b",
+      subtitleColor: "#6d7481",
+    },
+    journal: {
+      bgA: "#f4faf6",
+      bgB: "#eef7ff",
+      panelFill: "rgba(255, 255, 255, 0.9)",
+      panelStroke: "#bed7cf",
+      titleColor: "#1f3f4c",
+      sectionColor: "#2f7d6b",
+      labelColor: "#4a616b",
+      textColor: "#1f2f37",
+      subtitleColor: "#56717d",
+    },
+    minimal: {
+      bgA: "#f8f8f8",
+      bgB: "#f1f2f4",
+      panelFill: "rgba(255, 255, 255, 0.96)",
+      panelStroke: "#d8dce2",
+      titleColor: "#1f2329",
+      sectionColor: "#30363d",
+      labelColor: "#5a6472",
+      textColor: "#1f2329",
+      subtitleColor: "#6b7280",
+    },
+  };
+  return themes[style] || themes.classic;
 }
 
 function getProjectProgress(project) {
@@ -220,9 +286,11 @@ function renderProject(project) {
   refs.needleSize.value = project.needleSize || "";
   refs.patternName.value = project.patternName || "";
   refs.textDiagram.value = project.textDiagram || "";
+  refs.exportStyle.value = project.exportStyle || "classic";
   refs.notes.value = project.notes || "";
   refs.rowCounter.textContent = String(project.rows || 0);
   refs.progressText.textContent = `进度 ${getProjectProgress(project)}%（${project.rows || 0}/${project.totalRows || 0} 行）`;
+  refs.projectTimeSpent.textContent = `累计用时 ${formatDuration(project.spentSeconds)}`;
 
   if (project.coverImage) {
     refs.projectCoverPreview.src = project.coverImage;
@@ -244,82 +312,98 @@ function syncDraftFields(project) {
   project.needleSize = refs.needleSize.value.trim();
   project.patternName = refs.patternName.value.trim();
   project.textDiagram = refs.textDiagram.value.trim();
+  project.exportStyle = refs.exportStyle.value || "classic";
   project.notes = refs.notes.value;
+  applyProgressStatus(project);
 }
 
-function buildExportImageLines(project) {
-  const status = STATUS_MAP[project.status] || STATUS_MAP.active;
-  const lines = [
-    "织伴 | 项目导出",
-    `项目名称：${project.projectName || "未命名作品"}`,
-    `类型：${project.projectType || "未填写"}`,
-    `状态：${status.label}`,
-    `线材：${project.yarnType || "未填写"}`,
-    `品牌/色号：${project.yarnRef || "未填写"}`,
-    `工具：${project.tools || "未填写"}`,
-    `针号：${project.needleSize || "未填写"}`,
-    `花样：${project.patternName || "未填写"}`,
-    `进度：${getProjectProgress(project)}%（${project.rows || 0}/${project.totalRows || 0} 行）`,
-    "------------------------------",
-    "文字图解：",
-  ];
-
-  String(project.textDiagram || "未填写").split(/\r?\n/).forEach((row) => {
-    const text = row.trim();
-    if (!text) {
-      lines.push(" ");
+function wrapTextLines(text, maxChars = 24) {
+  const source = String(text || "").trim();
+  if (!source) return [];
+  const rows = [];
+  source.split(/\r?\n/).forEach((line) => {
+    const part = line.trim();
+    if (!part) {
+      rows.push(" ");
       return;
     }
-    for (let i = 0; i < text.length; i += 28) {
-      lines.push(text.slice(i, i + 28));
+    for (let i = 0; i < part.length; i += maxChars) {
+      rows.push(part.slice(i, i + maxChars));
     }
   });
-  return lines;
+  return rows;
 }
 
-function drawExportBackground(ctx, width, height) {
+function buildExportSections(project) {
+  const status = STATUS_MAP[project.status] || STATUS_MAP.active;
+  const rows = Math.max(0, Number(project.rows) || 0);
+  const totalRows = Math.max(0, Number(project.totalRows) || 0);
+  const progressValue = totalRows > 0 ? `${getProjectProgress(project)}%（${rows}/${totalRows} 行）` : rows > 0 ? `已织 ${rows} 行` : "";
+
+  const projectInfo = [
+    ["项目名称", project.projectName],
+    ["类型", project.projectType],
+    ["状态", status.label],
+    ["进度", progressValue],
+  ].filter((item) => String(item[1] || "").trim());
+
+  const craftInfo = [
+    ["线材", project.yarnType],
+    ["品牌/色号", project.yarnRef],
+    ["工具", project.tools],
+    ["针号", project.needleSize],
+    ["花样", project.patternName],
+  ].filter((item) => String(item[1] || "").trim());
+
+  const diagramLines = wrapTextLines(project.textDiagram, 24);
+  const sections = [];
+  if (projectInfo.length) sections.push({ title: "项目信息", entries: projectInfo });
+  if (craftInfo.length) sections.push({ title: "编织信息", entries: craftInfo });
+  if (diagramLines.length) sections.push({ title: "文字图解", lines: diagramLines });
+  return sections;
+}
+
+function drawExportBackground(ctx, width, height, theme, style) {
   const bg = ctx.createLinearGradient(0, 0, width, height);
-  bg.addColorStop(0, "#fff8ef");
-  bg.addColorStop(1, "#fff3e4");
+  bg.addColorStop(0, theme.bgA);
+  bg.addColorStop(1, theme.bgB);
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
 
-  ctx.globalAlpha = 0.45;
-  ctx.fillStyle = "#ffd3b0";
-  ctx.beginPath();
-  ctx.arc(140, 120, 150, 0, Math.PI * 2);
-  ctx.fill();
+  if (style === "journal") {
+    ctx.globalAlpha = 0.24;
+    ctx.fillStyle = "#8fb6a8";
+    for (let i = 0; i < 8; i += 1) {
+      ctx.fillRect(0, i * 170 + 40, width, 72);
+    }
+  } else if (style === "minimal") {
+    ctx.globalAlpha = 0.2;
+    ctx.strokeStyle = "#cfd6df";
+    ctx.lineWidth = 1;
+    for (let x = 80; x < width; x += 80) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+  } else {
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = "#ffd3b0";
+    ctx.beginPath();
+    ctx.arc(140, 120, 150, 0, Math.PI * 2);
+    ctx.fill();
 
-  ctx.fillStyle = "#cfeadb";
-  ctx.beginPath();
-  ctx.arc(width - 120, 110, 180, 0, Math.PI * 2);
-  ctx.fill();
+    ctx.fillStyle = "#cfeadb";
+    ctx.beginPath();
+    ctx.arc(width - 120, 110, 180, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.globalAlpha = 1;
 }
 
-function showFeedback(message) {
-  refs.feedbackToast.textContent = message;
-  refs.feedbackToast.classList.add("show");
-  setTimeout(() => {
-    refs.feedbackToast.classList.remove("show");
-  }, 1600);
-}
-
-function exportProjectImage(project) {
-  const lines = buildExportImageLines(project);
-  const canvas = refs.exportCanvas;
-  const ctx = canvas.getContext("2d");
-  const width = 1100;
-  const lineHeight = 42;
-  const height = Math.max(1400, 140 + lines.length * lineHeight);
-
-  canvas.width = width;
-  canvas.height = height;
-
-  drawExportBackground(ctx, width, height);
-
-  ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
-  ctx.strokeStyle = "#ead6bf";
+function drawClassicLayout(ctx, width, height, theme, sections, project, styleLabel) {
+  ctx.fillStyle = theme.panelFill;
+  ctx.strokeStyle = theme.panelStroke;
   ctx.lineWidth = 2;
   ctx.beginPath();
   if (typeof ctx.roundRect === "function") {
@@ -330,14 +414,271 @@ function exportProjectImage(project) {
   ctx.fill();
   ctx.stroke();
 
-  ctx.fillStyle = "#25303b";
-  ctx.font = "30px sans-serif";
+  ctx.fillStyle = theme.titleColor;
+  ctx.font = "600 44px serif";
+  ctx.fillText(project.projectName || "我的编织项目", 72, 108);
 
-  lines.forEach((line, index) => {
-    ctx.fillText(line, 80, 100 + index * lineHeight);
+  ctx.fillStyle = theme.subtitleColor;
+  ctx.font = "500 22px sans-serif";
+  ctx.fillText(`织伴项目卡(${styleLabel})  ·  ${getToday()}`, 72, 142);
+
+  ctx.strokeStyle = theme.panelStroke;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(72, 174);
+  ctx.lineTo(width - 72, 174);
+  ctx.stroke();
+
+  let y = 214;
+  sections.forEach((section) => {
+    ctx.fillStyle = theme.sectionColor;
+    ctx.font = "700 24px sans-serif";
+    ctx.fillText(section.title, 72, y);
+    y += 34;
+
+    if (section.entries) {
+      section.entries.forEach(([label, value]) => {
+        ctx.fillStyle = theme.labelColor;
+        ctx.font = "600 21px sans-serif";
+        ctx.fillText(`${label}：`, 72, y);
+
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 21px sans-serif";
+        ctx.fillText(String(value), 202, y);
+        y += 32;
+      });
+    }
+
+    if (section.lines) {
+      section.lines.forEach((line) => {
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 20px sans-serif";
+        ctx.fillText(line, 72, y);
+        y += 30;
+      });
+    }
+
+    y += 8;
+  });
+}
+
+function drawJournalLayout(ctx, width, height, theme, sections, project, styleLabel) {
+  ctx.save();
+  ctx.translate(width / 2, 108);
+  ctx.rotate(-0.03);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
+  ctx.strokeStyle = theme.panelStroke;
+  ctx.lineWidth = 2;
+  ctx.fillRect(-462, -58, 924, 146);
+  ctx.strokeRect(-462, -58, 924, 146);
+  ctx.restore();
+
+  ctx.fillStyle = theme.titleColor;
+  ctx.font = "700 42px serif";
+  ctx.fillText(project.projectName || "我的编织项目", 86, 118);
+  ctx.fillStyle = theme.subtitleColor;
+  ctx.font = "500 20px sans-serif";
+  ctx.fillText(`织伴项目卡(${styleLabel})  ·  ${getToday()}`, 86, 150);
+
+  const noteColors = ["#fff4d7", "#e9f8f0", "#f6ebff", "#ffe8e2"];
+  let x = 72;
+  let y = 198;
+  const noteW = 430;
+
+  sections.forEach((section, index) => {
+    const rows = (section.entries ? section.entries.length : 0) + (section.lines ? section.lines.length : 0);
+    const noteH = Math.max(152, 78 + rows * 28);
+
+    ctx.save();
+    ctx.translate(x + noteW / 2, y + noteH / 2);
+    ctx.rotate(index % 2 === 0 ? -0.02 : 0.02);
+    ctx.fillStyle = noteColors[index % noteColors.length];
+    ctx.strokeStyle = "rgba(138, 123, 100, 0.25)";
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(-noteW / 2, -noteH / 2, noteW, noteH);
+    ctx.strokeRect(-noteW / 2, -noteH / 2, noteW, noteH);
+    ctx.fillStyle = "rgba(240, 221, 179, 0.85)";
+    ctx.fillRect(-34, -noteH / 2 - 9, 68, 16);
+    ctx.restore();
+
+    let ly = y + 36;
+    ctx.fillStyle = theme.sectionColor;
+    ctx.font = "700 22px sans-serif";
+    ctx.fillText(section.title, x + 14, ly);
+    ly += 26;
+
+    if (section.entries) {
+      section.entries.forEach(([label, value]) => {
+        ctx.fillStyle = theme.labelColor;
+        ctx.font = "600 18px sans-serif";
+        ctx.fillText(`${label}：`, x + 14, ly);
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 18px sans-serif";
+        ctx.fillText(String(value), x + 126, ly);
+        ly += 24;
+      });
+    }
+
+    if (section.lines) {
+      section.lines.forEach((line) => {
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 17px sans-serif";
+        ctx.fillText(line, x + 14, ly);
+        ly += 22;
+      });
+    }
+
+    if (x > 100) {
+      x = width - noteW - 72;
+    } else {
+      x = 72;
+      y += noteH + 20;
+    }
+  });
+}
+
+function drawMinimalLayout(ctx, width, height, theme, sections, project, styleLabel) {
+  ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
+  ctx.fillRect(54, 54, width - 108, height - 108);
+
+  ctx.fillStyle = theme.titleColor;
+  ctx.font = "700 40px sans-serif";
+  ctx.fillText(project.projectName || "我的编织项目", 84, 126);
+
+  ctx.fillStyle = theme.subtitleColor;
+  ctx.font = "500 19px sans-serif";
+  ctx.fillText(`织伴项目卡(${styleLabel})`, 84, 156);
+
+  ctx.strokeStyle = theme.panelStroke;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(84, 184);
+  ctx.lineTo(84, height - 84);
+  ctx.stroke();
+
+  let y = 220;
+  sections.forEach((section) => {
+    ctx.fillStyle = theme.sectionColor;
+    ctx.font = "700 22px sans-serif";
+    ctx.fillText(section.title, 108, y);
+    y += 30;
+
+    if (section.entries) {
+      section.entries.forEach(([label, value]) => {
+        ctx.fillStyle = theme.labelColor;
+        ctx.font = "600 17px sans-serif";
+        ctx.fillText(label.toUpperCase(), 108, y);
+        y += 20;
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 19px sans-serif";
+        ctx.fillText(String(value), 108, y);
+        y += 28;
+      });
+    }
+
+    if (section.lines) {
+      section.lines.forEach((line) => {
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 18px sans-serif";
+        ctx.fillText(line, 108, y);
+        y += 26;
+      });
+    }
+
+    y += 8;
+  });
+}
+
+function computeExportHeight(style, contentRows, sectionCount) {
+  if (style === "journal") {
+    return Math.max(860, 240 + contentRows * 40 + sectionCount * 24);
+  }
+  if (style === "minimal") {
+    return Math.max(820, 220 + contentRows * 36 + sectionCount * 20);
+  }
+  return Math.max(880, 230 + contentRows * 38 + sectionCount * 24);
+}
+
+function buildExportImageData(project, options = {}) {
+  const preview = Boolean(options.preview);
+  const sections = buildExportSections(project);
+  const style = project.exportStyle || "classic";
+  const theme = getExportTheme(style);
+  const canvas = refs.exportCanvas;
+  const ctx = canvas.getContext("2d");
+  const width = preview ? 860 : 1100;
+
+  let contentRows = 0;
+  sections.forEach((section) => {
+    if (section.entries) contentRows += section.entries.length;
+    if (section.lines) contentRows += section.lines.length;
   });
 
-  const dataUrl = canvas.toDataURL("image/png");
+  const height = computeExportHeight(style, contentRows, sections.length);
+
+  canvas.width = width;
+  canvas.height = height;
+
+  const styleLabel = style === "journal" ? "手帐" : style === "minimal" ? "极简" : "经典";
+
+  drawExportBackground(ctx, width, height, theme, style);
+
+  if (style === "journal") {
+    drawJournalLayout(ctx, width, height, theme, sections, project, styleLabel);
+  } else if (style === "minimal") {
+    drawMinimalLayout(ctx, width, height, theme, sections, project, styleLabel);
+  } else {
+    drawClassicLayout(ctx, width, height, theme, sections, project, styleLabel);
+  }
+
+  return canvas.toDataURL("image/png");
+}
+
+function refreshExportPreview(project) {
+  const dataUrl = buildExportImageData(project, { preview: true });
+  refs.exportImagePreview.src = dataUrl;
+  refs.exportImagePreview.classList.add("show");
+  refs.downloadCurrentImageLink.href = dataUrl;
+  refs.downloadCurrentImageLink.download = `${project.projectName || "knit-project"}-${getToday()}.png`;
+}
+
+function showFeedback(message) {
+  refs.feedbackToast.textContent = message;
+  refs.feedbackToast.classList.add("show");
+  setTimeout(() => {
+    refs.feedbackToast.classList.remove("show");
+  }, 1600);
+}
+
+function celebrateProjectCompletion(projectName) {
+  const layer = document.createElement("div");
+  layer.className = "celebration-layer";
+
+  const badge = document.createElement("div");
+  badge.className = "celebration-badge";
+  badge.textContent = `🎉 恭喜完成：${projectName || "编织项目"}`;
+  layer.appendChild(badge);
+
+  const colors = ["#f39c6b", "#ffd97d", "#86d2bf", "#9fc3ff", "#f7a8b8"];
+  for (let i = 0; i < 36; i += 1) {
+    const piece = document.createElement("span");
+    piece.className = "celebration-piece";
+    piece.style.left = `${Math.random() * 100}%`;
+    piece.style.background = colors[i % colors.length];
+    piece.style.setProperty("--fall-duration", `${1.4 + Math.random() * 1.1}s`);
+    piece.style.setProperty("--fall-delay", `${Math.random() * 0.4}s`);
+    piece.style.setProperty("--drift", `${(Math.random() - 0.5) * 180}px`);
+    layer.appendChild(piece);
+  }
+
+  document.body.appendChild(layer);
+  setTimeout(() => {
+    layer.remove();
+  }, 2600);
+}
+
+function exportProjectImage(project) {
+  const dataUrl = buildExportImageData(project, { preview: false });
   refs.exportImagePreview.src = dataUrl;
   refs.exportImagePreview.classList.add("show");
   refs.downloadCurrentImageLink.href = dataUrl;
@@ -368,7 +709,7 @@ function renderTimerState() {
   refs.globalTimerDisplay.textContent = formatTime(timerState.left);
 }
 
-function bindGlobalTimer() {
+function bindGlobalTimer(project, persist) {
   refs.globalTimerMinutes.addEventListener("change", () => {
     timerState.minutes = Math.max(1, Number(refs.globalTimerMinutes.value) || 25);
     if (!timerState.running) timerState.left = timerState.minutes * 60;
@@ -382,6 +723,13 @@ function bindGlobalTimer() {
     globalTimerId = setInterval(() => {
       if (timerState.left > 0) {
         timerState.left -= 1;
+        project.spentSeconds += 1;
+        projectTimeTick += 1;
+        refs.projectTimeSpent.textContent = `累计用时 ${formatDuration(project.spentSeconds)}`;
+        if (projectTimeTick >= 5) {
+          projectTimeTick = 0;
+          persist();
+        }
         saveTimerState();
         renderTimerState();
         return;
@@ -396,6 +744,10 @@ function bindGlobalTimer() {
   refs.globalPauseBtn.addEventListener("click", () => {
     clearInterval(globalTimerId);
     timerState.running = false;
+    if (projectTimeTick > 0) {
+      projectTimeTick = 0;
+      persist();
+    }
     saveTimerState();
   });
 
@@ -403,9 +755,129 @@ function bindGlobalTimer() {
     clearInterval(globalTimerId);
     timerState.running = false;
     timerState.left = timerState.minutes * 60;
+    if (projectTimeTick > 0) {
+      projectTimeTick = 0;
+      persist();
+    }
     saveTimerState();
     renderTimerState();
   });
+}
+
+function bindDraggableFloatingTimer() {
+  const timer = refs.floatingTimer;
+  const handle = refs.floatingTimerHandle;
+  if (!timer) return;
+
+  const desktopQuery = window.matchMedia("(min-width: 901px)");
+
+  const applySavedPosition = () => {
+    if (!desktopQuery.matches) {
+      timer.style.left = "";
+      timer.style.top = "";
+      timer.style.right = "";
+      timer.style.transform = "";
+      return;
+    }
+
+    const saved = localStorage.getItem(FLOATING_TIMER_POS_KEY);
+    if (!saved) return;
+
+    try {
+      const parsed = JSON.parse(saved);
+      const left = Number(parsed.left);
+      const top = Number(parsed.top);
+      if (!Number.isFinite(left) || !Number.isFinite(top)) return;
+      timer.style.left = `${left}px`;
+      timer.style.top = `${top}px`;
+      timer.style.right = "auto";
+      timer.style.transform = "none";
+    } catch {
+      // Ignore invalid stored position.
+    }
+  };
+
+  applySavedPosition();
+  desktopQuery.addEventListener("change", () => {
+    applySavedPosition();
+  });
+
+  let dragging = false;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  const clampPosition = (left, top) => {
+    const maxLeft = Math.max(0, window.innerWidth - timer.offsetWidth - 8);
+    const maxTop = Math.max(0, window.innerHeight - timer.offsetHeight - 8);
+    return {
+      left: Math.min(maxLeft, Math.max(8, left)),
+      top: Math.min(maxTop, Math.max(8, top)),
+    };
+  };
+
+  const onMove = (clientX, clientY) => {
+    const nextLeft = clientX - offsetX;
+    const nextTop = clientY - offsetY;
+    const clamped = clampPosition(nextLeft, nextTop);
+    timer.style.left = `${clamped.left}px`;
+    timer.style.top = `${clamped.top}px`;
+    timer.style.right = "auto";
+    timer.style.transform = "none";
+  };
+
+  const stopDrag = () => {
+    if (!dragging) return;
+    dragging = false;
+    timer.classList.remove("dragging");
+    const left = parseFloat(timer.style.left);
+    const top = parseFloat(timer.style.top);
+    if (Number.isFinite(left) && Number.isFinite(top) && desktopQuery.matches) {
+      localStorage.setItem(FLOATING_TIMER_POS_KEY, JSON.stringify({ left, top }));
+    }
+  };
+
+  const startDrag = (clientX, clientY) => {
+    if (!desktopQuery.matches) return;
+    const rect = timer.getBoundingClientRect();
+    dragging = true;
+    offsetX = clientX - rect.left;
+    offsetY = clientY - rect.top;
+    timer.classList.add("dragging");
+    onMove(clientX, clientY);
+  };
+
+  const isInteractiveTarget = (target) => target?.closest("button, input, select, textarea, label, a");
+
+  const dragTarget = handle || timer;
+
+  dragTarget.addEventListener("mousedown", (event) => {
+    if (event.button !== 0) return;
+    if (isInteractiveTarget(event.target)) return;
+    startDrag(event.clientX, event.clientY);
+  });
+
+  dragTarget.addEventListener("touchstart", (event) => {
+    const touch = event.touches?.[0];
+    if (!touch) return;
+    if (isInteractiveTarget(event.target)) return;
+    startDrag(touch.clientX, touch.clientY);
+  }, { passive: true });
+
+  document.addEventListener("mousemove", (event) => {
+    if (!dragging) return;
+    onMove(event.clientX, event.clientY);
+  });
+
+  document.addEventListener("touchmove", (event) => {
+    if (!dragging) return;
+    event.preventDefault();
+    const touch = event.touches?.[0];
+    if (!touch) return;
+    onMove(touch.clientX, touch.clientY);
+  }, { passive: false });
+
+  document.addEventListener("mouseup", stopDrag);
+  document.addEventListener("touchend", stopDrag);
 }
 
 function init() {
@@ -422,6 +894,7 @@ function init() {
   const persist = () => {
     const index = projects.findIndex((item) => item.id === project.id);
     if (index >= 0) {
+      applyProgressStatus(project);
       projects[index] = project;
       const saved = saveProjects(projects);
       if (!saved) {
@@ -435,15 +908,31 @@ function init() {
     return false;
   };
 
+  const persistWithCelebration = (beforeStatus) => {
+    const ok = persist();
+    if (ok && beforeStatus !== "done" && project.status === "done") {
+      celebrateProjectCompletion(project.projectName);
+    }
+    return ok;
+  };
+
   renderProject(project);
   renderMaterials(project, persist);
 
   refs.projectForm.addEventListener("submit", (event) => {
     event.preventDefault();
+    const before = project.status;
     syncDraftFields(project);
-    if (persist()) {
+    if (persistWithCelebration(before)) {
       showFeedback("项目已保存");
+      refreshExportPreview(project);
     }
+  });
+
+  refs.exportStyle.addEventListener("change", () => {
+    project.exportStyle = refs.exportStyle.value || "classic";
+    persist();
+    refreshExportPreview(project);
   });
 
   refs.projectCoverInput.addEventListener("change", async (event) => {
@@ -474,10 +963,11 @@ function init() {
   });
 
   document.querySelector("[data-action='incRow']").addEventListener("click", () => {
+    const before = project.status;
     project.rows += 1;
     project.todayRows += 1;
     project.lastDate = getToday();
-    persist();
+    persistWithCelebration(before);
   });
 
   document.querySelector("[data-action='decRow']").addEventListener("click", () => {
@@ -486,11 +976,12 @@ function init() {
   });
 
   document.querySelector("[data-action='addStep']").addEventListener("click", () => {
+    const before = project.status;
     const step = Math.max(1, Number(refs.stepInput.value) || 1);
     project.rows += step;
     project.todayRows += step;
     project.lastDate = getToday();
-    persist();
+    persistWithCelebration(before);
   });
 
   document.querySelector("[data-action='resetRows']").addEventListener("click", () => {
@@ -512,11 +1003,14 @@ function init() {
 
   refs.exportCurrentImageBtn.addEventListener("click", () => {
     exportProjectImage(project);
+    showFeedback("导出预览已更新，可直接下载");
   });
 
   loadTimerState();
   renderTimerState();
-  bindGlobalTimer();
+  bindGlobalTimer(project, persist);
+  bindDraggableFloatingTimer();
+  refreshExportPreview(project);
 }
 
 init();
