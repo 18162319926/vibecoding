@@ -27,6 +27,19 @@ body {
   overflow-x: hidden;
 }
 
+h1,
+h2,
+h3,
+.subtitle,
+.project-meta,
+.btn,
+label,
+input,
+select,
+textarea {
+  overflow-wrap: anywhere;
+}
+
 body.homepage {
   height: 100vh;
   overflow: hidden;
@@ -527,6 +540,21 @@ body.homepage .footer {
   z-index: 20;
 }
 
+.floating-timer .timer-controls,
+.floating-timer label {
+  transition: opacity 0.2s ease, max-height 0.2s ease, margin 0.2s ease;
+}
+
+.floating-timer.is-collapsed .helper-text,
+.floating-timer.is-collapsed .timer-controls,
+.floating-timer.is-collapsed label {
+  opacity: 0;
+  max-height: 0;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 .floating-timer h3 {
   margin: 0;
   font-size: 1rem;
@@ -759,7 +787,7 @@ body.homepage .footer {
   }
 
   .floating-timer-handle {
-    cursor: default;
+    cursor: pointer;
     touch-action: auto;
   }
 
@@ -793,11 +821,33 @@ body.homepage .footer {
   body.homepage .project-cards {
     max-height: none;
   }
+
+  body.homepage .project-cards {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    overflow-x: hidden;
+    overflow-y: auto;
+    max-height: 60vh;
+    padding-right: 2px;
+  }
+
+  body.homepage .project-card {
+    min-width: 100%;
+    max-width: none;
+  }
 }
 
 @media (max-width: 620px) {
   body {
     padding: 14px;
+  }
+
+  input,
+  select,
+  textarea,
+  .btn {
+    min-height: 44px;
+    font-size: 16px;
   }
 
   .grid-form {
@@ -819,7 +869,77 @@ body.homepage .footer {
     max-width: none;
   }
 
+  body.homepage .project-card {
+    min-width: 100%;
+  }
+
+  body.homepage .project-cover {
+    aspect-ratio: 16 / 9;
+    max-height: 140px;
+  }
+
+  body.homepage .project-card h3 {
+    font-size: 1.08rem;
+  }
+
+  body.homepage .project-meta {
+    font-size: 0.94rem;
+  }
+
   .counter-display {
     min-width: 104px;
+  }
+
+  .counter-wrap {
+    gap: 8px;
+  }
+
+  .counter-display {
+    min-width: 88px;
+    font-size: 1.6rem;
+    padding: 10px;
+  }
+
+  .export-image-actions .btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  body {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .hero-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .project-card {
+    min-width: 100%;
+  }
+
+  body.homepage .project-cover {
+    max-height: 120px;
+  }
+
+  body.homepage .project-card h3 {
+    font-size: 1.12rem;
+  }
+
+  body.homepage .project-meta {
+    font-size: 0.98rem;
+  }
+
+  .status-filters .btn,
+  .import-export-actions .btn,
+  .create-menu-wrap,
+  .create-menu {
+    width: 100%;
+  }
+
+  .create-menu {
+    right: auto;
   }
 }

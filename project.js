@@ -880,6 +880,56 @@ function bindDraggableFloatingTimer() {
   document.addEventListener("touchend", stopDrag);
 }
 
+function bindMobileFloatingTimerToggle() {
+  const timer = refs.floatingTimer;
+  const handle = refs.floatingTimerHandle;
+  if (!timer || !handle) return;
+
+  const mobileQuery = window.matchMedia("(max-width: 900px)");
+
+  const renderHandleState = () => {
+    if (mobileQuery.matches) {
+      const collapsed = timer.classList.contains("is-collapsed");
+      handle.textContent = collapsed ? "点击展开计时器" : "点击收起计时器";
+      handle.setAttribute("aria-expanded", String(!collapsed));
+      handle.setAttribute("role", "button");
+      handle.tabIndex = 0;
+      return;
+    }
+
+    timer.classList.remove("is-collapsed");
+    handle.textContent = "拖动浮窗";
+    handle.removeAttribute("aria-expanded");
+    handle.removeAttribute("role");
+    handle.removeAttribute("tabindex");
+  };
+
+  const toggleCollapsed = () => {
+    if (!mobileQuery.matches) return;
+    timer.classList.toggle("is-collapsed");
+    renderHandleState();
+  };
+
+  handle.addEventListener("click", toggleCollapsed);
+  handle.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    toggleCollapsed();
+  });
+
+  mobileQuery.addEventListener("change", () => {
+    if (mobileQuery.matches) {
+      timer.classList.add("is-collapsed");
+    }
+    renderHandleState();
+  });
+
+  if (mobileQuery.matches) {
+    timer.classList.add("is-collapsed");
+  }
+  renderHandleState();
+}
+
 function init() {
   const projectId = getProjectIdFromUrl();
   const projects = loadProjects();
@@ -1010,6 +1060,7 @@ function init() {
   renderTimerState();
   bindGlobalTimer(project, persist);
   bindDraggableFloatingTimer();
+  bindMobileFloatingTimerToggle();
   refreshExportPreview(project);
 }
 
