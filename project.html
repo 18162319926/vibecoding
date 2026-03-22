@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>织伴 | 项目详情</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Outfit:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-shape bg-shape-a"></div>
+    <div class="bg-shape bg-shape-b"></div>
+
+    <header class="hero">
+      <div>
+        <p class="eyebrow">PROJECT DETAIL</p>
+        <h1 id="projectTitle">项目详情</h1>
+        <p class="subtitle">在这里记录具体编织过程</p>
+      </div>
+      <div class="hero-stats">
+        <a class="btn ghost" href="index.html">返回仪表盘</a>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel project-panel reveal">
+        <h2>项目信息</h2>
+        <form id="projectForm" class="grid-form">
+          <label>
+            项目名称
+            <input id="projectName" type="text" required />
+          </label>
+          <label>
+            作品类型
+            <select id="projectType">
+              <option value="围巾">围巾</option>
+              <option value="毛衣">毛衣</option>
+              <option value="帽子">帽子</option>
+              <option value="披肩">披肩</option>
+              <option value="毯子">毯子</option>
+              <option value="其他">其他</option>
+            </select>
+          </label>
+          <label>
+            项目状态
+            <select id="projectStatus">
+              <option value="active">进行中</option>
+              <option value="paused">搁置</option>
+              <option value="done">已完成</option>
+            </select>
+          </label>
+          <label>
+            总行数目标
+            <input id="totalRows" type="number" min="0" />
+          </label>
+          <label>
+            线材
+            <input id="yarnType" type="text" />
+          </label>
+          <label>
+            毛线品牌/色号
+            <input id="yarnRef" type="text" />
+          </label>
+          <label>
+            工具
+            <input id="tools" type="text" />
+          </label>
+          <label>
+            针号
+            <input id="needleSize" type="text" />
+          </label>
+          <label class="full-span">
+            花样/备注
+            <input id="patternName" type="text" />
+          </label>
+          <label class="full-span">
+            项目封面
+            <input id="projectCoverInput" type="file" accept="image/*" />
+            <img id="projectCoverPreview" class="cover-preview" alt="封面预览" />
+          </label>
+          <label class="full-span">
+            文字图解
+            <textarea id="textDiagram" rows="5"></textarea>
+          </label>
+          <button class="btn primary" type="submit">保存项目</button>
+        </form>
+      </section>
+
+      <section class="panel counter-panel reveal">
+        <h2>行数计数器</h2>
+        <div class="counter-wrap">
+          <button class="btn ghost" data-action="decRow">-1</button>
+          <div class="counter-display" id="rowCounter">0</div>
+          <button class="btn primary" data-action="incRow">+1</button>
+        </div>
+        <p class="project-meta" id="progressText">进度 0%</p>
+        <div class="counter-tools">
+          <label>
+            步进值
+            <input id="stepInput" type="number" min="1" value="1" />
+          </label>
+          <button class="btn ghost" data-action="addStep">增加步进</button>
+          <button class="btn danger" data-action="resetRows">行数清零</button>
+        </div>
+      </section>
+
+      <section class="panel materials-panel reveal">
+        <h2>材料清单</h2>
+        <form id="materialForm" class="inline-form">
+          <input id="materialInput" type="text" placeholder="添加材料" required />
+          <button class="btn primary" type="submit">添加</button>
+        </form>
+        <ul id="materialList" class="checklist"></ul>
+      </section>
+
+      <section class="panel notes-panel reveal">
+        <h2>编织笔记</h2>
+        <textarea id="notes" rows="8"></textarea>
+      </section>
+
+      <section class="panel export-image-panel reveal">
+        <h2>导出当前项目图片</h2>
+        <div class="export-image-actions">
+          <button class="btn ghost" id="exportCurrentImageBtn" type="button">生成项目图片</button>
+          <a class="btn primary" id="downloadCurrentImageLink" href="#" download="knit-project.png">下载图片</a>
+        </div>
+        <canvas id="exportCanvas" width="1100" height="1400" hidden></canvas>
+        <img id="exportImagePreview" alt="项目导出预览" />
+      </section>
+    </main>
+
+    <aside class="floating-timer" id="floatingTimer">
+      <h3>全局计时器</h3>
+      <p class="helper-text">跨项目共享</p>
+      <div class="timer" id="globalTimerDisplay">25:00</div>
+      <div class="timer-controls">
+        <button class="btn primary" id="globalStartBtn" type="button">开始</button>
+        <button class="btn ghost" id="globalPauseBtn" type="button">暂停</button>
+        <button class="btn danger" id="globalResetBtn" type="button">重置</button>
+      </div>
+      <label>
+        分钟
+        <input id="globalTimerMinutes" type="number" min="1" value="25" />
+      </label>
+    </aside>
+
+    <script src="project.js"></script>
+  </body>
+</html>
