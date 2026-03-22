@@ -27,6 +27,11 @@ body {
   overflow-x: hidden;
 }
 
+body.homepage {
+  height: 100vh;
+  overflow: hidden;
+}
+
 .bg-shape {
   position: fixed;
   border-radius: 999px;
@@ -116,6 +121,12 @@ h1 {
   grid-template-columns: repeat(12, 1fr);
 }
 
+body.homepage .layout {
+  max-height: calc(100vh - 220px);
+  overflow: hidden;
+  align-content: start;
+}
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -145,7 +156,6 @@ h1 {
 .timer-panel,
 .materials-panel,
 .notes-panel,
-.diagram-import-panel,
 .export-image-panel {
   grid-column: span 6;
 }
@@ -197,9 +207,17 @@ h1 {
 }
 
 .project-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  padding-bottom: 6px;
+}
+
+body.homepage .project-cards {
+  max-height: calc(100vh - 410px);
 }
 
 .project-card {
@@ -207,6 +225,9 @@ h1 {
   border-radius: 14px;
   padding: 10px;
   background: #fffefb;
+  min-width: 250px;
+  max-width: 280px;
+  flex: 0 0 auto;
 }
 
 .project-card h3 {
@@ -241,15 +262,73 @@ h1 {
 }
 
 .project-card-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-top: 8px;
+}
+
+.project-card-actions .btn {
+  width: 100%;
+}
+
+.project-card-actions a.btn {
+  text-align: center;
 }
 
 .import-export-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.create-menu-wrap {
+  position: relative;
+}
+
+.create-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 190px;
+  background: #fffdf9;
+  border: 1px solid #e9dbc8;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+  z-index: 30;
+}
+
+.create-menu[hidden] {
+  display: none !important;
+}
+
+.create-menu .btn {
+  text-align: left;
+}
+
+.project-detail-layout {
+  grid-template-columns: minmax(380px, 1.12fr) minmax(340px, 0.88fr);
+  align-items: start;
+}
+
+.project-detail-layout .project-panel {
+  grid-column: 1;
+}
+
+.project-right-column {
+  grid-column: 2;
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.project-right-column .counter-panel,
+.project-right-column .notes-panel,
+.project-right-column .export-image-panel {
+  grid-column: auto;
 }
 
 .grid-form {
@@ -289,10 +368,6 @@ textarea {
   font-size: 0.9rem;
 }
 
-#diagramImageStatus {
-  margin-top: 10px;
-}
-
 .cover-preview {
   margin-top: 8px;
   width: 180px;
@@ -313,6 +388,10 @@ textarea {
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
@@ -415,6 +494,10 @@ textarea {
   font-size: 0.9rem;
 }
 
+body.homepage .footer {
+  margin-top: 10px;
+}
+
 .floating-timer {
   position: fixed;
   right: 20px;
@@ -433,6 +516,27 @@ textarea {
 .floating-timer h3 {
   margin: 0;
   font-size: 1rem;
+}
+
+.feedback-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  background: rgba(37, 48, 59, 0.92);
+  color: #fff;
+  border-radius: 12px;
+  padding: 10px 14px;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 40;
+}
+
+.feedback-toast.show {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .export-image-actions {
@@ -511,9 +615,30 @@ textarea {
   .timer-panel,
   .materials-panel,
   .notes-panel,
-  .diagram-import-panel,
   .export-image-panel {
     grid-column: span 12;
+  }
+
+  .project-detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .project-right-column {
+    grid-column: 1;
+  }
+
+  body.homepage {
+    height: auto;
+    overflow: auto;
+  }
+
+  body.homepage .layout {
+    max-height: none;
+    overflow: visible;
+  }
+
+  body.homepage .project-cards {
+    max-height: none;
   }
 }
 
@@ -534,6 +659,11 @@ textarea {
   .status-filters,
   .project-card-actions {
     flex-direction: column;
+  }
+
+  .project-card {
+    min-width: calc(100vw - 58px);
+    max-width: none;
   }
 
   .counter-display {

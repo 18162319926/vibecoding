@@ -38,6 +38,7 @@ const refs = {
   globalStartBtn: document.getElementById("globalStartBtn"),
   globalPauseBtn: document.getElementById("globalPauseBtn"),
   globalResetBtn: document.getElementById("globalResetBtn"),
+  feedbackToast: document.getElementById("feedbackToast"),
 };
 
 const timerState = {
@@ -116,7 +117,55 @@ function loadProjects() {
 }
 
 function saveProjects(projects) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects }));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects }));
+    return true;
+  } catch (error) {
+    if (error && error.name === "QuotaExceededError") {
+      return false;
+    }
+    throw error;
+  }
+}
+
+async function compressCoverImage(file) {
+  const maxSide = 1080;
+  const maxLength = 380_000;
+
+  const image = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("图片读取失败"));
+      img.src = String(reader.result || "");
+    };
+    reader.onerror = () => reject(new Error("图片读取失败"));
+    reader.readAsDataURL(file);
+  });
+
+  const sourceWidth = Number(image.width) || 1;
+  const sourceHeight = Number(image.height) || 1;
+  const scale = Math.min(1, maxSide / Math.max(sourceWidth, sourceHeight));
+  const targetWidth = Math.max(1, Math.round(sourceWidth * scale));
+  const targetHeight = Math.max(1, Math.round(sourceHeight * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = targetWidth;
+  canvas.height = targetHeight;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("无法处理图片");
+
+  ctx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+  let quality = 0.82;
+  let dataUrl = canvas.toDataURL("image/jpeg", quality);
+  while (dataUrl.length > maxLength && quality > 0.42) {
+    quality -= 0.08;
+    dataUrl = canvas.toDataURL("image/jpeg", quality);
+  }
+
+  return dataUrl;
 }
 
 function getProjectIdFromUrl() {
@@ -125,6 +174,7 @@ function getProjectIdFromUrl() {
 }
 
 function renderMaterials(project, onChanged) {
+  if (!refs.materialList) return;
   refs.materialList.innerHTML = "";
   project.materials.forEach((item) => {
     const li = document.createElement("li");
@@ -183,6 +233,20 @@ function renderProject(project) {
   }
 }
 
+function syncDraftFields(project) {
+  project.projectName = refs.projectName.value.trim() || project.projectName || "未命名作品";
+  project.projectType = refs.projectType.value;
+  project.status = refs.projectStatus.value;
+  project.totalRows = Math.max(0, Number(refs.totalRows.value) || 0);
+  project.yarnType = refs.yarnType.value.trim();
+  project.yarnRef = refs.yarnRef.value.trim();
+  project.tools = refs.tools.value.trim();
+  project.needleSize = refs.needleSize.value.trim();
+  project.patternName = refs.patternName.value.trim();
+  project.textDiagram = refs.textDiagram.value.trim();
+  project.notes = refs.notes.value;
+}
+
 function buildExportImageLines(project) {
   const status = STATUS_MAP[project.status] || STATUS_MAP.active;
   const lines = [
@@ -213,6 +277,34 @@ function buildExportImageLines(project) {
   return lines;
 }
 
+function drawExportBackground(ctx, width, height) {
+  const bg = ctx.createLinearGradient(0, 0, width, height);
+  bg.addColorStop(0, "#fff8ef");
+  bg.addColorStop(1, "#fff3e4");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.globalAlpha = 0.45;
+  ctx.fillStyle = "#ffd3b0";
+  ctx.beginPath();
+  ctx.arc(140, 120, 150, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#cfeadb";
+  ctx.beginPath();
+  ctx.arc(width - 120, 110, 180, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function showFeedback(message) {
+  refs.feedbackToast.textContent = message;
+  refs.feedbackToast.classList.add("show");
+  setTimeout(() => {
+    refs.feedbackToast.classList.remove("show");
+  }, 1600);
+}
+
 function exportProjectImage(project) {
   const lines = buildExportImageLines(project);
   const canvas = refs.exportCanvas;
@@ -224,13 +316,25 @@ function exportProjectImage(project) {
   canvas.width = width;
   canvas.height = height;
 
-  ctx.fillStyle = "#fffdf9";
-  ctx.fillRect(0, 0, width, height);
+  drawExportBackground(ctx, width, height);
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
+  ctx.strokeStyle = "#ead6bf";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  if (typeof ctx.roundRect === "function") {
+    ctx.roundRect(40, 40, width - 80, height - 80, 28);
+  } else {
+    ctx.rect(40, 40, width - 80, height - 80);
+  }
+  ctx.fill();
+  ctx.stroke();
+
   ctx.fillStyle = "#25303b";
   ctx.font = "30px sans-serif";
 
   lines.forEach((line, index) => {
-    ctx.fillText(line, 42, 70 + index * lineHeight);
+    ctx.fillText(line, 80, 100 + index * lineHeight);
   });
 
   const dataUrl = canvas.toDataURL("image/png");
@@ -319,10 +423,16 @@ function init() {
     const index = projects.findIndex((item) => item.id === project.id);
     if (index >= 0) {
       projects[index] = project;
-      saveProjects(projects);
+      const saved = saveProjects(projects);
+      if (!saved) {
+        showFeedback("保存失败：本地存储空间不足");
+        return false;
+      }
       renderProject(project);
       renderMaterials(project, persist);
+      return true;
     }
+    return false;
   };
 
   renderProject(project);
@@ -330,28 +440,31 @@ function init() {
 
   refs.projectForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    project.projectName = refs.projectName.value.trim() || "未命名作品";
-    project.projectType = refs.projectType.value;
-    project.status = refs.projectStatus.value;
-    project.totalRows = Math.max(0, Number(refs.totalRows.value) || 0);
-    project.yarnType = refs.yarnType.value.trim();
-    project.yarnRef = refs.yarnRef.value.trim();
-    project.tools = refs.tools.value.trim();
-    project.needleSize = refs.needleSize.value.trim();
-    project.patternName = refs.patternName.value.trim();
-    project.textDiagram = refs.textDiagram.value.trim();
-    persist();
+    syncDraftFields(project);
+    if (persist()) {
+      showFeedback("项目已保存");
+    }
   });
 
-  refs.projectCoverInput.addEventListener("change", (event) => {
+  refs.projectCoverInput.addEventListener("change", async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      project.coverImage = String(reader.result || "");
-      persist();
-    };
-    reader.readAsDataURL(file);
+
+    const previousCover = project.coverImage;
+    try {
+      // 先把当前页面草稿同步进对象，再更新封面，避免未点击“保存”时字段被重置。
+      syncDraftFields(project);
+      project.coverImage = await compressCoverImage(file);
+      if (!persist()) {
+        project.coverImage = previousCover;
+        persist();
+        alert("图片体积较大导致无法保存，请换更小的封面图。");
+      }
+    } catch (error) {
+      project.coverImage = previousCover;
+      alert(`封面处理失败：${error.message || "请换一张图片重试"}`);
+    }
+
     refs.projectCoverInput.value = "";
   });
 
@@ -386,14 +499,16 @@ function init() {
     persist();
   });
 
-  refs.materialForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const text = refs.materialInput.value.trim();
-    if (!text) return;
-    project.materials.push({ id: makeId(), text, done: false });
-    refs.materialInput.value = "";
-    persist();
-  });
+  if (refs.materialForm && refs.materialInput) {
+    refs.materialForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const text = refs.materialInput.value.trim();
+      if (!text) return;
+      project.materials.push({ id: makeId(), text, done: false });
+      refs.materialInput.value = "";
+      persist();
+    });
+  }
 
   refs.exportCurrentImageBtn.addEventListener("click", () => {
     exportProjectImage(project);
