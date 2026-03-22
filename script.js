@@ -35,6 +35,7 @@ const refs = {
   ocrDiagramImageBtn: document.getElementById("ocrDiagramImageBtn"),
   diagramImageInput: document.getElementById("diagramImageInput"),
   diagramImageStatus: document.getElementById("diagramImageStatus"),
+  dashboardExportCanvas: document.getElementById("dashboardExportCanvas"),
   globalTimerDisplay: document.getElementById("globalTimerDisplay"),
   globalTimerMinutes: document.getElementById("globalTimerMinutes"),
   globalStartBtn: document.getElementById("globalStartBtn"),
@@ -126,6 +127,96 @@ function parseMaterialsToList(rawMaterials) {
     .map((item) => item.trim())
     .filter(Boolean)
     .map((text) => ({ id: makeId(), text, done: false }));
+}
+
+function buildExportImageLines(project) {
+  const status = STATUS_MAP[project.status] || STATUS_MAP.active;
+  const lines = [
+    "织伴 | 项目导出",
+    `项目名称：${project.projectName || "未命名作品"}`,
+    `类型：${project.projectType || "未填写"}`,
+    `状态：${status.label}`,
+    `线材：${project.yarnType || "未填写"}`,
+    `品牌/色号：${project.yarnRef || "未填写"}`,
+    `工具：${project.tools || "未填写"}`,
+    `针号：${project.needleSize || "未填写"}`,
+    `花样：${project.patternName || "未填写"}`,
+    `进度：${getProjectProgress(project)}%（${project.rows || 0}/${project.totalRows || 0} 行）`,
+    "------------------------------",
+    "文字图解：",
+  ];
+
+  String(project.textDiagram || "未填写").split(/\r?\n/).forEach((row) => {
+    const text = row.trim();
+    if (!text) {
+      lines.push(" ");
+      return;
+    }
+    for (let i = 0; i < text.length; i += 28) {
+      lines.push(text.slice(i, i + 28));
+    }
+  });
+
+  return lines;
+}
+
+function drawExportBackground(ctx, width, height) {
+  const bg = ctx.createLinearGradient(0, 0, width, height);
+  bg.addColorStop(0, "#fff8ef");
+  bg.addColorStop(1, "#fff3e4");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.globalAlpha = 0.45;
+  ctx.fillStyle = "#ffd3b0";
+  ctx.beginPath();
+  ctx.arc(140, 120, 150, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#cfeadb";
+  ctx.beginPath();
+  ctx.arc(width - 120, 110, 180, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.globalAlpha = 1;
+}
+
+function exportProjectImage(project) {
+  const lines = buildExportImageLines(project);
+  const canvas = refs.dashboardExportCanvas;
+  const ctx = canvas.getContext("2d");
+  const width = 1200;
+  const lineHeight = 42;
+  const height = Math.max(1500, 200 + lines.length * lineHeight);
+
+  canvas.width = width;
+  canvas.height = height;
+
+  drawExportBackground(ctx, width, height);
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
+  ctx.strokeStyle = "#ead6bf";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  if (typeof ctx.roundRect === "function") {
+    ctx.roundRect(40, 40, width - 80, height - 80, 28);
+  } else {
+    ctx.rect(40, 40, width - 80, height - 80);
+  }
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "#25303b";
+  ctx.font = "30px sans-serif";
+  lines.forEach((line, index) => {
+    ctx.fillText(line, 80, 100 + index * lineHeight);
+  });
+
+  const dataUrl = canvas.toDataURL("image/png");
+  const a = document.createElement("a");
+  a.href = dataUrl;
+  a.download = `${project.projectName || "knit-project"}-${getToday()}.png`;
+  a.click();
 }
 
 function getProjectProgress(project) {
@@ -224,7 +315,27 @@ function renderDashboard() {
       renderDashboard();
     });
 
-    actions.append(openBtn, statusBtn);
+    const exportBtn = document.createElement("button");
+    exportBtn.className = "btn ghost";
+    exportBtn.textContent = "导出图片";
+    exportBtn.addEventListener("click", () => {
+      exportProjectImage(project);
+    });
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "btn danger";
+    deleteBtn.textContent = "删除";
+    deleteBtn.addEventListener("click", () => {
+      if (!confirm(`确认删除项目“${project.projectName || "未命名作品"}”？`)) return;
+      state.projects = state.projects.filter((item) => item.id !== project.id);
+      if (!state.projects.length) {
+        state.projects = [createProject("我的第一件作品")];
+      }
+      saveProjects();
+      renderDashboard();
+    });
+
+    actions.append(openBtn, statusBtn, exportBtn, deleteBtn);
     card.append(cover, title, meta, track, progressText, actions);
     refs.projectCards.appendChild(card);
   });
@@ -323,15 +434,12 @@ function bindActions() {
   });
 
   refs.exportProjectsBtn.addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify({ projects: state.projects, exportedAt: new Date().toISOString() }, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `knit-projects-${getToday()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    if (!state.projects.length) {
+      alert("没有可导出的项目。");
+      return;
+    }
+    const target = state.projects.find((project) => project.status === "active") || state.projects[0];
+    exportProjectImage(target);
   });
 
   refs.importProjectsBtn.addEventListener("click", () => refs.importProjectsInput.click());
@@ -385,8 +493,16 @@ function bindActions() {
         return alert("识别完成，但未提取到文字。请换更清晰图片。");
       }
       refs.diagramImportText.value = text;
-      refs.diagramImageStatus.textContent = "识别完成，已填入文本框";
-      alert("图片识别成功，已填入图解文本框。点击“解析图解并新建”即可。");
+      const parsed = parseDiagramText(text);
+      const created = createProject(parsed.projectName);
+      created.tools = parsed.tools;
+      created.materials = parseMaterialsToList(parsed.materials);
+      created.textDiagram = parsed.textDiagram || text;
+      state.projects.push(created);
+      saveProjects();
+      renderDashboard();
+      refs.diagramImageStatus.textContent = "识别完成，已自动新建项目";
+      alert("图片识别成功，已自动新建项目。");
     } catch (error) {
       refs.diagramImageStatus.textContent = "识别失败";
       alert(`图片识别失败：${error.message || "请稍后重试"}`);

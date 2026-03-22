@@ -46,7 +46,7 @@
           </div>
           <div class="import-export-actions">
             <button class="btn primary" id="createProjectBtn" type="button">新建空白项目</button>
-            <button class="btn ghost" id="exportProjectsBtn" type="button">导出项目</button>
+            <button class="btn ghost" id="exportProjectsBtn" type="button">导出项目图片</button>
             <button class="btn ghost" id="importProjectsBtn" type="button">导入项目</button>
             <input id="importProjectsInput" type="file" accept="application/json" hidden />
           </div>
@@ -60,7 +60,7 @@
         <p class="helper-text">支持粘贴带字段的图解文本，自动识别项目名称、工具、材料、文字图解。</p>
         <div class="import-export-actions">
           <button class="btn ghost" id="pickDiagramImageBtn" type="button">选择图解图片</button>
-          <button class="btn ghost" id="ocrDiagramImageBtn" type="button">识别图片文字</button>
+          <button class="btn ghost" id="ocrDiagramImageBtn" type="button">识别图片并新建项目</button>
           <input id="diagramImageInput" type="file" accept="image/*" hidden />
         </div>
         <p class="helper-text" id="diagramImageStatus">未选择图片</p>
@@ -69,6 +69,8 @@
       </section>
 
     </main>
+
+    <canvas id="dashboardExportCanvas" width="1200" height="1600" hidden></canvas>
 
     <aside class="floating-timer" id="floatingTimer">
       <h3>全局计时器</h3>

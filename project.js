@@ -38,6 +38,7 @@ const refs = {
   globalStartBtn: document.getElementById("globalStartBtn"),
   globalPauseBtn: document.getElementById("globalPauseBtn"),
   globalResetBtn: document.getElementById("globalResetBtn"),
+  feedbackToast: document.getElementById("feedbackToast"),
 };
 
 const timerState = {
@@ -213,6 +214,34 @@ function buildExportImageLines(project) {
   return lines;
 }
 
+function drawExportBackground(ctx, width, height) {
+  const bg = ctx.createLinearGradient(0, 0, width, height);
+  bg.addColorStop(0, "#fff8ef");
+  bg.addColorStop(1, "#fff3e4");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.globalAlpha = 0.45;
+  ctx.fillStyle = "#ffd3b0";
+  ctx.beginPath();
+  ctx.arc(140, 120, 150, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "#cfeadb";
+  ctx.beginPath();
+  ctx.arc(width - 120, 110, 180, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function showFeedback(message) {
+  refs.feedbackToast.textContent = message;
+  refs.feedbackToast.classList.add("show");
+  setTimeout(() => {
+    refs.feedbackToast.classList.remove("show");
+  }, 1600);
+}
+
 function exportProjectImage(project) {
   const lines = buildExportImageLines(project);
   const canvas = refs.exportCanvas;
@@ -224,13 +253,25 @@ function exportProjectImage(project) {
   canvas.width = width;
   canvas.height = height;
 
-  ctx.fillStyle = "#fffdf9";
-  ctx.fillRect(0, 0, width, height);
+  drawExportBackground(ctx, width, height);
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.78)";
+  ctx.strokeStyle = "#ead6bf";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  if (typeof ctx.roundRect === "function") {
+    ctx.roundRect(40, 40, width - 80, height - 80, 28);
+  } else {
+    ctx.rect(40, 40, width - 80, height - 80);
+  }
+  ctx.fill();
+  ctx.stroke();
+
   ctx.fillStyle = "#25303b";
   ctx.font = "30px sans-serif";
 
   lines.forEach((line, index) => {
-    ctx.fillText(line, 42, 70 + index * lineHeight);
+    ctx.fillText(line, 80, 100 + index * lineHeight);
   });
 
   const dataUrl = canvas.toDataURL("image/png");
@@ -341,6 +382,7 @@ function init() {
     project.patternName = refs.patternName.value.trim();
     project.textDiagram = refs.textDiagram.value.trim();
     persist();
+    showFeedback("项目已保存");
   });
 
   refs.projectCoverInput.addEventListener("change", (event) => {
