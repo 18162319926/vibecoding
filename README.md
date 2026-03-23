@@ -101,6 +101,52 @@
   - 如果封面集合字段名不同，调整 `coverCollection/coverOwnerField/coverProjectIdField/coverFileField`
 8. 刷新页面，即可在页面右上角注册/登录并同步。
 
+## 部署到 Render（推荐）
+
+当前仓库结构：
+- `backend/`：PocketBase 服务（Render 上运行）
+- `frontend/`：静态前端（可继续 GitHub Pages 或改为 Render Static Site）
+
+### 1. 一键创建 PocketBase 服务
+
+仓库已包含：
+- `backend/Dockerfile`
+- `backend/start.sh`
+- `render.yaml`
+
+在 Render 中：
+1. New -> Blueprint
+2. 选择该仓库
+3. 按 `render.yaml` 创建 `knit-pocketbase`
+4. 等待首次部署完成
+
+### 2. 初始化 PocketBase 管理员
+
+部署后打开：
+- `https://<你的-render-服务域名>/_/`
+
+首次创建管理员账号，然后按本文前面的集合说明创建：
+- `knit_user_state`
+- `knit_project_covers`
+
+### 3. 配置前端连接地址
+
+打开 `frontend/pocketbase-config.js`，把 `baseUrl` 改为 Render 的 PocketBase 地址（必须 `https`）：
+
+```js
+baseUrl: "https://<你的-render-服务域名>"
+```
+
+如果前端仍在 GitHub Pages，必须使用 Render 提供的 HTTPS API 地址，不能用 `127.0.0.1` 或局域网地址。
+
+### 4. 再部署前端
+
+前端可以二选一：
+1. 继续 GitHub Pages（推荐最简单）
+2. Render Static Site（根目录选 `frontend/`，发布目录 `.`）
+
+完成后手机端即可直接登录与同步。
+
 ## 注意事项
 
 - OCR 依赖网络加载 Tesseract CDN，离线环境下图片识别不可用。

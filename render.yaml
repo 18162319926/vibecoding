@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: knit-pocketbase
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /api/health
+    disk:
+      name: pocketbase-data
+      mountPath: /pb/pb_data
+      sizeGB: 1
