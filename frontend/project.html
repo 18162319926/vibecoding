@@ -188,11 +188,11 @@
 
     <footer class="footer">愿你的每一针，都织进生活的温度。<span id="syncHint" class="sync-hint inline">离线模式</span></footer>
 
-    <script src="pocketbase-config.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.25.0/dist/pocketbase.umd.js"></script>
+    <script src="supabase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-      if (typeof window.PocketBase === "undefined") {
-        document.write('<script src="https://unpkg.com/pocketbase@0.25.0/dist/pocketbase.umd.js"><\\/script>');
+      if (!window.supabase || typeof window.supabase.createClient !== "function") {
+        document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\\/script>');
       }
     </script>
     <script src="cloud-sync.js"></script>
