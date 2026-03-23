@@ -15,11 +15,8 @@ const refs = {
   projectType: document.getElementById("projectType"),
   projectStatus: document.getElementById("projectStatus"),
   totalRows: document.getElementById("totalRows"),
-  yarnType: document.getElementById("yarnType"),
-  yarnRef: document.getElementById("yarnRef"),
-  tools: document.getElementById("tools"),
-  needleSize: document.getElementById("needleSize"),
-  patternName: document.getElementById("patternName"),
+  yarnInfo: document.getElementById("yarnInfo"),
+  toolsInfo: document.getElementById("toolsInfo"),
   textDiagram: document.getElementById("textDiagram"),
   exportStyle: document.getElementById("exportStyle"),
   projectCoverInput: document.getElementById("projectCoverInput"),
@@ -138,6 +135,22 @@ function normalizeProject(project) {
   };
   applyProgressStatus(normalized);
   return normalized;
+}
+
+function combinePair(primary, secondary) {
+  const first = String(primary || "").trim();
+  const second = String(secondary || "").trim();
+  if (first && second) return `${first} / ${second}`;
+  return first || second;
+}
+
+function splitPair(value) {
+  const source = String(value || "").trim();
+  if (!source) return ["", ""];
+  const parts = source.split(/\s*\/\s*|\s*\|\s*|\s*，\s*|\s*,\s*/);
+  const first = String(parts[0] || "").trim();
+  const second = String(parts.slice(1).join(" ") || "").trim();
+  return [first, second];
 }
 
 function applyProgressStatus(project) {
@@ -317,11 +330,8 @@ function renderProject(project) {
   refs.projectType.value = project.projectType || "围巾";
   refs.projectStatus.value = project.status || "active";
   refs.totalRows.value = project.totalRows ? String(project.totalRows) : "";
-  refs.yarnType.value = project.yarnType || "";
-  refs.yarnRef.value = project.yarnRef || "";
-  refs.tools.value = project.tools || "";
-  refs.needleSize.value = project.needleSize || "";
-  refs.patternName.value = project.patternName || "";
+  refs.yarnInfo.value = combinePair(project.yarnType, project.yarnRef);
+  refs.toolsInfo.value = combinePair(project.tools, project.needleSize);
   refs.textDiagram.value = project.textDiagram || "";
   refs.exportStyle.value = project.exportStyle || "classic";
   refs.rowCounter.textContent = String(project.rows || 0);
@@ -342,11 +352,12 @@ function syncDraftFields(project) {
   project.projectType = refs.projectType.value;
   project.status = refs.projectStatus.value;
   project.totalRows = Math.max(0, Number(refs.totalRows.value) || 0);
-  project.yarnType = refs.yarnType.value.trim();
-  project.yarnRef = refs.yarnRef.value.trim();
-  project.tools = refs.tools.value.trim();
-  project.needleSize = refs.needleSize.value.trim();
-  project.patternName = refs.patternName.value.trim();
+  const [yarnType, yarnRef] = splitPair(refs.yarnInfo.value);
+  project.yarnType = yarnType;
+  project.yarnRef = yarnRef;
+  const [tools, needleSize] = splitPair(refs.toolsInfo.value);
+  project.tools = tools;
+  project.needleSize = needleSize;
   project.textDiagram = refs.textDiagram.value.trim();
   project.exportStyle = refs.exportStyle.value || "classic";
   applyProgressStatus(project);
