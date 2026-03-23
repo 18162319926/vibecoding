@@ -872,7 +872,7 @@ function applyCloudPayload(payload) {
         .map((project) => [String(project.id), String(project.coverImage || "")])
     );
 
-    const normalized = payload.projects.map((project) => {
+    const normalizedRemote = payload.projects.map((project) => {
       const next = normalizeProject(project);
       const localCover = localCoverById.get(String(next.id || ""));
       if (!next.coverImage && localCover) {
@@ -880,8 +880,17 @@ function applyCloudPayload(payload) {
       }
       return next;
     });
-    if (normalized.length) {
-      state.projects = normalized;
+
+    const remoteIdSet = new Set(normalizedRemote.map((project) => String(project.id || "")));
+    const localOnly = state.projects
+      .filter((project) => project && project.id)
+      .filter((project) => !remoteIdSet.has(String(project.id || "")))
+      .map((project) => normalizeProject(project));
+
+    const merged = [...normalizedRemote, ...localOnly];
+
+    if (merged.length) {
+      state.projects = merged;
       changed = true;
     }
   }
