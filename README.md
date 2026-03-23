@@ -101,70 +101,47 @@
   - 如果封面集合字段名不同，调整 `coverCollection/coverOwnerField/coverProjectIdField/coverFileField`
 8. 刷新页面，即可在页面右上角注册/登录并同步。
 
-## 部署到 Render（推荐）
+## 部署到 Pockethost（推荐）
 
-当前仓库结构：
-- `backend/`：PocketBase 服务（Render 上运行）
-- `frontend/`：静态前端（可继续 GitHub Pages 或改为 Render Static Site）
+你当前前端是静态站点（GitHub Pages/任意静态托管），最省事方案是直接用 Pockethost 托管 PocketBase。
 
-### 1. 一键创建 PocketBase 服务
+### 1. 创建 Pockethost 实例
 
-仓库已包含：
-- `backend/Dockerfile`
-- `backend/start.sh`
-- `render.yaml`
+1. 在 Pockethost 创建新实例
+2. 记下实例地址（例如：`https://your-app.pockethost.io`）
+3. 打开实例后台：`https://your-app.pockethost.io/_/`
+4. 创建管理员账号
 
-在 Render 中：
-1. New -> Blueprint
-2. 选择该仓库
-3. 按 `render.yaml` 创建 `knit-pocketbase`
-4. 等待首次部署完成
+### 2. 初始化集合
 
-### 2. 初始化 PocketBase 管理员
+按本文前面的同步说明创建两个集合：
+1. `knit_user_state`
+2. `knit_project_covers`
 
-部署后打开：
-- `https://<你的-render-服务域名>/_/`
+并配置权限规则仅允许本人读写：
+- `@request.auth.id != "" && owner.id = @request.auth.id`
 
-首次创建管理员账号，然后按本文前面的集合说明创建：
-- `knit_user_state`
-- `knit_project_covers`
+### 3. 修改前端连接地址
 
-### 3. 配置前端连接地址
-
-打开 `frontend/pocketbase-config.js`，把 `baseUrl` 改为 Render 的 PocketBase 地址（必须 `https`）：
+打开 `frontend/pocketbase-config.js`，把 `baseUrl` 改成你的 Pockethost 地址（必须 `https`）：
 
 ```js
-baseUrl: "https://<你的-render-服务域名>"
+baseUrl: "https://your-app.pockethost.io"
 ```
 
-如果前端仍在 GitHub Pages，必须使用 Render 提供的 HTTPS API 地址，不能用 `127.0.0.1` 或局域网地址。
+### 4. 发布前端
 
-### 4. 再部署前端
+1. 推送到 GitHub
+2. GitHub Pages（或其他静态托管）自动更新
+3. 手机端打开页面后即可登录与同步
 
-前端可以二选一：
-1. 继续 GitHub Pages（推荐最简单）
-2. Render Static Site（根目录选 `frontend/`，发布目录 `.`）
+### 5. 常见坑
 
-完成后手机端即可直接登录与同步。
+1. 前端是 HTTPS 时，`baseUrl` 也必须是 HTTPS
+2. 不能再用 `127.0.0.1` 或局域网地址
+3. 登录失败优先检查：实例是否在线、域名是否填对、集合规则是否正确
 
-### 免费版（仅个人轻量使用）
-
-如果你只用 Render 免费套餐：
-
-1. 使用仓库里的 `render.free.yaml`（不挂载磁盘）
-2. 在 Render 选择 New -> Blueprint 后，使用该蓝图创建服务
-3. 前端 `frontend/pocketbase-config.js` 的 `baseUrl` 仍改成 Render 的 HTTPS 地址
-
-重要限制（免费版必须接受）：
-
-- 服务重启、重新部署或平台回收实例后，PocketBase 数据可能丢失
-- 包括账号、项目记录、封面文件都可能被清空
-
-建议（免费条件下尽量降低损失）：
-
-1. 把项目核心信息定期导出图片或复制到本地
-2. 不要频繁触发后端重部署
-3. 真正需要长期稳定保存时再升级到带磁盘方案
+> 说明：仓库中的 Render 文件可以保留，但你使用 Pockethost 时无需配置 Render 后端。
 
 ## 注意事项
 
