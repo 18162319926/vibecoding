@@ -16,6 +16,16 @@
     <div class="bg-shape bg-shape-a"></div>
     <div class="bg-shape bg-shape-b"></div>
 
+    <nav class="top-nav" aria-label="主导航">
+      <div class="brand">织伴</div>
+      <div class="nav-auth" id="navAuth">
+        <span class="account-chip" id="accountChip" hidden>未登录</span>
+        <button class="btn ghost" id="openLoginBtn" type="button">登录</button>
+        <button class="btn ghost" id="openRegisterBtn" type="button">注册</button>
+        <button class="btn primary" id="logoutBtn" type="button" hidden>退出</button>
+      </div>
+    </nav>
+
     <header class="hero">
       <div>
         <p class="eyebrow">KNIT COMPANION</p>
@@ -78,8 +88,31 @@
       </div>
     </div>
 
-    <footer class="footer">愿你的每一针，都织进生活的温度。</footer>
+    <div class="dialog-backdrop" id="authDialog" hidden>
+      <div class="dialog-card auth-dialog-card" role="dialog" aria-modal="true" aria-labelledby="authDialogTitle">
+        <h3 id="authDialogTitle">账号登录</h3>
+        <p id="authStatus" class="auth-status">未登录（当前仅本地保存）</p>
+        <label>
+          邮箱
+          <input id="authEmail" type="email" placeholder="请输入邮箱" autocomplete="email" />
+        </label>
+        <label>
+          密码
+          <input id="authPassword" type="password" placeholder="请输入密码" autocomplete="current-password" />
+        </label>
+        <div class="dialog-actions">
+          <button class="btn primary" id="loginBtn" type="button">登录</button>
+          <button class="btn ghost" id="registerBtn" type="button">注册</button>
+          <button class="btn danger" id="closeAuthDialogBtn" type="button">关闭</button>
+        </div>
+      </div>
+    </div>
 
+    <footer class="footer">愿你的每一针，都织进生活的温度。<span id="syncHint" class="sync-hint inline">离线模式</span></footer>
+
+    <script src="pocketbase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.25.0/dist/pocketbase.umd.js"></script>
+    <script src="cloud-sync.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="script.js"></script>
   </body>

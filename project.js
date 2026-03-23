@@ -44,12 +44,30 @@ const refs = {
   globalPauseBtn: document.getElementById("globalPauseBtn"),
   globalResetBtn: document.getElementById("globalResetBtn"),
   feedbackToast: document.getElementById("feedbackToast"),
+  authEmail: document.getElementById("authEmail"),
+  authPassword: document.getElementById("authPassword"),
+  authStatus: document.getElementById("authStatus"),
+  authDialog: document.getElementById("authDialog"),
+  closeAuthDialogBtn: document.getElementById("closeAuthDialogBtn"),
+  openLoginBtn: document.getElementById("openLoginBtn"),
+  openRegisterBtn: document.getElementById("openRegisterBtn"),
+  accountChip: document.getElementById("accountChip"),
+  loginBtn: document.getElementById("loginBtn"),
+  registerBtn: document.getElementById("registerBtn"),
+  logoutBtn: document.getElementById("logoutBtn"),
+  syncHint: document.getElementById("syncHint"),
 };
 
 const timerState = {
   minutes: 25,
   left: 25 * 60,
   running: false,
+};
+
+const syncRuntime = {
+  pushTimerId: null,
+  remoteUnsubscribe: null,
+  lastSeenCloudStamp: 0,
 };
 
 let globalTimerId = null;
@@ -182,9 +200,12 @@ function loadProjects() {
   }
 }
 
-function saveProjects(projects) {
+function saveProjects(projects, options = {}) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects }));
+    if (options.scheduleCloud !== false) {
+      scheduleCloudPush(projects);
+    }
     return true;
   } catch (error) {
     if (error && error.name === "QuotaExceededError") {
@@ -685,8 +706,115 @@ function exportProjectImage(project) {
   refs.downloadCurrentImageLink.download = `${project.projectName || "knit-project"}-${getToday()}.png`;
 }
 
-function saveTimerState() {
+function setSyncHint(text) {
+  if (!refs.syncHint) return;
+  refs.syncHint.textContent = text;
+}
+
+function setAuthNav(user) {
+  const loggedIn = Boolean(user && user.email);
+  if (refs.accountChip) {
+    refs.accountChip.hidden = !loggedIn;
+    refs.accountChip.textContent = loggedIn ? `当前账号：${user.email}` : "未登录";
+  }
+  if (refs.openLoginBtn) refs.openLoginBtn.hidden = loggedIn;
+  if (refs.openRegisterBtn) refs.openRegisterBtn.hidden = loggedIn;
+  if (refs.logoutBtn) refs.logoutBtn.hidden = !loggedIn;
+}
+
+function openAuthDialog(mode) {
+  if (!refs.authDialog) return;
+  refs.authDialog.hidden = false;
+  if (mode === "register" && refs.authStatus) {
+    refs.authStatus.textContent = "注册后将自动登录并开启云同步";
+  }
+}
+
+function closeAuthDialog() {
+  if (!refs.authDialog) return;
+  refs.authDialog.hidden = true;
+}
+
+function replaceProjectsInPlace(target, next) {
+  target.splice(0, target.length, ...next);
+}
+
+function scheduleCloudPush(projects) {
+  if (!window.cloudSync || !window.cloudSync.isReady()) return;
+  if (!window.cloudSync.getCurrentUser()) return;
+
+  if (syncRuntime.pushTimerId) {
+    clearTimeout(syncRuntime.pushTimerId);
+  }
+
+  syncRuntime.pushTimerId = setTimeout(async () => {
+    const stamp = Date.now();
+    syncRuntime.lastSeenCloudStamp = Math.max(syncRuntime.lastSeenCloudStamp, stamp);
+    try {
+      await window.cloudSync.pushState({
+        projects,
+        timer: timerState,
+        clientUpdatedAt: stamp,
+      });
+      setSyncHint("已同步到云端");
+    } catch (error) {
+      setSyncHint(`云同步失败：${error.message || "请稍后重试"}`);
+    }
+  }, 700);
+}
+
+function applyCloudPayload(payload, projects) {
+  if (!payload || typeof payload !== "object") return false;
+  const stamp = Number(payload.clientUpdatedAt) || 0;
+  if (stamp && stamp <= syncRuntime.lastSeenCloudStamp) return false;
+
+  let changed = false;
+
+  if (Array.isArray(payload.projects)) {
+    const localCoverById = new Map(
+      projects
+        .filter((project) => project && project.id)
+        .map((project) => [String(project.id), String(project.coverImage || "")])
+    );
+
+    const normalized = payload.projects.map((project) => {
+      const next = normalizeProject(project);
+      const localCover = localCoverById.get(String(next.id || ""));
+      if (!next.coverImage && localCover) {
+        next.coverImage = localCover;
+      }
+      return next;
+    });
+    if (normalized.length) {
+      replaceProjectsInPlace(projects, normalized);
+      changed = true;
+    }
+  }
+
+  if (payload.timer && typeof payload.timer === "object") {
+    timerState.minutes = Math.max(1, Number(payload.timer.minutes) || timerState.minutes);
+    timerState.left = Math.max(0, Number(payload.timer.left) || timerState.left);
+    timerState.running = false;
+    saveTimerState();
+    renderTimerState();
+    changed = true;
+  }
+
+  if (!changed) return false;
+
+  if (stamp) {
+    syncRuntime.lastSeenCloudStamp = stamp;
+  }
+  saveProjects(projects, { scheduleCloud: false });
+  setSyncHint("已从云端同步");
+  return true;
+}
+
+function saveTimerState(options = {}) {
   localStorage.setItem(GLOBAL_TIMER_KEY, JSON.stringify(timerState));
+  if (options.scheduleCloud && Array.isArray(options.projects)) {
+    scheduleCloudPush(options.projects);
+  }
 }
 
 function loadTimerState() {
@@ -930,6 +1058,75 @@ function bindMobileFloatingTimerToggle() {
   renderHandleState();
 }
 
+function setupCloudSync(projects, onRemoteApplied) {
+  if (!window.cloudSync) return;
+
+  setAuthNav(window.cloudSync.getCurrentUser());
+
+  if (refs.openLoginBtn) {
+    refs.openLoginBtn.addEventListener("click", () => openAuthDialog("login"));
+  }
+  if (refs.openRegisterBtn) {
+    refs.openRegisterBtn.addEventListener("click", () => openAuthDialog("register"));
+  }
+  if (refs.closeAuthDialogBtn) {
+    refs.closeAuthDialogBtn.addEventListener("click", closeAuthDialog);
+  }
+  if (refs.authDialog) {
+    refs.authDialog.addEventListener("click", (event) => {
+      if (event.target === refs.authDialog) closeAuthDialog();
+    });
+  }
+
+  window.cloudSync.bindAuthUI({
+    emailInput: refs.authEmail,
+    passwordInput: refs.authPassword,
+    statusEl: refs.authStatus,
+    loginBtn: refs.loginBtn,
+    registerBtn: refs.registerBtn,
+    logoutBtn: refs.logoutBtn,
+    onUserChanged: async (user) => {
+      setAuthNav(user);
+      if (typeof syncRuntime.remoteUnsubscribe === "function") {
+        syncRuntime.remoteUnsubscribe();
+        syncRuntime.remoteUnsubscribe = null;
+      }
+
+      if (!user) {
+        setSyncHint("离线模式");
+        return;
+      }
+
+      closeAuthDialog();
+
+      setSyncHint("正在同步云端数据...");
+
+      try {
+        const remote = await window.cloudSync.pullState();
+        if (remote) {
+          const changed = applyCloudPayload(remote, projects);
+          if (changed) onRemoteApplied();
+        } else {
+          scheduleCloudPush(projects);
+          setSyncHint("云端已初始化");
+        }
+      } catch (error) {
+        setSyncHint(`拉取云端失败：${error.message || "请稍后重试"}`);
+      }
+
+      syncRuntime.remoteUnsubscribe = window.cloudSync.watchRemoteState(
+        (payload) => {
+          const changed = applyCloudPayload(payload, projects);
+          if (changed) onRemoteApplied();
+        },
+        (error) => {
+          setSyncHint(`监听同步失败：${error.message || "请稍后重试"}`);
+        }
+      );
+    },
+  });
+}
+
 function init() {
   const projectId = getProjectIdFromUrl();
   const projects = loadProjects();
@@ -1062,6 +1259,19 @@ function init() {
   bindDraggableFloatingTimer();
   bindMobileFloatingTimerToggle();
   refreshExportPreview(project);
+
+  setupCloudSync(projects, () => {
+    const updated = projects.find((item) => item.id === projectId);
+    if (!updated) {
+      alert("该项目已在其他设备被删除，正在返回首页。");
+      window.location.href = "index.html";
+      return;
+    }
+    project = updated;
+    renderProject(project);
+    renderMaterials(project, persist);
+    refreshExportPreview(project);
+  });
 }
 
 init();

@@ -18,6 +18,12 @@ const state = {
   dashboardFilter: "all",
 };
 
+const syncRuntime = {
+  pushTimerId: null,
+  remoteUnsubscribe: null,
+  lastSeenCloudStamp: 0,
+};
+
 const timerState = {
   minutes: 25,
   left: 25 * 60,
@@ -65,6 +71,18 @@ const refs = {
   globalStartBtn: document.getElementById("globalStartBtn"),
   globalPauseBtn: document.getElementById("globalPauseBtn"),
   globalResetBtn: document.getElementById("globalResetBtn"),
+  authEmail: document.getElementById("authEmail"),
+  authPassword: document.getElementById("authPassword"),
+  authStatus: document.getElementById("authStatus"),
+  authDialog: document.getElementById("authDialog"),
+  closeAuthDialogBtn: document.getElementById("closeAuthDialogBtn"),
+  openLoginBtn: document.getElementById("openLoginBtn"),
+  openRegisterBtn: document.getElementById("openRegisterBtn"),
+  accountChip: document.getElementById("accountChip"),
+  loginBtn: document.getElementById("loginBtn"),
+  registerBtn: document.getElementById("registerBtn"),
+  logoutBtn: document.getElementById("logoutBtn"),
+  syncHint: document.getElementById("syncHint"),
 };
 
 function makeId() {
@@ -568,8 +586,11 @@ function getProjectProgress(project) {
   return Math.min(100, Math.round((project.rows / total) * 100));
 }
 
-function saveProjects() {
+function saveProjects(options = {}) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects: state.projects }));
+  if (options.scheduleCloud !== false) {
+    scheduleCloudPush();
+  }
 }
 
 function loadProjects() {
@@ -715,8 +736,11 @@ function renderDashboard() {
   });
 }
 
-function saveTimerState() {
+function saveTimerState(options = {}) {
   localStorage.setItem(GLOBAL_TIMER_KEY, JSON.stringify(timerState));
+  if (options.scheduleCloud) {
+    scheduleCloudPush();
+  }
 }
 
 function loadTimerState() {
@@ -745,7 +769,7 @@ function bindGlobalTimer() {
   refs.globalTimerMinutes.addEventListener("change", () => {
     timerState.minutes = Math.max(1, Number(refs.globalTimerMinutes.value) || 25);
     if (!timerState.running) timerState.left = timerState.minutes * 60;
-    saveTimerState();
+    saveTimerState({ scheduleCloud: true });
     renderTimerState();
   });
 
@@ -761,7 +785,7 @@ function bindGlobalTimer() {
       }
       clearInterval(timerId);
       timerState.running = false;
-      saveTimerState();
+      saveTimerState({ scheduleCloud: true });
       alert("计时结束，记得活动一下肩颈。");
     }, 1000);
   });
@@ -769,15 +793,181 @@ function bindGlobalTimer() {
   refs.globalPauseBtn.addEventListener("click", () => {
     clearInterval(timerId);
     timerState.running = false;
-    saveTimerState();
+    saveTimerState({ scheduleCloud: true });
   });
 
   refs.globalResetBtn.addEventListener("click", () => {
     clearInterval(timerId);
     timerState.running = false;
     timerState.left = timerState.minutes * 60;
+    saveTimerState({ scheduleCloud: true });
+    renderTimerState();
+  });
+}
+
+function setSyncHint(text) {
+  if (!refs.syncHint) return;
+  refs.syncHint.textContent = text;
+}
+
+function setAuthNav(user) {
+  const loggedIn = Boolean(user && user.email);
+  if (refs.accountChip) {
+    refs.accountChip.hidden = !loggedIn;
+    refs.accountChip.textContent = loggedIn ? `当前账号：${user.email}` : "未登录";
+  }
+  if (refs.openLoginBtn) refs.openLoginBtn.hidden = loggedIn;
+  if (refs.openRegisterBtn) refs.openRegisterBtn.hidden = loggedIn;
+  if (refs.logoutBtn) refs.logoutBtn.hidden = !loggedIn;
+}
+
+function openAuthDialog(mode) {
+  if (!refs.authDialog) return;
+  refs.authDialog.hidden = false;
+  if (mode === "register") {
+    if (refs.authStatus) refs.authStatus.textContent = "注册后将自动登录并开启云同步";
+  }
+}
+
+function closeAuthDialog() {
+  if (!refs.authDialog) return;
+  refs.authDialog.hidden = true;
+}
+
+function scheduleCloudPush() {
+  if (!window.cloudSync || !window.cloudSync.isReady()) return;
+  if (!window.cloudSync.getCurrentUser()) return;
+
+  if (syncRuntime.pushTimerId) {
+    clearTimeout(syncRuntime.pushTimerId);
+  }
+
+  syncRuntime.pushTimerId = setTimeout(async () => {
+    const stamp = Date.now();
+    syncRuntime.lastSeenCloudStamp = Math.max(syncRuntime.lastSeenCloudStamp, stamp);
+    try {
+      await window.cloudSync.pushState({
+        projects: state.projects,
+        timer: timerState,
+        clientUpdatedAt: stamp,
+      });
+      setSyncHint("已同步到云端");
+    } catch (error) {
+      setSyncHint(`云同步失败：${error.message || "请稍后重试"}`);
+    }
+  }, 700);
+}
+
+function applyCloudPayload(payload) {
+  if (!payload || typeof payload !== "object") return;
+  const stamp = Number(payload.clientUpdatedAt) || 0;
+  if (stamp && stamp <= syncRuntime.lastSeenCloudStamp) return;
+
+  let changed = false;
+
+  if (Array.isArray(payload.projects)) {
+    const localCoverById = new Map(
+      state.projects
+        .filter((project) => project && project.id)
+        .map((project) => [String(project.id), String(project.coverImage || "")])
+    );
+
+    const normalized = payload.projects.map((project) => {
+      const next = normalizeProject(project);
+      const localCover = localCoverById.get(String(next.id || ""));
+      if (!next.coverImage && localCover) {
+        next.coverImage = localCover;
+      }
+      return next;
+    });
+    if (normalized.length) {
+      state.projects = normalized;
+      changed = true;
+    }
+  }
+
+  if (payload.timer && typeof payload.timer === "object") {
+    timerState.minutes = Math.max(1, Number(payload.timer.minutes) || timerState.minutes);
+    timerState.left = Math.max(0, Number(payload.timer.left) || timerState.left);
+    timerState.running = false;
     saveTimerState();
     renderTimerState();
+    changed = true;
+  }
+
+  if (!changed) return;
+
+  if (stamp) {
+    syncRuntime.lastSeenCloudStamp = stamp;
+  }
+  saveProjects({ scheduleCloud: false });
+  renderDashboard();
+  setSyncHint("已从云端同步");
+}
+
+function setupCloudSync() {
+  if (!window.cloudSync) return;
+
+  setAuthNav(window.cloudSync.getCurrentUser());
+
+  if (refs.openLoginBtn) {
+    refs.openLoginBtn.addEventListener("click", () => openAuthDialog("login"));
+  }
+  if (refs.openRegisterBtn) {
+    refs.openRegisterBtn.addEventListener("click", () => openAuthDialog("register"));
+  }
+  if (refs.closeAuthDialogBtn) {
+    refs.closeAuthDialogBtn.addEventListener("click", closeAuthDialog);
+  }
+  if (refs.authDialog) {
+    refs.authDialog.addEventListener("click", (event) => {
+      if (event.target === refs.authDialog) closeAuthDialog();
+    });
+  }
+
+  window.cloudSync.bindAuthUI({
+    emailInput: refs.authEmail,
+    passwordInput: refs.authPassword,
+    statusEl: refs.authStatus,
+    loginBtn: refs.loginBtn,
+    registerBtn: refs.registerBtn,
+    logoutBtn: refs.logoutBtn,
+    onUserChanged: async (user) => {
+      setAuthNav(user);
+      if (typeof syncRuntime.remoteUnsubscribe === "function") {
+        syncRuntime.remoteUnsubscribe();
+        syncRuntime.remoteUnsubscribe = null;
+      }
+
+      if (!user) {
+        setSyncHint("离线模式");
+        return;
+      }
+
+      closeAuthDialog();
+
+      setSyncHint("正在同步云端数据...");
+      try {
+        const remote = await window.cloudSync.pullState();
+        if (remote) {
+          applyCloudPayload(remote);
+        } else {
+          scheduleCloudPush();
+          setSyncHint("云端已初始化");
+        }
+      } catch (error) {
+        setSyncHint(`拉取云端失败：${error.message || "请稍后重试"}`);
+      }
+
+      syncRuntime.remoteUnsubscribe = window.cloudSync.watchRemoteState(
+        (payload) => {
+          applyCloudPayload(payload);
+        },
+        (error) => {
+          setSyncHint(`监听同步失败：${error.message || "请稍后重试"}`);
+        }
+      );
+    },
   });
 }
 
@@ -942,6 +1132,7 @@ function init() {
   renderTimerState();
   bindActions();
   bindGlobalTimer();
+  setupCloudSync();
 }
 
 init();

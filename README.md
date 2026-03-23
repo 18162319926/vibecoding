@@ -1,6 +1,6 @@
 # 织伴（Web 版）
 
-织伴是一个面向织毛线场景的本地项目管理网页，帮助你记录作品信息、计行进度、材料清单、文字图解与导出分享图。
+织伴是一个面向织毛线场景的项目管理网页，帮助你记录作品信息、计行进度、材料清单、文字图解与导出分享图。
 
 ## 功能总览
 
@@ -10,7 +10,8 @@
 - 全局悬浮计时器（主页与详情页共享；移动端详情页支持折叠/展开）
 - 图解识别与自动建项目（OCR）
 - 项目图片导出（卡片级导出，带主页风格背景）
-- 本地持久化存储（`localStorage`）
+- 登录与多端同步（PocketBase）
+- 本地持久化存储（`localStorage`，未登录时仍可使用）
 
 ## 页面结构
 
@@ -39,8 +40,10 @@
 
 ## 数据说明
 
-项目数据存储在浏览器 `localStorage` 的 `knit-helper-state` 下；
+项目数据默认存储在浏览器 `localStorage` 的 `knit-helper-state` 下；
 全局计时器状态存储在 `knit-global-timer` 下。
+
+登录后会自动把数据同步到 PocketBase 集合 `knit_user_state` 中，支持跨设备同步。
 
 字段示例：
 
@@ -73,7 +76,44 @@
 1. 直接在浏览器打开 `index.html`。
 2. 或使用任意静态服务器在当前目录启动后访问。
 
+## 开启登录与多端同步（PocketBase）
+
+1. 下载 PocketBase（Windows）：
+  - https://pocketbase.io/docs/
+2. 解压后在目录中启动：
+  - `pocketbase serve`
+3. 首次打开管理后台：
+  - `http://127.0.0.1:8090/_/`
+4. 创建集合 `knit_user_state`，建议字段：
+  - `owner`（relation，关联 `users`，单选）
+  - `projects`（json）
+  - `timer`（json）
+  - `clientUpdatedAt`（number）
+5. 创建集合 `knit_project_covers`，建议字段：
+  - `owner`（relation，关联 `users`，单选）
+  - `projectId`（text）
+  - `image`（file，单文件）
+6. 设置访问规则（List/View/Create/Update/Delete）为仅允许本人：
+  - `@request.auth.id != "" && owner.id = @request.auth.id`
+7. 打开 `pocketbase-config.js`，确认 `baseUrl` 与集合名：
+  - 默认 `http://127.0.0.1:8090`
+  - 若你的关联字段不是 `owner`，把 `ownerField` 改成实际字段名
+  - 如果封面集合字段名不同，调整 `coverCollection/coverOwnerField/coverProjectIdField/coverFileField`
+8. 刷新页面，即可在页面右上角注册/登录并同步。
+
 ## 注意事项
 
 - OCR 依赖网络加载 Tesseract CDN，离线环境下图片识别不可用。
-- 数据保存在当前浏览器本地，清理浏览器存储会导致数据丢失。
+- 未登录时数据仅保存在当前浏览器本地，清理浏览器存储会导致数据丢失。
+- 已登录时会自动同步到 PocketBase 云端，但仍建议定期导出项目图片做备份。
+
+## 同步失败排查
+
+如果提示 `云同步失败：Failed to create record`，通常是集合字段或规则不匹配：
+
+1. 检查集合名是否正确：`knit_user_state`
+2. 检查是否有 `projects`(json)、`timer`(json)、`clientUpdatedAt`(number)
+3. 检查 owner 字段名是否与 `pocketbase-config.js` 的 `ownerField` 一致
+4. 检查规则是否允许当前登录用户创建记录
+
+说明：PocketBase 单条 JSON 存在大小上限。当前实现会把封面图上传到 `knit_project_covers` 文件集合，再在项目数据中保存封面 URL；若文本过长会自动裁剪，确保同步不中断且封面可跨端显示。
