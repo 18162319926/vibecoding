@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>织伴 | 织毛线辅助站</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Outfit:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="homepage">
+    <div class="bg-shape bg-shape-a"></div>
+    <div class="bg-shape bg-shape-b"></div>
+
+    <nav class="top-nav" aria-label="主导航">
+      <div class="brand">织伴</div>
+      <div class="nav-auth" id="navAuth">
+        <span class="account-chip" id="accountChip" hidden>未登录</span>
+        <button class="btn ghost" id="openLoginBtn" type="button">登录</button>
+        <button class="btn ghost" id="openRegisterBtn" type="button">注册</button>
+        <button class="btn primary" id="logoutBtn" type="button" hidden>退出</button>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <p class="eyebrow">KNIT COMPANION</p>
+        <h1>织伴</h1>
+        <p class="subtitle">让每一行针目都被温柔记录</p>
+      </div>
+      <div class="hero-stats" aria-label="今日进度">
+        <div class="stat-card">
+          <span>项目总数</span>
+          <strong id="projectCount">0</strong>
+        </div>
+        <div class="stat-card">
+          <span>进行中</span>
+          <strong id="activeCount">0</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel dashboard-panel reveal">
+        <h2>项目仪表盘</h2>
+        <div class="dashboard-toolbar">
+          <div class="status-filters" id="statusFilters">
+            <button class="btn ghost is-active" type="button" data-filter="all">全部</button>
+            <button class="btn ghost" type="button" data-filter="active">进行中</button>
+            <button class="btn ghost" type="button" data-filter="paused">搁置</button>
+            <button class="btn ghost" type="button" data-filter="done">已完成</button>
+          </div>
+          <div class="import-export-actions">
+            <div class="create-menu-wrap" id="createMenuWrap">
+              <button class="btn primary" id="createProjectBtn" type="button" aria-haspopup="true" aria-expanded="false">新建项目</button>
+              <div class="create-menu" id="createProjectMenu" hidden>
+                <button class="btn ghost" id="createBlankOption" type="button">空白项目</button>
+                <button class="btn ghost" id="createFromImageOption" type="button">导入图片图解</button>
+                <button class="btn ghost" id="createFromTextOption" type="button">导入文字图解</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="helper-text">支持鼠标滚轮上下滚动来横向浏览项目；点击卡片“进入项目”查看详情。</p>
+        <div id="projectCards" class="project-cards"></div>
+      </section>
+
+    </main>
+
+    <canvas id="dashboardExportCanvas" width="1200" height="1600" hidden></canvas>
+    <input id="diagramImageInput" type="file" accept="image/*" hidden />
+
+    <div class="dialog-backdrop" id="exportChoiceDialog" hidden>
+      <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="exportChoiceTitle">
+        <h3 id="exportChoiceTitle">导出项目图片</h3>
+        <p class="helper-text">选择导出方式：先预览确认，或直接下载。</p>
+        <div class="dialog-actions">
+          <button class="btn ghost" id="exportPreviewBtn" type="button">预览图片</button>
+          <button class="btn primary" id="exportDirectDownloadBtn" type="button">直接下载</button>
+          <button class="btn danger" id="exportCloseBtn" type="button">取消</button>
+        </div>
+        <img id="exportPreviewImage" alt="导出预览" />
+        <a class="btn primary" id="exportPreviewDownloadLink" href="#" download="knit-project.png">下载当前预览</a>
+      </div>
+    </div>
+
+    <div class="dialog-backdrop" id="authDialog" hidden>
+      <div class="dialog-card auth-dialog-card" role="dialog" aria-modal="true" aria-labelledby="authDialogTitle">
+        <h3 id="authDialogTitle">账号登录</h3>
+        <p id="authStatus" class="auth-status">未登录（当前仅本地保存）</p>
+        <label>
+          邮箱
+          <input id="authEmail" type="email" placeholder="请输入邮箱" autocomplete="email" />
+        </label>
+        <label>
+          密码
+          <input id="authPassword" type="password" placeholder="请输入密码" autocomplete="current-password" />
+        </label>
+        <div class="dialog-actions">
+          <button class="btn primary" id="loginBtn" type="button">登录</button>
+          <button class="btn ghost" id="registerBtn" type="button">注册</button>
+          <button class="btn danger" id="closeAuthDialogBtn" type="button">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">愿你的每一针，都织进生活的温度。<span id="syncHint" class="sync-hint inline">离线模式</span></footer>
+
+    <script src="pocketbase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.25.0/dist/pocketbase.umd.js"></script>
+    <script>
+      if (typeof window.PocketBase === "undefined") {
+        document.write('<script src="https://unpkg.com/pocketbase@0.25.0/dist/pocketbase.umd.js"><\\/script>');
+      }
+    </script>
+    <script src="cloud-sync.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
