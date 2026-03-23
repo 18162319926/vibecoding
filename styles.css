@@ -66,6 +66,50 @@ body.homepage {
   gap: 8px;
 }
 
+.project-page .nav-auth {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.project-page .top-nav {
+  align-items: flex-start;
+}
+
+.project-nav-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-title-actions {
+  margin-top: 0;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.project-page .project-nav-row {
+  gap: 10px;
+}
+
+.project-page .project-nav-row .btn {
+  height: 46px;
+  padding: 0 16px;
+  line-height: 1;
+  font-size: 1.05rem;
+}
+
+.project-page .project-time-chip {
+  height: 46px;
+  padding: 0 16px;
+  line-height: 1;
+  font-size: 1.05rem;
+}
+
+.project-page .hero {
+  margin: 2px auto 6px;
+}
+
 .account-chip {
   display: inline-flex;
   align-items: center;
@@ -75,6 +119,21 @@ body.homepage {
   border: 1px solid #e9dbc8;
   font-size: 0.84rem;
   color: #704d38;
+}
+
+.project-time-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: #f5ece1;
+  border: 1px solid #e9dbc8;
+  color: #5a4837;
+  font-family: "Outfit", sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .bg-shape {
@@ -139,7 +198,7 @@ h1 {
 }
 
 .project-page .hero {
-  align-items: center;
+  align-items: flex-end;
 }
 
 .project-page .project-hero-stats {
@@ -499,8 +558,10 @@ body.homepage .project-cards {
 
 .grid-form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(150px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 12px;
+  row-gap: 14px;
+  align-content: start;
 }
 
 .full-span {
@@ -509,7 +570,8 @@ body.homepage .project-cards {
 
 label {
   display: grid;
-  gap: 6px;
+  gap: 7px;
+  line-height: 1.25;
   font-size: 0.9rem;
 }
 
@@ -519,9 +581,14 @@ textarea {
   width: 100%;
   border: 1px solid #d8c7b1;
   border-radius: 12px;
-  padding: 10px;
+  padding: 10px 12px;
   font: inherit;
   background: #fffdfa;
+}
+
+.project-panel .grid-form > label,
+.project-panel .grid-form > .full-span {
+  margin: 0;
 }
 
 textarea {
@@ -545,20 +612,44 @@ textarea {
 
 .diagram-box {
   display: grid;
-  grid-template-columns: 1fr;
   gap: 10px;
-  align-items: start;
 }
 
-.diagram-subtitle {
-  margin: 0;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #6f5d4c;
+.diagram-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.diagram-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.diagram-card-title {
+  margin: 0 0 8px;
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: inherit;
+  background: transparent;
+  border: 0;
+}
+
+.diagram-card-body {
+  border: 1px solid #e7d8c6;
+  border-radius: 12px;
+  background: #fffdfa;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  aspect-ratio: 1 / 1;
+  min-height: 0;
 }
 
 .diagram-box .cover-upload-btn {
-  grid-column: 1;
+  width: 100%;
 }
 
 .cover-frame {
@@ -566,7 +657,7 @@ textarea {
   border: 1px dashed #d8c7b1;
   border-radius: 12px;
   background: #fffdfa;
-  height: 180px;
+  flex: 1;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -592,7 +683,6 @@ textarea {
   font-size: 0.92rem;
 }
 .cover-preview.in-diagram {
-  grid-column: 1;
   display: none;
   width: 100%;
   height: 100%;
@@ -601,12 +691,16 @@ textarea {
 }
 
 .diagram-box #textDiagram {
-  grid-column: 1;
+  flex: 1;
   width: 100%;
-  min-height: 120px;
-  max-height: 220px;
+  min-height: 0;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
   overflow-y: auto;
-  resize: vertical;
+  resize: none;
 }
 
 .cover-preview.in-diagram.show {
@@ -856,15 +950,15 @@ body.homepage .footer {
 
 .feedback-toast {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
+  left: 50%;
+  top: 50%;
   background: rgba(37, 48, 59, 0.92);
   color: #fff;
   border-radius: 12px;
   padding: 10px 14px;
   box-shadow: var(--shadow);
   opacity: 0;
-  transform: translateY(10px);
+  transform: translate(-50%, -50%) scale(0.96);
   pointer-events: none;
   transition: opacity 0.2s ease, transform 0.2s ease;
   z-index: 40;
@@ -872,7 +966,7 @@ body.homepage .footer {
 
 .feedback-toast.show {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate(-50%, -50%) scale(1);
 }
 
 .celebration-layer {
@@ -936,6 +1030,18 @@ body.homepage .footer {
   margin-bottom: 10px;
 }
 
+.export-image-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.export-image-head h2 {
+  margin: 0;
+}
+
 #downloadCurrentImageLink {
   text-decoration: none;
   display: inline-flex;
@@ -991,7 +1097,7 @@ body.homepage .footer {
     height: 100vh;
     overflow: hidden;
     padding-top: 10px;
-    padding-bottom: 10px;
+    padding-bottom: 22px;
   }
 
   body.project-page .top-nav {
@@ -1003,7 +1109,7 @@ body.homepage .footer {
   }
 
   body.project-page .layout.project-detail-layout {
-    height: calc(100vh - 142px);
+    height: calc(100vh - 170px);
     overflow: hidden;
     gap: 12px;
     align-items: stretch;
@@ -1023,15 +1129,26 @@ body.homepage .footer {
     display: flex;
     flex-direction: column;
     height: 100%;
-    gap: 12px;
+    gap: 6px;
   }
 
   body.project-page .project-right-column .export-image-panel {
-    margin-top: auto;
+    margin-top: 0;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+  }
+
+  body.project-page .project-right-column .export-image-panel h2 {
+    margin: 0 0 8px;
+    font-size: 1rem;
   }
 
   body.project-page .grid-form {
-    gap: 8px;
+    column-gap: 10px;
+    row-gap: 12px;
   }
 
   body.project-page input,
@@ -1059,6 +1176,15 @@ body.homepage .footer {
 
   body.project-page .export-image-actions {
     margin-bottom: 6px;
+    gap: 8px;
+  }
+
+  body.project-page #exportImagePreview {
+    margin-top: 2px;
+    flex: 1;
+    min-height: 200px;
+    max-height: none;
+    object-fit: cover;
   }
 
   body.project-page .footer {
@@ -1172,14 +1298,12 @@ body.homepage .footer {
     grid-template-columns: 1fr;
   }
 
-  .diagram-box {
+  .diagram-split {
     grid-template-columns: 1fr;
   }
 
-  .diagram-box #projectCoverInput,
-  .cover-preview.in-diagram,
-  .diagram-box #textDiagram {
-    grid-column: 1;
+  .diagram-card-body {
+    aspect-ratio: auto;
   }
 
   .inline-form,

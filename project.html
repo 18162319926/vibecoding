@@ -19,23 +19,18 @@
     <nav class="top-nav" aria-label="主导航">
       <div class="brand">织伴</div>
       <div class="nav-auth" id="navAuth">
-        <a class="btn ghost" href="index.html">返回仪表盘</a>
-        <span class="account-chip" id="accountChip" hidden>未登录</span>
-        <button class="btn ghost" id="openLoginBtn" type="button">登录</button>
-        <button class="btn ghost" id="openRegisterBtn" type="button">注册</button>
-        <button class="btn primary" id="logoutBtn" type="button" hidden>退出</button>
+        <span class="account-chip" id="accountChip">当前账号：未登录</span>
       </div>
     </nav>
 
     <header class="hero">
-      <div>
+      <div class="project-hero-title">
         <p class="eyebrow">PROJECT DETAIL</p>
         <h1 id="projectTitle">项目详情</h1>
       </div>
-      <div class="hero-stats project-hero-stats">
-        <div class="stat-card project-time-card">
-          <strong id="projectTimeSpent">00:00:00</strong>
-        </div>
+      <div class="project-nav-row project-title-actions">
+        <a class="btn ghost" href="index.html">返回仪表盘</a>
+        <span class="project-time-chip" id="projectTimeSpent">累计用时 00:00:00</span>
       </div>
     </header>
 
@@ -82,15 +77,25 @@
           </label>
           <div class="full-span">
             <div class="diagram-box">
-              <div class="diagram-subtitle">项目封面</div>
-              <input id="projectCoverInput" class="sr-only-input" type="file" accept="image/*" title="项目封面上传" aria-label="项目封面上传" />
-              <label for="projectCoverInput" class="btn ghost cover-upload-btn">选择或更换封面</label>
-              <div class="cover-frame">
-                <img id="projectCoverPreview" class="cover-preview in-diagram" alt="封面预览" />
-                <span class="cover-frame-placeholder">封面预览</span>
+              <div class="diagram-split">
+                <section class="diagram-card cover-card">
+                  <h3 class="diagram-card-title">项目封面</h3>
+                  <div class="diagram-card-body">
+                    <input id="projectCoverInput" class="sr-only-input" type="file" accept="image/*" title="项目封面上传" aria-label="项目封面上传" />
+                    <label for="projectCoverInput" class="btn ghost cover-upload-btn">选择或更换封面</label>
+                    <div class="cover-frame">
+                      <img id="projectCoverPreview" class="cover-preview in-diagram" alt="封面预览" />
+                      <span class="cover-frame-placeholder">封面预览</span>
+                    </div>
+                  </div>
+                </section>
+                <section class="diagram-card text-card">
+                  <h3 class="diagram-card-title">文字图解</h3>
+                  <div class="diagram-card-body">
+                    <textarea id="textDiagram" rows="3" title="文字图解" aria-label="文字图解" placeholder="请输入文字图解"></textarea>
+                  </div>
+                </section>
               </div>
-              <div class="diagram-subtitle">文字图解</div>
-              <textarea id="textDiagram" rows="3" title="文字图解" aria-label="文字图解" placeholder="请输入文字图解"></textarea>
             </div>
           </div>
           <label class="full-span">
@@ -99,6 +104,9 @@
               <option value="classic">经典卡片</option>
               <option value="journal">手帐拼贴</option>
               <option value="minimal">极简留白</option>
+              <option value="blueprint">蓝图线稿</option>
+              <option value="sunset">落日胶片</option>
+              <option value="retro">复古印刷</option>
             </select>
           </label>
           <button class="btn primary" type="submit">保存项目</button>
@@ -125,9 +133,8 @@
         </section>
 
         <section class="panel export-image-panel reveal">
-          <h2>导出当前项目图片</h2>
-          <div class="export-image-actions">
-            <button class="btn ghost" id="exportCurrentImageBtn" type="button">生成项目图片</button>
+          <div class="export-image-head">
+            <h2>导出当前项目卡片</h2>
             <a class="btn primary" id="downloadCurrentImageLink" href="#" download="knit-project.png">下载图片</a>
           </div>
           <canvas id="exportCanvas" width="1100" height="1400" hidden></canvas>

@@ -204,6 +204,39 @@ function getExportTheme(style) {
       textColor: "#1f2329",
       subtitleColor: "#6b7280",
     },
+    blueprint: {
+      bgA: "#0b2c4f",
+      bgB: "#123e6c",
+      panelFill: "rgba(8, 24, 43, 0.76)",
+      panelStroke: "rgba(158, 211, 255, 0.75)",
+      titleColor: "#e6f4ff",
+      sectionColor: "#8ed2ff",
+      labelColor: "#b9e5ff",
+      textColor: "#ecf8ff",
+      subtitleColor: "#b6d8f3",
+    },
+    sunset: {
+      bgA: "#ffd6b2",
+      bgB: "#ff9d8b",
+      panelFill: "rgba(255, 248, 240, 0.8)",
+      panelStroke: "#f6b593",
+      titleColor: "#5a2f2f",
+      sectionColor: "#b34f42",
+      labelColor: "#7a4942",
+      textColor: "#4d3030",
+      subtitleColor: "#8e5d58",
+    },
+    retro: {
+      bgA: "#f5e5c8",
+      bgB: "#ebd4ab",
+      panelFill: "rgba(255, 252, 245, 0.82)",
+      panelStroke: "#c8aa73",
+      titleColor: "#3e2c1d",
+      sectionColor: "#7b4d2b",
+      labelColor: "#6e5038",
+      textColor: "#3a2a1c",
+      subtitleColor: "#7c6652",
+    },
   };
   return themes[style] || themes.classic;
 }
@@ -432,6 +465,42 @@ function drawExportBackground(ctx, width, height, theme, style) {
       ctx.lineTo(x, height);
       ctx.stroke();
     }
+  } else if (style === "blueprint") {
+    ctx.globalAlpha = 0.2;
+    ctx.strokeStyle = "#9cd3ff";
+    ctx.lineWidth = 1;
+    for (let y = 30; y < height; y += 36) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+    for (let x = 30; x < width; x += 36) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
+      ctx.stroke();
+    }
+  } else if (style === "sunset") {
+    ctx.globalAlpha = 0.4;
+    const sun = ctx.createRadialGradient(width * 0.74, height * 0.2, 20, width * 0.74, height * 0.2, 220);
+    sun.addColorStop(0, "#fff2c6");
+    sun.addColorStop(1, "rgba(255, 242, 198, 0)");
+    ctx.fillStyle = sun;
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = "rgba(255, 130, 120, 0.22)";
+    ctx.fillRect(0, height * 0.64, width, height * 0.36);
+  } else if (style === "retro") {
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = "#8f6a3f";
+    for (let i = 0; i < 260; i += 1) {
+      const x = Math.random() * width;
+      const y = Math.random() * height;
+      const r = Math.random() * 1.6;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
   } else {
     ctx.globalAlpha = 0.45;
     ctx.fillStyle = "#ffd3b0";
@@ -445,6 +514,107 @@ function drawExportBackground(ctx, width, height, theme, style) {
     ctx.fill();
   }
   ctx.globalAlpha = 1;
+}
+
+function drawBlueprintLayout(ctx, width, height, theme, sections, project, styleLabel) {
+  ctx.fillStyle = theme.panelFill;
+  ctx.strokeStyle = theme.panelStroke;
+  ctx.lineWidth = 2;
+  ctx.fillRect(56, 56, width - 112, height - 112);
+  ctx.strokeRect(56, 56, width - 112, height - 112);
+
+  ctx.strokeStyle = "rgba(170, 220, 255, 0.9)";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(74, 74, width - 148, height - 148);
+
+  ctx.fillStyle = theme.titleColor;
+  ctx.font = "700 40px sans-serif";
+  ctx.fillText(project.projectName || "我的编织项目", 98, 128);
+  ctx.fillStyle = theme.subtitleColor;
+  ctx.font = "500 20px monospace";
+  ctx.fillText(`织伴项目卡(${styleLabel})  ·  ${getToday()}`, 98, 160);
+
+  let y = 212;
+  sections.forEach((section) => {
+    ctx.fillStyle = theme.sectionColor;
+    ctx.font = "700 22px monospace";
+    ctx.fillText(`[ ${section.title} ]`, 98, y);
+    y += 34;
+
+    if (section.entries) {
+      section.entries.forEach(([label, value]) => {
+        ctx.fillStyle = theme.labelColor;
+        ctx.font = "600 18px monospace";
+        ctx.fillText(`${label}:`, 98, y);
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 18px monospace";
+        ctx.fillText(String(value), 232, y);
+        y += 28;
+      });
+    }
+
+    if (section.lines) {
+      section.lines.forEach((line) => {
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 17px monospace";
+        ctx.fillText(line, 98, y);
+        y += 24;
+      });
+    }
+
+    y += 10;
+  });
+}
+
+function drawRetroLayout(ctx, width, height, theme, sections, project, styleLabel) {
+  ctx.fillStyle = theme.panelFill;
+  ctx.strokeStyle = theme.panelStroke;
+  ctx.lineWidth = 4;
+  ctx.fillRect(48, 48, width - 96, height - 96);
+  ctx.strokeRect(48, 48, width - 96, height - 96);
+
+  ctx.fillStyle = theme.titleColor;
+  ctx.font = "700 44px serif";
+  ctx.fillText(project.projectName || "我的编织项目", 86, 126);
+
+  ctx.fillStyle = theme.subtitleColor;
+  ctx.font = "600 18px sans-serif";
+  ctx.fillText(`织伴项目卡(${styleLabel})  ·  ${getToday()}`, 86, 156);
+
+  ctx.strokeStyle = theme.panelStroke;
+  ctx.lineWidth = 2;
+  ctx.strokeRect(86, 178, width - 172, 2);
+
+  let y = 222;
+  sections.forEach((section) => {
+    ctx.fillStyle = theme.sectionColor;
+    ctx.font = "700 24px serif";
+    ctx.fillText(section.title, 86, y);
+    y += 34;
+
+    if (section.entries) {
+      section.entries.forEach(([label, value]) => {
+        ctx.fillStyle = theme.labelColor;
+        ctx.font = "700 19px serif";
+        ctx.fillText(`${label}：`, 86, y);
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 19px serif";
+        ctx.fillText(String(value), 208, y);
+        y += 30;
+      });
+    }
+
+    if (section.lines) {
+      section.lines.forEach((line) => {
+        ctx.fillStyle = theme.textColor;
+        ctx.font = "500 18px serif";
+        ctx.fillText(line, 86, y);
+        y += 26;
+      });
+    }
+
+    y += 8;
+  });
 }
 
 function drawClassicLayout(ctx, width, height, theme, sections, project, styleLabel) {
@@ -642,6 +812,15 @@ function computeExportHeight(style, contentRows, sectionCount) {
   if (style === "minimal") {
     return Math.max(820, 220 + contentRows * 36 + sectionCount * 20);
   }
+  if (style === "blueprint") {
+    return Math.max(860, 240 + contentRows * 36 + sectionCount * 22);
+  }
+  if (style === "sunset") {
+    return Math.max(900, 250 + contentRows * 38 + sectionCount * 24);
+  }
+  if (style === "retro") {
+    return Math.max(900, 250 + contentRows * 39 + sectionCount * 24);
+  }
   return Math.max(880, 230 + contentRows * 38 + sectionCount * 24);
 }
 
@@ -665,7 +844,15 @@ function buildExportImageData(project, options = {}) {
   canvas.width = width;
   canvas.height = height;
 
-  const styleLabel = style === "journal" ? "手帐" : style === "minimal" ? "极简" : "经典";
+  const styleLabelMap = {
+    classic: "经典",
+    journal: "手帐",
+    minimal: "极简",
+    blueprint: "蓝图",
+    sunset: "落日",
+    retro: "复古",
+  };
+  const styleLabel = styleLabelMap[style] || "经典";
 
   drawExportBackground(ctx, width, height, theme, style);
 
@@ -673,6 +860,10 @@ function buildExportImageData(project, options = {}) {
     drawJournalLayout(ctx, width, height, theme, sections, project, styleLabel);
   } else if (style === "minimal") {
     drawMinimalLayout(ctx, width, height, theme, sections, project, styleLabel);
+  } else if (style === "blueprint") {
+    drawBlueprintLayout(ctx, width, height, theme, sections, project, styleLabel);
+  } else if (style === "retro") {
+    drawRetroLayout(ctx, width, height, theme, sections, project, styleLabel);
   } else {
     drawClassicLayout(ctx, width, height, theme, sections, project, styleLabel);
   }
@@ -739,7 +930,7 @@ function setSyncHint(text) {
 function setAuthNav(user) {
   const loggedIn = Boolean(user && user.email);
   if (refs.accountChip) {
-    refs.accountChip.hidden = !loggedIn;
+    refs.accountChip.hidden = false;
     refs.accountChip.textContent = loggedIn ? `当前账号：${user.email}` : "未登录";
   }
   if (refs.openLoginBtn) refs.openLoginBtn.hidden = loggedIn;
@@ -1098,6 +1289,46 @@ function setupCloudSync(projects, onRemoteApplied) {
 
   setAuthNav(window.cloudSync.getCurrentUser());
 
+  const handleUserChanged = async (user) => {
+    setAuthNav(user);
+    if (typeof syncRuntime.remoteUnsubscribe === "function") {
+      syncRuntime.remoteUnsubscribe();
+      syncRuntime.remoteUnsubscribe = null;
+    }
+
+    if (!user) {
+      setSyncHint("离线模式");
+      return;
+    }
+
+    closeAuthDialog();
+
+    setSyncHint("正在同步云端数据...");
+
+    try {
+      const remote = await window.cloudSync.pullState();
+      if (remote) {
+        const changed = applyCloudPayload(remote, projects);
+        if (changed) onRemoteApplied();
+      } else {
+        scheduleCloudPush(projects);
+        setSyncHint("云端已初始化");
+      }
+    } catch (error) {
+      setSyncHint(`拉取云端失败：${error.message || "请稍后重试"}`);
+    }
+
+    syncRuntime.remoteUnsubscribe = window.cloudSync.watchRemoteState(
+      (payload) => {
+        const changed = applyCloudPayload(payload, projects);
+        if (changed) onRemoteApplied();
+      },
+      (error) => {
+        setSyncHint(`监听同步失败：${error.message || "请稍后重试"}`);
+      }
+    );
+  };
+
   if (refs.openLoginBtn) {
     refs.openLoginBtn.addEventListener("click", () => openAuthDialog("login"));
   }
@@ -1113,53 +1344,24 @@ function setupCloudSync(projects, onRemoteApplied) {
     });
   }
 
-  window.cloudSync.bindAuthUI({
-    emailInput: refs.authEmail,
-    passwordInput: refs.authPassword,
-    statusEl: refs.authStatus,
-    loginBtn: refs.loginBtn,
-    registerBtn: refs.registerBtn,
-    logoutBtn: refs.logoutBtn,
-    onUserChanged: async (user) => {
-      setAuthNav(user);
-      if (typeof syncRuntime.remoteUnsubscribe === "function") {
-        syncRuntime.remoteUnsubscribe();
-        syncRuntime.remoteUnsubscribe = null;
-      }
+  const hasFullAuthUI = Boolean(
+    refs.authEmail && refs.authPassword && refs.authStatus && refs.loginBtn && refs.registerBtn && refs.logoutBtn
+  );
 
-      if (!user) {
-        setSyncHint("离线模式");
-        return;
-      }
+  if (hasFullAuthUI) {
+    window.cloudSync.bindAuthUI({
+      emailInput: refs.authEmail,
+      passwordInput: refs.authPassword,
+      statusEl: refs.authStatus,
+      loginBtn: refs.loginBtn,
+      registerBtn: refs.registerBtn,
+      logoutBtn: refs.logoutBtn,
+      onUserChanged: handleUserChanged,
+    });
+    return;
+  }
 
-      closeAuthDialog();
-
-      setSyncHint("正在同步云端数据...");
-
-      try {
-        const remote = await window.cloudSync.pullState();
-        if (remote) {
-          const changed = applyCloudPayload(remote, projects);
-          if (changed) onRemoteApplied();
-        } else {
-          scheduleCloudPush(projects);
-          setSyncHint("云端已初始化");
-        }
-      } catch (error) {
-        setSyncHint(`拉取云端失败：${error.message || "请稍后重试"}`);
-      }
-
-      syncRuntime.remoteUnsubscribe = window.cloudSync.watchRemoteState(
-        (payload) => {
-          const changed = applyCloudPayload(payload, projects);
-          if (changed) onRemoteApplied();
-        },
-        (error) => {
-          setSyncHint(`监听同步失败：${error.message || "请稍后重试"}`);
-        }
-      );
-    },
-  });
+  window.cloudSync.onAuthStateChanged(handleUserChanged);
 }
 
 function init() {
@@ -1277,11 +1479,6 @@ function init() {
       persist();
     });
   }
-
-  refs.exportCurrentImageBtn.addEventListener("click", () => {
-    exportProjectImage(project);
-    showFeedback("导出预览已更新，可直接下载");
-  });
 
   loadTimerState();
   renderTimerState();
