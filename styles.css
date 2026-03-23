@@ -214,7 +214,7 @@ h1 {
 .layout {
   display: grid;
   gap: 16px;
-  max-width: 980px;
+  max-width: 1100px;
   margin: 0 auto;
   grid-template-columns: repeat(12, 1fr);
 }
@@ -865,7 +865,7 @@ body.homepage .footer {
     position: static;
     transform: none;
     width: auto;
-    max-width: 980px;
+    max-width: 1100px;
     margin: 0 auto 20px;
     cursor: default;
   }
@@ -907,23 +907,31 @@ body.homepage .footer {
   }
 
   body.homepage .project-cards {
-    flex-direction: column;
+    flex-direction: row;
     flex-wrap: nowrap;
-    overflow-x: hidden;
-    overflow-y: auto;
-    max-height: 60vh;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-height: none;
     padding-right: 2px;
   }
 
   body.homepage .project-card {
-    min-width: 100%;
-    max-width: none;
+    min-width: clamp(240px, calc((100vw - 52px) / 2), 320px);
+    max-width: clamp(240px, calc((100vw - 52px) / 2), 320px);
   }
 }
 
 @media (max-width: 620px) {
   body {
     padding: 14px;
+  }
+
+  body.homepage .hero {
+    margin: 6px auto 12px;
+  }
+
+  body.homepage .hero > div:first-child {
+    display: none;
   }
 
   .top-nav {
@@ -991,12 +999,13 @@ body.homepage .footer {
   }
 
   .project-card {
-    min-width: calc(100vw - 58px);
+    min-width: clamp(220px, calc((100vw - 48px) / 2), 300px);
     max-width: none;
   }
 
   body.homepage .project-card {
-    min-width: 100%;
+    min-width: clamp(220px, calc((100vw - 48px) / 2), 300px);
+    max-width: clamp(220px, calc((100vw - 48px) / 2), 300px);
   }
 
   body.homepage .project-cover {
@@ -1049,7 +1058,7 @@ body.homepage .footer {
   }
 
   .project-card {
-    min-width: 100%;
+    min-width: clamp(180px, calc((100vw - 38px) / 2), 240px);
   }
 
   body.homepage .project-cover {
