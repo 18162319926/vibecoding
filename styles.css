@@ -926,6 +926,15 @@ body.homepage .footer {
     padding: 14px;
   }
 
+  .top-nav {
+    align-items: flex-start;
+  }
+
+  .nav-auth {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
   input,
   select,
   textarea,
@@ -1030,7 +1039,13 @@ body.homepage .footer {
   }
 
   .hero-stats {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 8px;
+  }
+
+  .stat-card {
+    min-width: 0;
   }
 
   .project-card {

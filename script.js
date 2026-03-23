@@ -123,6 +123,20 @@ function createProject(name = "我的新作品") {
   };
 }
 
+function isLegacyStarterProject(project) {
+  if (!project || project.projectName !== "我的第一件作品") return false;
+  const hasProgress = Number(project.rows) > 0 || Number(project.totalRows) > 0 || Number(project.spentSeconds) > 0;
+  const hasContent = Boolean(
+    String(project.textDiagram || "").trim() ||
+    String(project.notes || "").trim() ||
+    String(project.coverImage || "").trim() ||
+    String(project.yarnType || "").trim() ||
+    String(project.tools || "").trim()
+  );
+  const materialsCount = Array.isArray(project.materials) ? project.materials.length : 0;
+  return !hasProgress && !hasContent && materialsCount === 0;
+}
+
 function normalizeProject(project) {
   const normalized = {
     ...createProject(project.projectName || "未命名作品"),
@@ -587,6 +601,7 @@ function getProjectProgress(project) {
 }
 
 function saveProjects(options = {}) {
+  state.projects = state.projects.filter((project) => !isLegacyStarterProject(project));
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects: state.projects }));
   if (options.scheduleCloud !== false) {
     scheduleCloudPush();
@@ -596,18 +611,16 @@ function saveProjects(options = {}) {
 function loadProjects() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (!saved) {
-    state.projects = [createProject("我的第一件作品")];
-    saveProjects();
+    state.projects = [];
     return;
   }
   try {
     const parsed = JSON.parse(saved);
     const list = Array.isArray(parsed.projects) ? parsed.projects : [];
-    state.projects = list.map(normalizeProject);
+    state.projects = list.map(normalizeProject).filter((project) => !isLegacyStarterProject(project));
   } catch {
-    state.projects = [createProject("我的第一件作品")];
+    state.projects = [];
   }
-  if (!state.projects.length) state.projects = [createProject("我的第一件作品")];
   let changed = false;
   state.projects.forEach((project) => {
     if (project.lastDate !== getToday()) {
@@ -723,9 +736,6 @@ function renderDashboard() {
     deleteBtn.addEventListener("click", () => {
       if (!confirm(`确认删除项目“${project.projectName || "未命名作品"}”？`)) return;
       state.projects = state.projects.filter((item) => item.id !== project.id);
-      if (!state.projects.length) {
-        state.projects = [createProject("我的第一件作品")];
-      }
       saveProjects();
       renderDashboard();
     });
@@ -847,7 +857,7 @@ function scheduleCloudPush() {
     syncRuntime.lastSeenCloudStamp = Math.max(syncRuntime.lastSeenCloudStamp, stamp);
     try {
       await window.cloudSync.pushState({
-        projects: state.projects,
+        projects: state.projects.filter((project) => !isLegacyStarterProject(project)),
         timer: timerState,
         clientUpdatedAt: stamp,
       });
@@ -879,13 +889,14 @@ function applyCloudPayload(payload) {
         next.coverImage = localCover;
       }
       return next;
-    });
+    }).filter((project) => !isLegacyStarterProject(project));
 
     const remoteIdSet = new Set(normalizedRemote.map((project) => String(project.id || "")));
     const localOnly = state.projects
       .filter((project) => project && project.id)
       .filter((project) => !remoteIdSet.has(String(project.id || "")))
-      .map((project) => normalizeProject(project));
+      .map((project) => normalizeProject(project))
+      .filter((project) => !isLegacyStarterProject(project));
 
     const merged = [...normalizedRemote, ...localOnly];
 

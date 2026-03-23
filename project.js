@@ -31,7 +31,6 @@ const refs = {
   materialForm: document.getElementById("materialForm"),
   materialInput: document.getElementById("materialInput"),
   materialList: document.getElementById("materialList"),
-  notes: document.getElementById("notes"),
   exportCurrentImageBtn: document.getElementById("exportCurrentImageBtn"),
   downloadCurrentImageLink: document.getElementById("downloadCurrentImageLink"),
   exportCanvas: document.getElementById("exportCanvas"),
@@ -109,6 +108,20 @@ function createProject(name = "我的新作品") {
     exportStyle: "classic",
     lastDate: getToday(),
   };
+}
+
+function isLegacyStarterProject(project) {
+  if (!project || project.projectName !== "我的第一件作品") return false;
+  const hasProgress = Number(project.rows) > 0 || Number(project.totalRows) > 0 || Number(project.spentSeconds) > 0;
+  const hasContent = Boolean(
+    String(project.textDiagram || "").trim() ||
+    String(project.notes || "").trim() ||
+    String(project.coverImage || "").trim() ||
+    String(project.yarnType || "").trim() ||
+    String(project.tools || "").trim()
+  );
+  const materialsCount = Array.isArray(project.materials) ? project.materials.length : 0;
+  return !hasProgress && !hasContent && materialsCount === 0;
 }
 
 function normalizeProject(project) {
@@ -190,21 +203,24 @@ function getProjectProgress(project) {
 
 function loadProjects() {
   const saved = localStorage.getItem(STORAGE_KEY);
-  if (!saved) return [createProject("我的第一件作品")];
+  if (!saved) return [];
   try {
     const parsed = JSON.parse(saved);
     const list = Array.isArray(parsed.projects) ? parsed.projects : [];
-    return list.length ? list.map(normalizeProject) : [createProject("我的第一件作品")];
+    return list.length ? list.map(normalizeProject).filter((project) => !isLegacyStarterProject(project)) : [];
   } catch {
-    return [createProject("我的第一件作品")];
+    return [];
   }
 }
 
 function saveProjects(projects, options = {}) {
+  const cleanedProjects = (Array.isArray(projects) ? projects : []).filter(
+    (project) => !isLegacyStarterProject(project)
+  );
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects: cleanedProjects }));
     if (options.scheduleCloud !== false) {
-      scheduleCloudPush(projects);
+      scheduleCloudPush(cleanedProjects);
     }
     return true;
   } catch (error) {
@@ -308,7 +324,6 @@ function renderProject(project) {
   refs.patternName.value = project.patternName || "";
   refs.textDiagram.value = project.textDiagram || "";
   refs.exportStyle.value = project.exportStyle || "classic";
-  refs.notes.value = project.notes || "";
   refs.rowCounter.textContent = String(project.rows || 0);
   refs.progressText.textContent = `进度 ${getProjectProgress(project)}%（${project.rows || 0}/${project.totalRows || 0} 行）`;
   refs.projectTimeSpent.textContent = `累计用时 ${formatDuration(project.spentSeconds)}`;
@@ -334,7 +349,6 @@ function syncDraftFields(project) {
   project.patternName = refs.patternName.value.trim();
   project.textDiagram = refs.textDiagram.value.trim();
   project.exportStyle = refs.exportStyle.value || "classic";
-  project.notes = refs.notes.value;
   applyProgressStatus(project);
 }
 
@@ -752,7 +766,7 @@ function scheduleCloudPush(projects) {
     syncRuntime.lastSeenCloudStamp = Math.max(syncRuntime.lastSeenCloudStamp, stamp);
     try {
       await window.cloudSync.pushState({
-        projects,
+        projects: (Array.isArray(projects) ? projects : []).filter((project) => !isLegacyStarterProject(project)),
         timer: timerState,
         clientUpdatedAt: stamp,
       });
@@ -784,13 +798,14 @@ function applyCloudPayload(payload, projects) {
         next.coverImage = localCover;
       }
       return next;
-    });
+    }).filter((project) => !isLegacyStarterProject(project));
 
     const remoteIdSet = new Set(normalizedRemote.map((project) => String(project.id || "")));
     const localOnly = projects
       .filter((project) => project && project.id)
       .filter((project) => !remoteIdSet.has(String(project.id || "")))
-      .map((project) => normalizeProject(project));
+      .map((project) => normalizeProject(project))
+      .filter((project) => !isLegacyStarterProject(project));
 
     const merged = [...normalizedRemote, ...localOnly];
 
@@ -1211,11 +1226,6 @@ function init() {
     }
 
     refs.projectCoverInput.value = "";
-  });
-
-  refs.notes.addEventListener("input", () => {
-    project.notes = refs.notes.value;
-    persist();
   });
 
   document.querySelector("[data-action='incRow']").addEventListener("click", () => {
