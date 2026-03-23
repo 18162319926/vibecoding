@@ -73,6 +73,27 @@
     return `${field}: ${detailMessage}`;
   }
 
+  function getHostHintForMobile() {
+    const config = getConfig();
+    const baseUrl = String(config.baseUrl || "");
+    const isLoopback = /127\.0\.0\.1|localhost/i.test(baseUrl);
+    const pageHost = String(window.location.hostname || "").toLowerCase();
+    const pageLooksLocal = pageHost === "localhost" || pageHost === "127.0.0.1";
+    if (!isLoopback || pageLooksLocal) return "";
+    return "当前 baseUrl 指向 127.0.0.1/localhost，手机无法访问电脑本机。请把 pocketbase-config.js 的 baseUrl 改为电脑局域网IP（如 http://192.168.1.10:8090）。";
+  }
+
+  function getFriendlyAuthError(error) {
+    const message = extractErrorMessage(error);
+    const raw = String(error?.message || "").toLowerCase();
+    const looksNetworkIssue = raw.includes("fetch") || raw.includes("network") || raw.includes("failed");
+    const hostHint = getHostHintForMobile();
+    if (looksNetworkIssue && hostHint) {
+      return `${message}。${hostHint}`;
+    }
+    return message;
+  }
+
   function getOwnerValue(recordOwner) {
     if (Array.isArray(recordOwner)) {
       return String(recordOwner[0] || "");
@@ -603,7 +624,7 @@
         setBusy(true);
         await signIn(email, password);
       } catch (error) {
-        setStatus(`登录失败：${extractErrorMessage(error)}`);
+        setStatus(`登录失败：${getFriendlyAuthError(error)}`);
       } finally {
         setBusy(false);
       }
@@ -624,7 +645,7 @@
         setBusy(true);
         await signUp(email, password);
       } catch (error) {
-        setStatus(`注册失败：${extractErrorMessage(error)}`);
+        setStatus(`注册失败：${getFriendlyAuthError(error)}`);
       } finally {
         setBusy(false);
       }

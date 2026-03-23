@@ -958,7 +958,10 @@ body.homepage .footer {
 
   body.homepage .status-filters .btn {
     flex: 0 0 auto;
-    min-width: 78px;
+    min-width: 64px;
+    min-height: 36px;
+    padding: 6px 8px;
+    font-size: 14px;
   }
 
   .project-card {
@@ -1037,6 +1040,10 @@ body.homepage .footer {
 
   body.homepage .status-filters .btn {
     width: auto;
+    min-width: 58px;
+    min-height: 34px;
+    padding: 5px 7px;
+    font-size: 13px;
   }
 
   .create-menu {
