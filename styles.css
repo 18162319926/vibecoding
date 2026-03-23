@@ -943,9 +943,22 @@ body.homepage .footer {
   .projects-toolbar,
   .import-export-actions,
   .dashboard-toolbar,
-  .status-filters,
   .project-card-actions {
     flex-direction: column;
+  }
+
+  body.homepage .status-filters {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    width: 100%;
+  }
+
+  body.homepage .status-filters .btn {
+    flex: 0 0 auto;
+    min-width: 78px;
   }
 
   .project-card {
@@ -1016,11 +1029,14 @@ body.homepage .footer {
     font-size: 0.98rem;
   }
 
-  .status-filters .btn,
   .import-export-actions .btn,
   .create-menu-wrap,
   .create-menu {
     width: 100%;
+  }
+
+  body.homepage .status-filters .btn {
+    width: auto;
   }
 
   .create-menu {

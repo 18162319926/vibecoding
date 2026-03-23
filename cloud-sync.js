@@ -8,6 +8,7 @@
     coverRecordCache: {},
     fileToken: "",
     fileTokenFetchedAt: 0,
+    initError: "",
   };
 
   function getConfig() {
@@ -338,13 +339,20 @@
 
   function init() {
     const config = getConfig();
-    if (!window.PocketBase || !hasValidConfig(config)) {
+    if (!hasValidConfig(config)) {
+      state.initError = "缺少 PocketBase 地址，请检查 pocketbase-config.js 的 baseUrl";
+      return;
+    }
+
+    if (!window.PocketBase) {
+      state.initError = "PocketBase SDK 未加载，请检查网络或 CDN 访问";
       return;
     }
 
     const pb = new PocketBase(config.baseUrl);
     state.pb = pb;
     state.ready = true;
+    state.initError = "";
 
     state.currentUser = normalizeUser(pb.authStore.model);
 
@@ -554,7 +562,7 @@
     }
 
     if (!isReady()) {
-      statusEl.textContent = "云同步未配置：请先在 pocketbase-config.js 填入配置";
+      statusEl.textContent = `云同步不可用：${state.initError || "请检查配置"}`;
       loginBtn.disabled = true;
       registerBtn.disabled = true;
       logoutBtn.disabled = true;
