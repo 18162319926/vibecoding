@@ -18,6 +18,9 @@ const refs = {
   yarnInfo: document.getElementById("yarnInfo"),
   toolsInfo: document.getElementById("toolsInfo"),
   textDiagram: document.getElementById("textDiagram"),
+  diagramImageInput: document.getElementById("diagramImageInput"),
+  diagramImageGallery: document.getElementById("diagramImageGallery"),
+  diagramImagePlaceholder: document.getElementById("diagramImagePlaceholder"),
   exportStyle: document.getElementById("exportStyle"),
   projectCoverInput: document.getElementById("projectCoverInput"),
   projectCoverPreview: document.getElementById("projectCoverPreview"),
@@ -97,6 +100,8 @@ function createProject(name = "我的新作品") {
     totalRows: 0,
     coverImage: "",
     textDiagram: "",
+    diagramImage: "",
+    diagramImages: [],
     rows: 0,
     todayRows: 0,
     materials: [],
@@ -104,6 +109,7 @@ function createProject(name = "我的新作品") {
     spentSeconds: 0,
     exportStyle: "classic",
     lastDate: getToday(),
+    updatedAt: Date.now(),
   };
 }
 
@@ -112,6 +118,8 @@ function isLegacyStarterProject(project) {
   const hasProgress = Number(project.rows) > 0 || Number(project.totalRows) > 0 || Number(project.spentSeconds) > 0;
   const hasContent = Boolean(
     String(project.textDiagram || "").trim() ||
+    String(project.diagramImage || "").trim() ||
+    (Array.isArray(project.diagramImages) && project.diagramImages.length > 0) ||
     String(project.notes || "").trim() ||
     String(project.coverImage || "").trim() ||
     String(project.yarnType || "").trim() ||
@@ -122,6 +130,7 @@ function isLegacyStarterProject(project) {
 }
 
 function normalizeProject(project) {
+  const parsedUpdatedAt = Number(project.updatedAt);
   const normalized = {
     ...createProject(project.projectName || "未命名作品"),
     ...project,
@@ -132,9 +141,24 @@ function normalizeProject(project) {
     spentSeconds: Math.max(0, Number(project.spentSeconds) || 0),
     materials: Array.isArray(project.materials) ? project.materials : [],
     lastDate: project.lastDate || getToday(),
+    updatedAt: Number.isFinite(parsedUpdatedAt) && parsedUpdatedAt > 0 ? parsedUpdatedAt : 0,
   };
+  const fallbackDiagramImage = String(normalized.diagramImage || "").trim();
+  const normalizedImages = Array.isArray(project.diagramImages)
+    ? project.diagramImages.map((item) => String(item || "").trim()).filter(Boolean)
+    : [];
+  normalized.diagramImages = normalizedImages.length
+    ? normalizedImages
+    : fallbackDiagramImage
+      ? [fallbackDiagramImage]
+      : [];
   applyProgressStatus(normalized);
   return normalized;
+}
+
+function touchProject(project) {
+  if (!project || typeof project !== "object") return;
+  project.updatedAt = Date.now();
 }
 
 function combinePair(primary, secondary) {
@@ -378,6 +402,40 @@ function renderProject(project) {
     refs.projectCoverPreview.classList.remove("show");
     refs.projectCoverPreview.removeAttribute("src");
   }
+
+  renderDiagramImages(project);
+}
+
+function renderDiagramImages(project) {
+  if (!refs.diagramImageGallery) return;
+  refs.diagramImageGallery.innerHTML = "";
+
+  const images = Array.isArray(project.diagramImages)
+    ? project.diagramImages.map((item) => String(item || "").trim()).filter(Boolean)
+    : [];
+
+  images.forEach((src, index) => {
+    const item = document.createElement("div");
+    item.className = "diagram-image-item";
+
+    const image = document.createElement("img");
+    image.src = src;
+    image.alt = `图解图片 ${index + 1}`;
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "diagram-image-remove";
+    removeBtn.textContent = "×";
+    removeBtn.title = "删除该图片";
+    removeBtn.dataset.index = String(index);
+
+    item.append(image, removeBtn);
+    refs.diagramImageGallery.appendChild(item);
+  });
+
+  if (refs.diagramImagePlaceholder) {
+    refs.diagramImagePlaceholder.style.display = images.length ? "none" : "inline";
+  }
 }
 
 function syncDraftFields(project) {
@@ -434,12 +492,90 @@ function buildExportSections(project) {
     ["花样", project.patternName],
   ].filter((item) => String(item[1] || "").trim());
 
-  const diagramLines = wrapTextLines(project.textDiagram, 24);
   const sections = [];
   if (projectInfo.length) sections.push({ title: "项目信息", entries: projectInfo });
   if (craftInfo.length) sections.push({ title: "编织信息", entries: craftInfo });
-  if (diagramLines.length) sections.push({ title: "文字图解", lines: diagramLines });
   return sections;
+}
+
+const exportImageCache = new Map();
+
+function loadExportImage(src) {
+  const key = String(src || "").trim();
+  if (!key) return Promise.reject(new Error("empty-image-src"));
+  if (exportImageCache.has(key)) return exportImageCache.get(key);
+
+  const task = new Promise((resolve, reject) => {
+    const img = new Image();
+    if (/^https?:\/\//i.test(key)) {
+      img.crossOrigin = "anonymous";
+    }
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("封面加载失败"));
+    img.src = key;
+  });
+  exportImageCache.set(key, task);
+  return task;
+}
+
+function drawRoundedRectPath(ctx, x, y, width, height, radius) {
+  if (typeof ctx.roundRect === "function") {
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, radius);
+    return;
+  }
+  ctx.beginPath();
+  ctx.rect(x, y, width, height);
+}
+
+async function drawExportCoverBlock(ctx, project, x, y, width, height, theme) {
+  drawRoundedRectPath(ctx, x, y, width, height, 16);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.fill();
+  ctx.strokeStyle = theme.panelStroke;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  const coverImage = String(project.coverImage || "").trim();
+  if (!coverImage) {
+    ctx.fillStyle = theme.subtitleColor;
+    ctx.font = "500 18px sans-serif";
+    ctx.fillText("未上传封面", x + 18, y + height / 2 + 6);
+    return;
+  }
+
+  try {
+    const image = await loadExportImage(coverImage);
+    const iw = Math.max(1, Number(image.width) || 1);
+    const ih = Math.max(1, Number(image.height) || 1);
+    const scale = Math.max(width / iw, height / ih);
+    const sw = width / scale;
+    const sh = height / scale;
+    const sx = (iw - sw) / 2;
+    const sy = (ih - sh) / 2;
+
+    ctx.save();
+    drawRoundedRectPath(ctx, x, y, width, height, 16);
+    ctx.clip();
+    ctx.drawImage(image, sx, sy, sw, sh, x, y, width, height);
+    ctx.restore();
+  } catch {
+    ctx.fillStyle = theme.subtitleColor;
+    ctx.font = "500 18px sans-serif";
+    ctx.fillText("封面加载失败", x + 18, y + height / 2 + 6);
+  }
+}
+
+function getExportCoverRect(canvasWidth, topY) {
+  const frameWidth = Math.round(Math.min(canvasWidth * 0.42, canvasWidth - 220));
+  const frameHeight = Math.round(frameWidth * 0.75);
+  const x = Math.round((canvasWidth - frameWidth) / 2);
+  return {
+    x,
+    y: topY,
+    width: frameWidth,
+    height: frameHeight,
+  };
 }
 
 function drawExportBackground(ctx, width, height, theme, style) {
@@ -516,7 +652,7 @@ function drawExportBackground(ctx, width, height, theme, style) {
   ctx.globalAlpha = 1;
 }
 
-function drawBlueprintLayout(ctx, width, height, theme, sections, project, styleLabel) {
+async function drawBlueprintLayout(ctx, width, height, theme, sections, project, styleLabel) {
   ctx.fillStyle = theme.panelFill;
   ctx.strokeStyle = theme.panelStroke;
   ctx.lineWidth = 2;
@@ -534,7 +670,10 @@ function drawBlueprintLayout(ctx, width, height, theme, sections, project, style
   ctx.font = "500 20px monospace";
   ctx.fillText(`织伴项目卡(${styleLabel})  ·  ${getToday()}`, 98, 160);
 
-  let y = 212;
+  const coverRect = getExportCoverRect(width, 186);
+  await drawExportCoverBlock(ctx, project, coverRect.x, coverRect.y, coverRect.width, coverRect.height, theme);
+
+  let y = coverRect.y + coverRect.height + 34;
   sections.forEach((section) => {
     ctx.fillStyle = theme.sectionColor;
     ctx.font = "700 22px monospace";
@@ -566,7 +705,7 @@ function drawBlueprintLayout(ctx, width, height, theme, sections, project, style
   });
 }
 
-function drawRetroLayout(ctx, width, height, theme, sections, project, styleLabel) {
+async function drawRetroLayout(ctx, width, height, theme, sections, project, styleLabel) {
   ctx.fillStyle = theme.panelFill;
   ctx.strokeStyle = theme.panelStroke;
   ctx.lineWidth = 4;
@@ -585,7 +724,10 @@ function drawRetroLayout(ctx, width, height, theme, sections, project, styleLabe
   ctx.lineWidth = 2;
   ctx.strokeRect(86, 178, width - 172, 2);
 
-  let y = 222;
+  const coverRect = getExportCoverRect(width, 182);
+  await drawExportCoverBlock(ctx, project, coverRect.x, coverRect.y, coverRect.width, coverRect.height, theme);
+
+  let y = coverRect.y + coverRect.height + 34;
   sections.forEach((section) => {
     ctx.fillStyle = theme.sectionColor;
     ctx.font = "700 24px serif";
@@ -617,7 +759,7 @@ function drawRetroLayout(ctx, width, height, theme, sections, project, styleLabe
   });
 }
 
-function drawClassicLayout(ctx, width, height, theme, sections, project, styleLabel) {
+async function drawClassicLayout(ctx, width, height, theme, sections, project, styleLabel) {
   ctx.fillStyle = theme.panelFill;
   ctx.strokeStyle = theme.panelStroke;
   ctx.lineWidth = 2;
@@ -645,7 +787,10 @@ function drawClassicLayout(ctx, width, height, theme, sections, project, styleLa
   ctx.lineTo(width - 72, 174);
   ctx.stroke();
 
-  let y = 214;
+  const coverRect = getExportCoverRect(width, 188);
+  await drawExportCoverBlock(ctx, project, coverRect.x, coverRect.y, coverRect.width, coverRect.height, theme);
+
+  let y = coverRect.y + coverRect.height + 34;
   sections.forEach((section) => {
     ctx.fillStyle = theme.sectionColor;
     ctx.font = "700 24px sans-serif";
@@ -678,7 +823,7 @@ function drawClassicLayout(ctx, width, height, theme, sections, project, styleLa
   });
 }
 
-function drawJournalLayout(ctx, width, height, theme, sections, project, styleLabel) {
+async function drawJournalLayout(ctx, width, height, theme, sections, project, styleLabel) {
   ctx.save();
   ctx.translate(width / 2, 108);
   ctx.rotate(-0.03);
@@ -696,9 +841,12 @@ function drawJournalLayout(ctx, width, height, theme, sections, project, styleLa
   ctx.font = "500 20px sans-serif";
   ctx.fillText(`织伴项目卡(${styleLabel})  ·  ${getToday()}`, 86, 150);
 
+  const coverRect = getExportCoverRect(width, 176);
+  await drawExportCoverBlock(ctx, project, coverRect.x, coverRect.y, coverRect.width, coverRect.height, theme);
+
   const noteColors = ["#fff4d7", "#e9f8f0", "#f6ebff", "#ffe8e2"];
   let x = 72;
-  let y = 198;
+  let y = coverRect.y + coverRect.height + 20;
   const noteW = 430;
 
   sections.forEach((section, index) => {
@@ -753,7 +901,7 @@ function drawJournalLayout(ctx, width, height, theme, sections, project, styleLa
   });
 }
 
-function drawMinimalLayout(ctx, width, height, theme, sections, project, styleLabel) {
+async function drawMinimalLayout(ctx, width, height, theme, sections, project, styleLabel) {
   ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
   ctx.fillRect(54, 54, width - 108, height - 108);
 
@@ -772,7 +920,10 @@ function drawMinimalLayout(ctx, width, height, theme, sections, project, styleLa
   ctx.lineTo(84, height - 84);
   ctx.stroke();
 
-  let y = 220;
+  const coverRect = getExportCoverRect(width, 186);
+  await drawExportCoverBlock(ctx, project, coverRect.x, coverRect.y, coverRect.width, coverRect.height, theme);
+
+  let y = coverRect.y + coverRect.height + 34;
   sections.forEach((section) => {
     ctx.fillStyle = theme.sectionColor;
     ctx.font = "700 22px sans-serif";
@@ -807,24 +958,24 @@ function drawMinimalLayout(ctx, width, height, theme, sections, project, styleLa
 
 function computeExportHeight(style, contentRows, sectionCount) {
   if (style === "journal") {
-    return Math.max(860, 240 + contentRows * 40 + sectionCount * 24);
+    return Math.max(980, 360 + contentRows * 40 + sectionCount * 24);
   }
   if (style === "minimal") {
-    return Math.max(820, 220 + contentRows * 36 + sectionCount * 20);
+    return Math.max(940, 340 + contentRows * 36 + sectionCount * 20);
   }
   if (style === "blueprint") {
-    return Math.max(860, 240 + contentRows * 36 + sectionCount * 22);
+    return Math.max(980, 360 + contentRows * 36 + sectionCount * 22);
   }
   if (style === "sunset") {
-    return Math.max(900, 250 + contentRows * 38 + sectionCount * 24);
+    return Math.max(1020, 370 + contentRows * 38 + sectionCount * 24);
   }
   if (style === "retro") {
-    return Math.max(900, 250 + contentRows * 39 + sectionCount * 24);
+    return Math.max(1020, 370 + contentRows * 39 + sectionCount * 24);
   }
-  return Math.max(880, 230 + contentRows * 38 + sectionCount * 24);
+  return Math.max(1000, 350 + contentRows * 38 + sectionCount * 24);
 }
 
-function buildExportImageData(project, options = {}) {
+async function buildExportImageData(project, options = {}) {
   const preview = Boolean(options.preview);
   const sections = buildExportSections(project);
   const style = project.exportStyle || "classic";
@@ -857,26 +1008,30 @@ function buildExportImageData(project, options = {}) {
   drawExportBackground(ctx, width, height, theme, style);
 
   if (style === "journal") {
-    drawJournalLayout(ctx, width, height, theme, sections, project, styleLabel);
+    await drawJournalLayout(ctx, width, height, theme, sections, project, styleLabel);
   } else if (style === "minimal") {
-    drawMinimalLayout(ctx, width, height, theme, sections, project, styleLabel);
+    await drawMinimalLayout(ctx, width, height, theme, sections, project, styleLabel);
   } else if (style === "blueprint") {
-    drawBlueprintLayout(ctx, width, height, theme, sections, project, styleLabel);
+    await drawBlueprintLayout(ctx, width, height, theme, sections, project, styleLabel);
   } else if (style === "retro") {
-    drawRetroLayout(ctx, width, height, theme, sections, project, styleLabel);
+    await drawRetroLayout(ctx, width, height, theme, sections, project, styleLabel);
   } else {
-    drawClassicLayout(ctx, width, height, theme, sections, project, styleLabel);
+    await drawClassicLayout(ctx, width, height, theme, sections, project, styleLabel);
   }
 
   return canvas.toDataURL("image/png");
 }
 
-function refreshExportPreview(project) {
-  const dataUrl = buildExportImageData(project, { preview: true });
-  refs.exportImagePreview.src = dataUrl;
-  refs.exportImagePreview.classList.add("show");
-  refs.downloadCurrentImageLink.href = dataUrl;
-  refs.downloadCurrentImageLink.download = `${project.projectName || "knit-project"}-${getToday()}.png`;
+async function refreshExportPreview(project) {
+  try {
+    const dataUrl = await buildExportImageData(project, { preview: true });
+    refs.exportImagePreview.src = dataUrl;
+    refs.exportImagePreview.classList.add("show");
+    refs.downloadCurrentImageLink.href = dataUrl;
+    refs.downloadCurrentImageLink.download = `${project.projectName || "knit-project"}-${getToday()}.png`;
+  } catch (error) {
+    showFeedback(`导出预览失败：${error.message || "请稍后重试"}`);
+  }
 }
 
 function showFeedback(message) {
@@ -914,12 +1069,16 @@ function celebrateProjectCompletion(projectName) {
   }, 2600);
 }
 
-function exportProjectImage(project) {
-  const dataUrl = buildExportImageData(project, { preview: false });
-  refs.exportImagePreview.src = dataUrl;
-  refs.exportImagePreview.classList.add("show");
-  refs.downloadCurrentImageLink.href = dataUrl;
-  refs.downloadCurrentImageLink.download = `${project.projectName || "knit-project"}-${getToday()}.png`;
+async function exportProjectImage(project) {
+  try {
+    const dataUrl = await buildExportImageData(project, { preview: false });
+    refs.exportImagePreview.src = dataUrl;
+    refs.exportImagePreview.classList.add("show");
+    refs.downloadCurrentImageLink.href = dataUrl;
+    refs.downloadCurrentImageLink.download = `${project.projectName || "knit-project"}-${getToday()}.png`;
+  } catch (error) {
+    showFeedback(`导出失败：${error.message || "请稍后重试"}`);
+  }
 }
 
 function setSyncHint(text) {
@@ -998,8 +1157,20 @@ function applyCloudPayload(payload, projects) {
         const next = normalizeProject(project);
         const localProject = localProjectById.get(String(next.id || ""));
         if (localProject) {
+          const localUpdatedAt = Number(localProject.updatedAt) || 0;
+          const remoteUpdatedAt = Number(next.updatedAt) || 0;
+          if (localUpdatedAt >= remoteUpdatedAt) {
+            return normalizeProject(localProject);
+          }
+
           if (!next.coverImage && localProject.coverImage) {
             next.coverImage = String(localProject.coverImage || "");
+          }
+          if (!next.diagramImage && localProject.diagramImage) {
+            next.diagramImage = String(localProject.diagramImage || "");
+          }
+          if ((!Array.isArray(next.diagramImages) || !next.diagramImages.length) && Array.isArray(localProject.diagramImages) && localProject.diagramImages.length) {
+            next.diagramImages = [...localProject.diagramImages];
           }
           next.spentSeconds = Math.max(
             Number(next.spentSeconds) || 0,
@@ -1407,6 +1578,7 @@ function init() {
     const index = projects.findIndex((item) => item.id === project.id);
     if (index >= 0) {
       applyProgressStatus(project);
+      touchProject(project);
       projects[index] = project;
       const saved = saveProjects(projects);
       if (!saved) {
@@ -1468,6 +1640,61 @@ function init() {
 
     refs.projectCoverInput.value = "";
   });
+
+  if (refs.diagramImageInput) {
+    refs.diagramImageInput.addEventListener("change", async (event) => {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+
+      const previousDiagramImages = Array.isArray(project.diagramImages) ? [...project.diagramImages] : [];
+      try {
+        // 先把当前页面草稿同步进对象，再更新图解图片，避免未点击“保存”时字段被重置。
+        syncDraftFields(project);
+        const validFiles = files.filter((file) => String(file.type || "").startsWith("image/"));
+        if (!validFiles.length) {
+          alert("请选择图片文件。\n支持一次选择多张。");
+          return;
+        }
+
+        const compressedImages = await Promise.all(validFiles.map((file) => compressCoverImage(file)));
+        project.diagramImages = [...previousDiagramImages, ...compressedImages];
+        project.diagramImage = project.diagramImages[0] || "";
+        if (!persist()) {
+          project.diagramImages = previousDiagramImages;
+          project.diagramImage = previousDiagramImages[0] || "";
+          persist();
+          alert("图片体积较大导致无法保存，请换更小的图解图。");
+        }
+      } catch (error) {
+        project.diagramImages = previousDiagramImages;
+        project.diagramImage = previousDiagramImages[0] || "";
+        alert(`图解图片处理失败：${error.message || "请换一张图片重试"}`);
+      }
+
+      refs.diagramImageInput.value = "";
+    });
+  }
+
+  if (refs.diagramImageGallery) {
+    refs.diagramImageGallery.addEventListener("click", (event) => {
+      const removeBtn = event.target.closest(".diagram-image-remove");
+      if (!removeBtn) return;
+      const index = Number(removeBtn.dataset.index);
+      if (!Number.isInteger(index) || index < 0) return;
+
+      const previousDiagramImages = Array.isArray(project.diagramImages) ? [...project.diagramImages] : [];
+      const nextImages = previousDiagramImages.filter((_, itemIndex) => itemIndex !== index);
+      project.diagramImages = nextImages;
+      project.diagramImage = nextImages[0] || "";
+
+      if (!persist()) {
+        project.diagramImages = previousDiagramImages;
+        project.diagramImage = previousDiagramImages[0] || "";
+        persist();
+        alert("删除图片失败，请稍后重试。");
+      }
+    });
+  }
 
   document.querySelector("[data-action='incRow']").addEventListener("click", () => {
     const before = project.status;

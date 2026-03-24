@@ -14,11 +14,14 @@ const refs = {
   count: document.getElementById("storageCount"),
   submitBtn: document.getElementById("submitBtn"),
   cancelEditBtn: document.getElementById("cancelEditBtn"),
+  photoInput: document.getElementById("photoInput"),
+  photoPreview: document.getElementById("photoPreview"),
 };
 
 const state = {
   items: loadItems(),
   editingId: "",
+  photoData: "",
 };
 
 function makeId() {
@@ -29,10 +32,27 @@ function loadItems() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS[pageType]);
     const data = raw ? JSON.parse(raw) : [];
-    return Array.isArray(data) ? data : [];
+    return Array.isArray(data) ? data.map(normalizeItem) : [];
   } catch {
     return [];
   }
+}
+
+function getItemPhoto(item) {
+  const candidates = [item?.photo, item?.photoData, item?.image, item?.coverImage, item?.diagramImage];
+  for (const value of candidates) {
+    const src = String(value || "").trim();
+    if (src) return src;
+  }
+  return "";
+}
+
+function normalizeItem(item) {
+  const normalized = {
+    ...(item && typeof item === "object" ? item : {}),
+  };
+  normalized.photo = getItemPhoto(normalized);
+  return normalized;
 }
 
 function saveItems() {
@@ -49,6 +69,7 @@ function collectFormData() {
       weight: Math.max(0, Number(document.getElementById("weight").value) || 0),
       season: document.getElementById("season").value,
       progress: clamp(Number(document.getElementById("progress").value) || 0, 0, 100),
+      photo: state.photoData,
       updatedAt: Date.now(),
     };
   }
@@ -56,10 +77,12 @@ function collectFormData() {
   return {
     id: state.editingId || makeId(),
     yarn: document.getElementById("swatchYarn").value.trim(),
+    pattern: document.getElementById("swatchPattern").value.trim(),
     needle: document.getElementById("swatchNeedle").value.trim(),
     spec: document.getElementById("swatchSpec").value.trim(),
     gauge: Math.max(0, Number(document.getElementById("swatchGauge").value) || 0),
     notes: document.getElementById("swatchNotes").value.trim(),
+    photo: state.photoData,
     updatedAt: Date.now(),
   };
 }
@@ -71,6 +94,8 @@ function clamp(value, min, max) {
 function resetForm() {
   refs.form.reset();
   state.editingId = "";
+  state.photoData = "";
+  renderPhotoPreview("");
   refs.cancelEditBtn.hidden = true;
   refs.submitBtn.textContent = pageType === "yarn" ? "新增毛线条目" : "新增小样条目";
 }
@@ -85,15 +110,39 @@ function fillForm(item) {
     document.getElementById("progress").value = Number(item.progress) || 0;
   } else {
     document.getElementById("swatchYarn").value = item.yarn || "";
+    document.getElementById("swatchPattern").value = item.pattern || "";
     document.getElementById("swatchNeedle").value = item.needle || "";
     document.getElementById("swatchSpec").value = item.spec || "";
     document.getElementById("swatchGauge").value = item.gauge || "";
     document.getElementById("swatchNotes").value = item.notes || "";
   }
 
+  state.photoData = getItemPhoto(item);
+  renderPhotoPreview(state.photoData);
   state.editingId = item.id;
   refs.cancelEditBtn.hidden = false;
   refs.submitBtn.textContent = "保存修改";
+}
+
+function renderPhotoPreview(dataUrl) {
+  if (!refs.photoPreview) return;
+  const src = String(dataUrl || "").trim();
+  refs.photoPreview.hidden = !src;
+  refs.photoPreview.classList.toggle("show", Boolean(src));
+  if (src) {
+    refs.photoPreview.src = src;
+  } else {
+    refs.photoPreview.removeAttribute("src");
+  }
+}
+
+function readImageAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("读取图片失败"));
+    reader.readAsDataURL(file);
+  });
 }
 
 function upsertItem(next) {
@@ -118,8 +167,10 @@ function deleteItem(id) {
 }
 
 function buildYarnCard(item) {
+  const photo = getItemPhoto(item);
   return `
     <article class="storage-item" data-id="${item.id}">
+      ${photo ? `<img class="storage-item-photo" src="${escapeHtml(photo)}" alt="${escapeHtml(item.yarnType || "毛线实拍图")}" />` : ""}
       <div class="storage-item-head">
         <h3>${escapeHtml(item.yarnType || "未命名线材")}</h3>
         <span class="storage-item-meta">${escapeHtml(item.season || "")}</span>
@@ -140,12 +191,15 @@ function buildYarnCard(item) {
 }
 
 function buildSwatchCard(item) {
+  const photo = getItemPhoto(item);
   return `
     <article class="storage-item" data-id="${item.id}">
+      ${photo ? `<img class="storage-item-photo" src="${escapeHtml(photo)}" alt="${escapeHtml(item.yarn || "小样实拍图")}" />` : ""}
       <div class="storage-item-head">
         <h3>${escapeHtml(item.yarn || "未命名小样")}</h3>
         <span class="storage-item-meta">密度 ${Number(item.gauge) || 0}</span>
       </div>
+      <p class="storage-item-line">花型：${escapeHtml(item.pattern || "-")}</p>
       <p class="storage-item-line">针号：${escapeHtml(item.needle || "-")}</p>
       <p class="storage-item-line">规格：${escapeHtml(item.spec || "-")}</p>
       <p class="storage-item-line">备注：${escapeHtml(item.notes || "-")}</p>
@@ -186,6 +240,21 @@ refs.form.addEventListener("submit", (event) => {
 refs.cancelEditBtn.addEventListener("click", () => {
   resetForm();
 });
+
+if (refs.photoInput) {
+  refs.photoInput.addEventListener("change", async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+    try {
+      state.photoData = await readImageAsDataUrl(file);
+      renderPhotoPreview(state.photoData);
+    } catch {
+      state.photoData = "";
+      renderPhotoPreview("");
+    }
+  });
+}
 
 refs.list.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-action]");

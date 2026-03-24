@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Outfit:wght@300;400;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=ZCOOL+XiaoWei&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
@@ -32,10 +32,9 @@
       </div>
     </header>
 
-    <main class="layout">
-      <section class="panel storage-panel">
+    <main class="layout storage-layout">
+      <section class="panel storage-panel storage-form-panel">
         <h2>毛线条目</h2>
-        <p class="helper-text">建议字段：线材类型、品牌/色号、重量、针号、季节、消耗进度。</p>
         <form class="grid-form" id="storageForm">
           <label>
             线材类型
@@ -66,6 +65,11 @@
             消耗进度（%）
             <input id="progress" type="number" min="0" max="100" placeholder="0-100" />
           </label>
+          <label class="full-span">
+            毛线实拍图
+            <input id="photoInput" type="file" accept="image/*" />
+            <img id="photoPreview" class="storage-form-photo" alt="毛线实拍图预览" hidden />
+          </label>
           <div class="full-span">
             <div class="storage-form-actions">
               <button class="btn primary" id="submitBtn" type="submit">新增毛线条目</button>
@@ -75,7 +79,7 @@
         </form>
       </section>
 
-      <section class="panel storage-panel">
+      <section class="panel storage-panel storage-list-panel">
         <h2>库存列表</h2>
         <p class="helper-text">共 <strong id="storageCount">0</strong> 条，可编辑或删除。</p>
         <div class="storage-list" id="storageList"></div>

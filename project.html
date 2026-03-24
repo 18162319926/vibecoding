@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Outfit:wght@300;400;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=ZCOOL+XiaoWei&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
@@ -90,9 +90,15 @@
                   </div>
                 </section>
                 <section class="diagram-card text-card">
-                  <h3 class="diagram-card-title">文字图解</h3>
+                  <h3 class="diagram-card-title">图解</h3>
                   <div class="diagram-card-body">
-                    <textarea id="textDiagram" rows="3" title="文字图解" aria-label="文字图解" placeholder="请输入文字图解"></textarea>
+                    <textarea id="textDiagram" rows="3" title="图解文字" aria-label="图解文字" placeholder="请输入文字图解（可选）"></textarea>
+                    <input id="diagramImageInput" class="sr-only-input" type="file" accept="image/*" multiple title="图解图片上传" aria-label="图解图片上传" />
+                    <label for="diagramImageInput" class="btn ghost cover-upload-btn">选择并追加图片图解</label>
+                    <div class="cover-frame">
+                      <div id="diagramImageGallery" class="diagram-image-gallery"></div>
+                      <span id="diagramImagePlaceholder" class="cover-frame-placeholder">图片图解预览</span>
+                    </div>
                   </div>
                 </section>
               </div>

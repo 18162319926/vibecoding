@@ -113,6 +113,8 @@ function createProject(name = "我的新作品") {
     totalRows: 0,
     coverImage: "",
     textDiagram: "",
+    diagramImage: "",
+    diagramImages: [],
     rows: 0,
     todayRows: 0,
     materials: [],
@@ -120,6 +122,7 @@ function createProject(name = "我的新作品") {
     spentSeconds: 0,
     exportStyle: "classic",
     lastDate: getToday(),
+    updatedAt: Date.now(),
   };
 }
 
@@ -128,6 +131,8 @@ function isLegacyStarterProject(project) {
   const hasProgress = Number(project.rows) > 0 || Number(project.totalRows) > 0 || Number(project.spentSeconds) > 0;
   const hasContent = Boolean(
     String(project.textDiagram || "").trim() ||
+    String(project.diagramImage || "").trim() ||
+    (Array.isArray(project.diagramImages) && project.diagramImages.length > 0) ||
     String(project.notes || "").trim() ||
     String(project.coverImage || "").trim() ||
     String(project.yarnType || "").trim() ||
@@ -138,6 +143,7 @@ function isLegacyStarterProject(project) {
 }
 
 function normalizeProject(project) {
+  const parsedUpdatedAt = Number(project.updatedAt);
   const normalized = {
     ...createProject(project.projectName || "未命名作品"),
     ...project,
@@ -150,9 +156,24 @@ function normalizeProject(project) {
     spentSeconds: Math.max(0, Number(project.spentSeconds) || 0),
     materials: Array.isArray(project.materials) ? project.materials : [],
     lastDate: project.lastDate || getToday(),
+    updatedAt: Number.isFinite(parsedUpdatedAt) && parsedUpdatedAt > 0 ? parsedUpdatedAt : 0,
   };
+  const fallbackDiagramImage = String(normalized.diagramImage || "").trim();
+  const normalizedImages = Array.isArray(project.diagramImages)
+    ? project.diagramImages.map((item) => String(item || "").trim()).filter(Boolean)
+    : [];
+  normalized.diagramImages = normalizedImages.length
+    ? normalizedImages
+    : fallbackDiagramImage
+      ? [fallbackDiagramImage]
+      : [];
   applyProgressStatus(normalized);
   return normalized;
+}
+
+function touchProject(project) {
+  if (!project || typeof project !== "object") return;
+  project.updatedAt = Date.now();
 }
 
 function applyProgressStatus(project) {
@@ -275,12 +296,90 @@ function buildExportSections(project) {
     ["花样", project.patternName],
   ].filter((item) => String(item[1] || "").trim());
 
-  const diagramLines = wrapTextLines(project.textDiagram, 24);
   const sections = [];
   if (projectInfo.length) sections.push({ title: "项目信息", entries: projectInfo });
   if (craftInfo.length) sections.push({ title: "编织信息", entries: craftInfo });
-  if (diagramLines.length) sections.push({ title: "文字图解", lines: diagramLines });
   return sections;
+}
+
+const exportImageCache = new Map();
+
+function loadExportImage(src) {
+  const key = String(src || "").trim();
+  if (!key) return Promise.reject(new Error("empty-image-src"));
+  if (exportImageCache.has(key)) return exportImageCache.get(key);
+
+  const task = new Promise((resolve, reject) => {
+    const img = new Image();
+    if (/^https?:\/\//i.test(key)) {
+      img.crossOrigin = "anonymous";
+    }
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("封面加载失败"));
+    img.src = key;
+  });
+  exportImageCache.set(key, task);
+  return task;
+}
+
+function drawRoundedRectPath(ctx, x, y, width, height, radius) {
+  if (typeof ctx.roundRect === "function") {
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, radius);
+    return;
+  }
+  ctx.beginPath();
+  ctx.rect(x, y, width, height);
+}
+
+async function drawExportCoverBlock(ctx, project, x, y, width, height, theme) {
+  drawRoundedRectPath(ctx, x, y, width, height, 16);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.fill();
+  ctx.strokeStyle = theme.panelStroke;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  const coverImage = String(project.coverImage || "").trim();
+  if (!coverImage) {
+    ctx.fillStyle = theme.subtitleColor;
+    ctx.font = "500 18px sans-serif";
+    ctx.fillText("未上传封面", x + 18, y + height / 2 + 6);
+    return;
+  }
+
+  try {
+    const image = await loadExportImage(coverImage);
+    const iw = Math.max(1, Number(image.width) || 1);
+    const ih = Math.max(1, Number(image.height) || 1);
+    const scale = Math.max(width / iw, height / ih);
+    const sw = width / scale;
+    const sh = height / scale;
+    const sx = (iw - sw) / 2;
+    const sy = (ih - sh) / 2;
+
+    ctx.save();
+    drawRoundedRectPath(ctx, x, y, width, height, 16);
+    ctx.clip();
+    ctx.drawImage(image, sx, sy, sw, sh, x, y, width, height);
+    ctx.restore();
+  } catch {
+    ctx.fillStyle = theme.subtitleColor;
+    ctx.font = "500 18px sans-serif";
+    ctx.fillText("封面加载失败", x + 18, y + height / 2 + 6);
+  }
+}
+
+function getExportCoverRect(canvasWidth, topY) {
+  const frameWidth = Math.round(Math.min(canvasWidth * 0.42, canvasWidth - 220));
+  const frameHeight = Math.round(frameWidth * 0.75);
+  const x = Math.round((canvasWidth - frameWidth) / 2);
+  return {
+    x,
+    y: topY,
+    width: frameWidth,
+    height: frameHeight,
+  };
 }
 
 function drawExportBackground(ctx, width, height, theme, style) {
@@ -322,7 +421,7 @@ function drawExportBackground(ctx, width, height, theme, style) {
   ctx.globalAlpha = 1;
 }
 
-function drawClassicLayout(ctx, width, height, theme, sections, project, styleLabel) {
+async function drawClassicLayout(ctx, width, height, theme, sections, project, styleLabel) {
   ctx.fillStyle = theme.panelFill;
   ctx.strokeStyle = theme.panelStroke;
   ctx.lineWidth = 2;
@@ -350,7 +449,10 @@ function drawClassicLayout(ctx, width, height, theme, sections, project, styleLa
   ctx.lineTo(width - 76, 174);
   ctx.stroke();
 
-  let y = 214;
+  const coverRect = getExportCoverRect(width, 188);
+  await drawExportCoverBlock(ctx, project, coverRect.x, coverRect.y, coverRect.width, coverRect.height, theme);
+
+  let y = coverRect.y + coverRect.height + 34;
   sections.forEach((section) => {
     ctx.fillStyle = theme.sectionColor;
     ctx.font = "700 25px sans-serif";
@@ -383,7 +485,7 @@ function drawClassicLayout(ctx, width, height, theme, sections, project, styleLa
   });
 }
 
-function drawJournalLayout(ctx, width, height, theme, sections, project, styleLabel) {
+async function drawJournalLayout(ctx, width, height, theme, sections, project, styleLabel) {
   ctx.save();
   ctx.translate(width / 2, 112);
   ctx.rotate(-0.03);
@@ -401,9 +503,12 @@ function drawJournalLayout(ctx, width, height, theme, sections, project, styleLa
   ctx.font = "500 21px sans-serif";
   ctx.fillText(`织伴项目卡(${styleLabel})  ·  ${getToday()}`, 86, 152);
 
+  const coverRect = getExportCoverRect(width, 178);
+  await drawExportCoverBlock(ctx, project, coverRect.x, coverRect.y, coverRect.width, coverRect.height, theme);
+
   const noteColors = ["#fff4d7", "#e9f8f0", "#f6ebff", "#ffe8e2"];
   let x = 78;
-  let y = 206;
+  let y = coverRect.y + coverRect.height + 20;
   const noteW = 470;
 
   sections.forEach((section, index) => {
@@ -458,7 +563,7 @@ function drawJournalLayout(ctx, width, height, theme, sections, project, styleLa
   });
 }
 
-function drawMinimalLayout(ctx, width, height, theme, sections, project, styleLabel) {
+async function drawMinimalLayout(ctx, width, height, theme, sections, project, styleLabel) {
   ctx.fillStyle = "rgba(255, 255, 255, 0.96)";
   ctx.fillRect(60, 60, width - 120, height - 120);
 
@@ -477,7 +582,10 @@ function drawMinimalLayout(ctx, width, height, theme, sections, project, styleLa
   ctx.lineTo(92, height - 92);
   ctx.stroke();
 
-  let y = 222;
+  const coverRect = getExportCoverRect(width, 186);
+  await drawExportCoverBlock(ctx, project, coverRect.x, coverRect.y, coverRect.width, coverRect.height, theme);
+
+  let y = coverRect.y + coverRect.height + 34;
   sections.forEach((section) => {
     ctx.fillStyle = theme.sectionColor;
     ctx.font = "700 23px sans-serif";
@@ -512,15 +620,15 @@ function drawMinimalLayout(ctx, width, height, theme, sections, project, styleLa
 
 function computeExportHeight(style, contentRows, sectionCount) {
   if (style === "journal") {
-    return Math.max(900, 250 + contentRows * 42 + sectionCount * 24);
+    return Math.max(1020, 370 + contentRows * 42 + sectionCount * 24);
   }
   if (style === "minimal") {
-    return Math.max(860, 230 + contentRows * 38 + sectionCount * 22);
+    return Math.max(980, 350 + contentRows * 38 + sectionCount * 22);
   }
-  return Math.max(920, 240 + contentRows * 40 + sectionCount * 24);
+  return Math.max(1040, 360 + contentRows * 40 + sectionCount * 24);
 }
 
-function buildExportImageData(project, options = {}) {
+async function buildExportImageData(project, options = {}) {
   const preview = Boolean(options.preview);
   const sections = buildExportSections(project);
   const style = project.exportStyle || "classic";
@@ -545,11 +653,11 @@ function buildExportImageData(project, options = {}) {
   drawExportBackground(ctx, width, height, theme, style);
 
   if (style === "journal") {
-    drawJournalLayout(ctx, width, height, theme, sections, project, styleLabel);
+    await drawJournalLayout(ctx, width, height, theme, sections, project, styleLabel);
   } else if (style === "minimal") {
-    drawMinimalLayout(ctx, width, height, theme, sections, project, styleLabel);
+    await drawMinimalLayout(ctx, width, height, theme, sections, project, styleLabel);
   } else {
-    drawClassicLayout(ctx, width, height, theme, sections, project, styleLabel);
+    await drawClassicLayout(ctx, width, height, theme, sections, project, styleLabel);
   }
 
   return canvas.toDataURL("image/png");
@@ -589,8 +697,8 @@ function celebrateProjectCompletion(projectName) {
   }, 2600);
 }
 
-function exportProjectImage(project) {
-  const dataUrl = buildExportImageData(project, { preview: false });
+async function exportProjectImage(project) {
+  const dataUrl = await buildExportImageData(project, { preview: false });
   triggerImageDownload(dataUrl, project.projectName);
 }
 
@@ -641,6 +749,22 @@ function renderDashboard() {
     return project.status === state.dashboardFilter;
   });
 
+  const statusRank = {
+    active: 0,
+    paused: 1,
+    done: 2,
+  };
+
+  const sortedProjects = [...filtered].sort((a, b) => {
+    const statusDiff = (statusRank[a.status] ?? 99) - (statusRank[b.status] ?? 99);
+    if (statusDiff !== 0) return statusDiff;
+
+    const timeDiff = (Number(b.updatedAt) || 0) - (Number(a.updatedAt) || 0);
+    if (timeDiff !== 0) return timeDiff;
+
+    return String(a.projectName || "").localeCompare(String(b.projectName || ""), "zh-CN");
+  });
+
   refs.projectCards.innerHTML = "";
   refs.projectCount.textContent = String(state.projects.length);
   refs.activeCount.textContent = String(state.projects.filter((project) => project.status === "active").length);
@@ -653,7 +777,7 @@ function renderDashboard() {
     return;
   }
 
-  filtered.forEach((project) => {
+  sortedProjects.forEach((project) => {
     const card = document.createElement("article");
     card.className = "project-card";
 
@@ -696,6 +820,7 @@ function renderDashboard() {
     exportStyleSelect.value = project.exportStyle || "classic";
     exportStyleSelect.addEventListener("change", () => {
       project.exportStyle = exportStyleSelect.value;
+      touchProject(project);
       saveProjects();
     });
 
@@ -711,6 +836,7 @@ function renderDashboard() {
       const before = project.status;
       project.status = project.status === "active" ? "paused" : project.status === "paused" ? "done" : "active";
       applyProgressStatus(project);
+      touchProject(project);
       saveProjects();
       renderDashboard();
       if (before !== "done" && project.status === "done") {
@@ -876,17 +1002,31 @@ function applyCloudPayload(payload) {
   let changed = false;
 
   if (Array.isArray(payload.projects)) {
-    const localCoverById = new Map(
+    const localProjectById = new Map(
       state.projects
         .filter((project) => project && project.id)
-        .map((project) => [String(project.id), String(project.coverImage || "")])
+        .map((project) => [String(project.id), normalizeProject(project)])
     );
 
     const normalizedRemote = payload.projects.map((project) => {
       const next = normalizeProject(project);
-      const localCover = localCoverById.get(String(next.id || ""));
-      if (!next.coverImage && localCover) {
-        next.coverImage = localCover;
+      const localProject = localProjectById.get(String(next.id || ""));
+      if (localProject) {
+        const localUpdatedAt = Number(localProject.updatedAt) || 0;
+        const remoteUpdatedAt = Number(next.updatedAt) || 0;
+        if (localUpdatedAt >= remoteUpdatedAt) {
+          return localProject;
+        }
+
+        if (!next.coverImage && localProject.coverImage) {
+          next.coverImage = String(localProject.coverImage || "");
+        }
+        if (!next.diagramImage && localProject.diagramImage) {
+          next.diagramImage = String(localProject.diagramImage || "");
+        }
+        if ((!Array.isArray(next.diagramImages) || !next.diagramImages.length) && Array.isArray(localProject.diagramImages) && localProject.diagramImages.length) {
+          next.diagramImages = [...localProject.diagramImages];
+        }
       }
       return next;
     }).filter((project) => !isLegacyStarterProject(project));
@@ -991,10 +1131,13 @@ function setupCloudSync() {
   });
 }
 
-async function ocrImageFile(file) {
-  if (!window.Tesseract) throw new Error("OCR库未加载，请检查网络后重试。");
-  const result = await window.Tesseract.recognize(file, "chi_sim+eng");
-  return String(result?.data?.text || "").trim();
+function readImageFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("图片读取失败，请稍后重试。"));
+    reader.readAsDataURL(file);
+  });
 }
 
 function bindActions() {
@@ -1041,6 +1184,7 @@ function bindActions() {
   });
 
   const createAndOpenProject = (project) => {
+    touchProject(project);
     state.projects.push(project);
     saveProjects();
     window.location.href = `project.html?id=${encodeURIComponent(project.id)}`;
@@ -1098,22 +1242,24 @@ function bindActions() {
   refs.diagramImageInput.addEventListener("change", async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (!String(file.type || "").startsWith("image/")) {
+      alert("请选择图片文件。");
+      refs.diagramImageInput.value = "";
+      return;
+    }
 
     try {
-      const text = await ocrImageFile(file);
-      if (!text) {
-        alert("识别完成，但未提取到文字。请换更清晰图片。");
-        return;
-      }
-
-      const parsed = parseDiagramText(text);
-      const created = createProject(parsed.projectName);
-      created.tools = parsed.tools;
-      created.materials = parseMaterialsToList(parsed.materials);
-      created.textDiagram = parsed.textDiagram || text;
+      const imageDataUrl = await readImageFileAsDataUrl(file);
+      const baseName = String(file.name || "")
+        .replace(/\.[^.]+$/, "")
+        .trim();
+      const created = createProject(baseName || `图片图解 ${state.projects.length + 1}`);
+      created.diagramImage = imageDataUrl;
+      created.diagramImages = [imageDataUrl];
+      created.textDiagram = "";
       createAndOpenProject(created);
     } catch (error) {
-      alert(`图片识别失败：${error.message || "请稍后重试"}`);
+      alert(`导入图片失败：${error.message || "请稍后重试"}`);
     } finally {
       refs.diagramImageInput.value = "";
     }
@@ -1127,7 +1273,7 @@ function bindActions() {
 
   if (refs.exportChoiceDialog) {
     const dialogCard = refs.exportChoiceDialog.querySelector(".dialog-card");
-    const handleDialogAction = (event) => {
+    const handleDialogAction = async (event) => {
       const actionButton = event.target.closest("#exportPreviewBtn, #exportDirectDownloadBtn, #exportCloseBtn");
       if (!actionButton) return;
 
@@ -1143,18 +1289,22 @@ function bindActions() {
         return;
       }
 
-      if (actionButton.id === "exportPreviewBtn") {
-        const dataUrl = buildExportImageData(project, { preview: true });
-        refs.exportPreviewImage.src = dataUrl;
-        refs.exportPreviewImage.classList.add("show");
-        refs.exportPreviewDownloadLink.href = dataUrl;
-        refs.exportPreviewDownloadLink.download = `${project.projectName || "knit-project"}-${getToday()}.png`;
-        refs.exportPreviewDownloadLink.classList.add("show");
-        return;
-      }
+      try {
+        if (actionButton.id === "exportPreviewBtn") {
+          const dataUrl = await buildExportImageData(project, { preview: true });
+          refs.exportPreviewImage.src = dataUrl;
+          refs.exportPreviewImage.classList.add("show");
+          refs.exportPreviewDownloadLink.href = dataUrl;
+          refs.exportPreviewDownloadLink.download = `${project.projectName || "knit-project"}-${getToday()}.png`;
+          refs.exportPreviewDownloadLink.classList.add("show");
+          return;
+        }
 
-      exportProjectImage(project);
-      closeExportChoiceDialog();
+        await exportProjectImage(project);
+        closeExportChoiceDialog();
+      } catch (error) {
+        alert(`导出失败：${error.message || "请稍后重试"}`);
+      }
     };
 
     if (dialogCard) {

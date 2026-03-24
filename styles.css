@@ -18,7 +18,7 @@ body {
   margin: 0;
   min-height: 100vh;
   color: var(--ink);
-  font-family: "ZCOOL XiaoWei", serif;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   background:
     radial-gradient(circle at 10% 20%, rgba(255, 195, 141, 0.32), transparent 30%),
     radial-gradient(circle at 90% 10%, rgba(170, 217, 202, 0.26), transparent 34%),
@@ -55,7 +55,7 @@ body.homepage {
 }
 
 .brand {
-  font-family: "ZCOOL XiaoWei", serif;
+  font-family: "ZCOOL XiaoWei", "KaiTi", cursive;
   font-size: 1.3rem;
   color: var(--accent-deep);
 }
@@ -130,7 +130,7 @@ body.homepage {
   background: #f5ece1;
   border: 1px solid #e9dbc8;
   color: #5a4837;
-  font-family: "ZCOOL XiaoWei", serif;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   font-size: 0.95rem;
   font-weight: 600;
   white-space: nowrap;
@@ -180,14 +180,26 @@ body.homepage {
 h1 {
   margin: 4px 0;
   font-size: clamp(2rem, 5vw, 3.1rem);
-  font-family: "ZCOOL XiaoWei", serif;
+  font-family: "ZCOOL XiaoWei", "KaiTi", cursive;
   font-weight: 400;
 }
 
 h2,
 h3 {
-  font-family: "ZCOOL XiaoWei", serif;
+  font-family: "ZCOOL XiaoWei", "KaiTi", cursive;
   font-weight: 400;
+}
+
+.subtitle,
+.project-meta,
+.helper-text,
+.storage-item-meta,
+.stat-card span,
+.auth-status,
+.sync-hint,
+.cover-frame-placeholder,
+.account-chip {
+  font-family: "ZCOOL XiaoWei", "KaiTi", cursive;
 }
 
 .subtitle {
@@ -338,10 +350,85 @@ body.homepage .layout {
   grid-column: span 12;
 }
 
+body[data-storage-page] {
+  height: 100vh;
+  overflow: hidden;
+}
+
+body[data-storage-page] .hero {
+  margin: 6px auto 16px;
+}
+
+body[data-storage-page] .hero > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 16px;
+  row-gap: 8px;
+  align-items: end;
+}
+
+body[data-storage-page] .hero > div > * {
+  margin: 0;
+}
+
+body[data-storage-page] .hero .eyebrow {
+  grid-column: 1 / -1;
+}
+
+body[data-storage-page] .hero h1 {
+  grid-column: 1;
+}
+
+body[data-storage-page] .hero .subtitle {
+  grid-column: 2;
+  text-align: right;
+}
+
+body[data-storage-page] h1 {
+  font-size: clamp(1.6rem, 3.8vw, 2.3rem);
+}
+
+body[data-storage-page] .storage-layout {
+  height: calc(100vh - 214px);
+  overflow: hidden;
+  grid-template-columns: minmax(340px, 0.95fr) minmax(360px, 1.05fr);
+  grid-template-rows: minmax(0, 1fr);
+  align-content: start;
+  margin-bottom: 16px;
+}
+
+body[data-storage-page] .storage-panel {
+  min-height: 0;
+  overflow: auto;
+}
+
+body[data-storage-page] .storage-form-panel {
+  grid-column: 1;
+}
+
+body[data-storage-page] .storage-list-panel {
+  grid-column: 2;
+}
+
 .storage-form-actions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.storage-form-photo {
+  display: block;
+  width: min(220px, 100%);
+  aspect-ratio: 4 / 3;
+  margin-top: 8px;
+  border: 1px solid #e4d5c1;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #fff;
+}
+
+.storage-form-photo[hidden] {
+  display: none;
 }
 
 .storage-list {
@@ -355,6 +442,16 @@ body.homepage .layout {
   border-radius: 14px;
   padding: 12px;
   background: #fffefb;
+}
+
+.storage-item-photo {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #e5d6c2;
+  margin-bottom: 8px;
+  background: #fff;
 }
 
 .storage-item-head {
@@ -382,16 +479,74 @@ body.homepage .layout {
 }
 
 .storage-progress-track {
-  height: 8px;
+  height: 14px;
   border-radius: 999px;
-  background: #f2e5d6;
-  overflow: hidden;
+  background: linear-gradient(180deg, #f6ecdf, #efdfcc);
+  border: 1px solid #e2d0b9;
+  box-shadow: inset 0 1px 2px rgba(112, 78, 49, 0.15);
+  overflow: visible;
   margin: 8px 0;
 }
 
 .storage-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #d35c2f, #f3a274);
+  border-radius: 999px;
+  position: relative;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      #c3532e 0 7px,
+      #df7b4f 7px 14px,
+      #c3532e 14px 21px
+    );
+}
+
+.storage-progress-fill::before {
+  content: "";
+  position: absolute;
+  right: -2px;
+  top: 50%;
+  width: 14px;
+  height: 2px;
+  background: #c65a34;
+  border-radius: 999px;
+  transform-origin: left center;
+  transform: translateY(-50%) rotate(0deg);
+  animation: yarn-tail-sway 1.1s ease-in-out infinite;
+}
+
+.storage-progress-fill::after {
+  content: "🧶";
+  position: absolute;
+  right: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  animation: yarn-ball-bob 1.1s ease-in-out infinite;
+}
+
+@keyframes yarn-tail-sway {
+  0% {
+    transform: translateY(-50%) rotate(-8deg);
+  }
+  50% {
+    transform: translateY(-50%) rotate(8deg);
+  }
+  100% {
+    transform: translateY(-50%) rotate(-8deg);
+  }
+}
+
+@keyframes yarn-ball-bob {
+  0% {
+    transform: translateY(-50%) translateX(0);
+  }
+  50% {
+    transform: translateY(calc(-50% - 1px)) translateX(1px);
+  }
+  100% {
+    transform: translateY(-50%) translateX(0);
+  }
 }
 
 .storage-item-actions {
@@ -401,7 +556,7 @@ body.homepage .layout {
 }
 
 .floating-timer .timer {
-  font-family: "ZCOOL XiaoWei", serif;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
 .project-panel {
@@ -744,6 +899,45 @@ textarea {
   object-fit: cover;
 }
 
+.diagram-image-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  align-content: start;
+  overflow: auto;
+}
+
+.diagram-image-item {
+  position: relative;
+  border: 1px solid #e3d3bd;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.diagram-image-item img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.diagram-image-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(30, 36, 42, 0.72);
+  color: #fff;
+  cursor: pointer;
+  line-height: 1;
+}
+
 .diagram-box #textDiagram {
   flex: 1;
   width: 100%;
@@ -774,7 +968,7 @@ textarea {
   border-radius: 12px;
   padding: 10px 14px;
   font: inherit;
-  font-family: "ZCOOL XiaoWei", serif;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
@@ -832,7 +1026,7 @@ textarea {
   text-align: center;
   font-size: clamp(2rem, 8vw, 3rem);
   letter-spacing: 0.06em;
-  font-family: "ZCOOL XiaoWei", serif;
+  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   margin: 10px 0 16px;
 }
 
@@ -881,6 +1075,7 @@ textarea {
   text-align: center;
   color: #6f7980;
   font-size: 0.9rem;
+  font-family: "ZCOOL XiaoWei", "KaiTi", cursive;
 }
 
 body.homepage .footer {
@@ -1251,6 +1446,27 @@ body.homepage .footer {
   .hero {
     flex-direction: column;
     align-items: start;
+  }
+
+  body[data-storage-page] .hero > div {
+    grid-template-columns: 1fr;
+    row-gap: 6px;
+  }
+
+  body[data-storage-page] .hero .subtitle {
+    grid-column: 1;
+    text-align: left;
+  }
+
+  body[data-storage-page] .storage-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: calc(100vh - 214px);
+  }
+
+  body[data-storage-page] .storage-form-panel,
+  body[data-storage-page] .storage-list-panel {
+    grid-column: 1;
   }
 
   .project-page .project-hero-stats {
