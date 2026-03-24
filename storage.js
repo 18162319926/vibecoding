@@ -26,6 +26,12 @@ const state = {
   photoData: "",
 };
 
+const syncState = {
+  pushTimerId: null,
+  lastSeenCloudStamp: 0,
+  remoteUnsubscribe: null,
+};
+
 function makeId() {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -105,8 +111,120 @@ function parseYarnInfo(item) {
   return parseYarnRef(item?.yarnRef);
 }
 
-function saveItems() {
+function saveItems(options = {}) {
   localStorage.setItem(STORAGE_KEYS[pageType], JSON.stringify(state.items));
+  if (options.scheduleCloud !== false) {
+    scheduleStorageCloudPush();
+  }
+}
+
+function setStorageItems(items, options = {}) {
+  state.items = Array.isArray(items) ? items.map(normalizeItem) : [];
+  saveItems({ scheduleCloud: options.scheduleCloud !== false });
+  renderList();
+}
+
+function scheduleStorageCloudPush() {
+  if (!window.cloudSync || !window.cloudSync.isReady()) return;
+  if (!window.cloudSync.getCurrentUser()) return;
+  if (typeof window.cloudSync.pushStorageState !== "function") return;
+
+  if (syncState.pushTimerId) {
+    clearTimeout(syncState.pushTimerId);
+  }
+
+  syncState.pushTimerId = setTimeout(async () => {
+    try {
+      if (pageType === "yarn") {
+        await window.cloudSync.pushStorageState({ yarn: state.items });
+      } else {
+        await window.cloudSync.pushStorageState({ swatch: state.items });
+      }
+    } catch (error) {
+      console.error("storage cloud push failed", error);
+    }
+  }, 700);
+}
+
+function applyCloudStoragePayload(payload) {
+  if (!payload || typeof payload !== "object") return;
+  const stamp = Number(payload.clientUpdatedAt) || 0;
+  if (stamp && stamp <= syncState.lastSeenCloudStamp) return;
+
+  const incoming = pageType === "yarn" ? payload.yarn : payload.swatch;
+  if (!Array.isArray(incoming)) return;
+
+  const remoteList = incoming.map(normalizeItem);
+  const localList = state.items.map(normalizeItem);
+
+  // Keep local data when cloud storage is still empty for this section.
+  if (!remoteList.length && localList.length) {
+    if (stamp) {
+      syncState.lastSeenCloudStamp = stamp;
+    }
+    scheduleStorageCloudPush();
+    return;
+  }
+
+  const localById = new Map(
+    localList
+      .filter((item) => item && item.id)
+      .map((item) => [String(item.id), item])
+  );
+
+  const mergedRemote = remoteList.map((item) => {
+    const local = localById.get(String(item.id || ""));
+    if (!local) return item;
+
+    const localUpdatedAt = Number(local.updatedAt) || 0;
+    const remoteUpdatedAt = Number(item.updatedAt) || 0;
+    return localUpdatedAt > remoteUpdatedAt ? local : item;
+  });
+
+  const remoteIds = new Set(mergedRemote.map((item) => String(item.id || "")));
+  const localOnly = localList.filter((item) => item && item.id && !remoteIds.has(String(item.id)));
+  const merged = [...mergedRemote, ...localOnly];
+
+  setStorageItems(merged, { scheduleCloud: false });
+  if (stamp) {
+    syncState.lastSeenCloudStamp = stamp;
+  }
+}
+
+function setupStorageCloudSync() {
+  if (!window.cloudSync || typeof window.cloudSync.onAuthStateChanged !== "function") return;
+
+  window.cloudSync.onAuthStateChanged(async (user) => {
+    if (typeof syncState.remoteUnsubscribe === "function") {
+      syncState.remoteUnsubscribe();
+      syncState.remoteUnsubscribe = null;
+    }
+
+    if (!user) return;
+
+    if (typeof window.cloudSync.pullStorageState === "function") {
+      try {
+        const remote = await window.cloudSync.pullStorageState();
+        applyCloudStoragePayload(remote);
+      } catch (error) {
+        console.error("storage cloud pull failed", error);
+      }
+    }
+
+    if (typeof window.cloudSync.watchRemoteState === "function") {
+      syncState.remoteUnsubscribe = window.cloudSync.watchRemoteState(
+        (payload) => {
+          applyCloudStoragePayload(payload?.storage ? {
+            ...payload.storage,
+            clientUpdatedAt: payload.clientUpdatedAt,
+          } : null);
+        },
+        (error) => {
+          console.error("storage cloud watch failed", error);
+        }
+      );
+    }
+  });
 }
 
 function collectFormData() {
@@ -355,3 +473,4 @@ refs.list.addEventListener("click", (event) => {
 });
 
 renderList();
+setupStorageCloudSync();

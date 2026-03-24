@@ -6,6 +6,8 @@
     authListeners: [],
     initError: "",
     realtimeChannel: null,
+    timerShadow: null,
+    storageShadow: { yarn: [], swatch: [] },
   };
 
   function getConfig() {
@@ -65,6 +67,56 @@
     const text = String(value || "");
     if (text.length <= maxLength) return text;
     return text.slice(0, maxLength);
+  }
+
+  function normalizeStorageCollection(value) {
+    return Array.isArray(value) ? value.filter((item) => item && typeof item === "object") : [];
+  }
+
+  function normalizeStoragePayload(value) {
+    const source = value && typeof value === "object" ? value : {};
+    return {
+      yarn: normalizeStorageCollection(source.yarn),
+      swatch: normalizeStorageCollection(source.swatch),
+    };
+  }
+
+  function splitTimerAndStorage(timer) {
+    if (!timer || typeof timer !== "object") {
+      return {
+        timer: null,
+        storage: normalizeStoragePayload(null),
+      };
+    }
+
+    const clone = { ...timer };
+    const storage = normalizeStoragePayload(clone.__storage);
+    delete clone.__storage;
+
+    return {
+      timer: clone,
+      storage,
+    };
+  }
+
+  function combineTimerAndStorage(timer, storage) {
+    const normalizedStorage = normalizeStoragePayload(storage);
+    const hasStorage = normalizedStorage.yarn.length > 0 || normalizedStorage.swatch.length > 0;
+    const baseTimer = timer && typeof timer === "object" ? { ...timer } : null;
+
+    if (!baseTimer && !hasStorage) return null;
+
+    const timerPayload = baseTimer || {
+      minutes: 25,
+      left: 25 * 60,
+      running: false,
+    };
+
+    if (hasStorage) {
+      timerPayload.__storage = normalizedStorage;
+    }
+
+    return timerPayload;
   }
 
   function slimProjectForCloud(project, options) {
@@ -316,9 +368,14 @@
     if (error) throw new Error(extractErrorMessage(error));
     if (!data) return null;
 
+    const parsed = splitTimerAndStorage(data.timer);
+    state.timerShadow = parsed.timer;
+    state.storageShadow = parsed.storage;
+
     return {
       projects: Array.isArray(data.projects) ? data.projects : [],
-      timer: data.timer && typeof data.timer === "object" ? data.timer : null,
+      timer: parsed.timer,
+      storage: parsed.storage,
       clientUpdatedAt: Number(data.client_updated_at) || 0,
     };
   }
@@ -327,7 +384,18 @@
     if (!state.ready || !state.currentUser) return false;
     const config = getConfig();
 
-    const timer = payload?.timer && typeof payload.timer === "object" ? payload.timer : null;
+    const parsedTimer = splitTimerAndStorage(payload?.timer);
+    const nextTimer = parsedTimer.timer || state.timerShadow;
+    const incomingStorage = normalizeStoragePayload(payload?.storage);
+    const hasIncomingStorage = incomingStorage.yarn.length > 0 || incomingStorage.swatch.length > 0;
+    if (hasIncomingStorage) {
+      state.storageShadow = incomingStorage;
+    } else if (parsedTimer.storage.yarn.length > 0 || parsedTimer.storage.swatch.length > 0) {
+      state.storageShadow = parsedTimer.storage;
+    }
+    const timer = combineTimerAndStorage(nextTimer, state.storageShadow);
+
+    state.timerShadow = nextTimer || null;
     const preparedProjects = await prepareProjectsForCloud(payload?.projects, config);
     const cloudProjects = fitProjectsToSize(preparedProjects, timer, 5_000_000);
     const clientUpdatedAt = Number(payload?.clientUpdatedAt) || Date.now();
@@ -345,6 +413,40 @@
     }
 
     return true;
+  }
+
+  async function pullStorageState() {
+    const payload = await pullState();
+    if (!payload) {
+      return {
+        yarn: [],
+        swatch: [],
+        clientUpdatedAt: 0,
+      };
+    }
+
+    return {
+      yarn: normalizeStorageCollection(payload.storage?.yarn),
+      swatch: normalizeStorageCollection(payload.storage?.swatch),
+      clientUpdatedAt: Number(payload.clientUpdatedAt) || 0,
+    };
+  }
+
+  async function pushStorageState(payload) {
+    if (!state.ready || !state.currentUser) return false;
+    const remote = await pullState();
+    const currentStorage = normalizeStoragePayload(remote?.storage);
+    const nextStorage = {
+      yarn: payload && Array.isArray(payload.yarn) ? normalizeStorageCollection(payload.yarn) : currentStorage.yarn,
+      swatch: payload && Array.isArray(payload.swatch) ? normalizeStorageCollection(payload.swatch) : currentStorage.swatch,
+    };
+
+    return pushState({
+      projects: Array.isArray(remote?.projects) ? remote.projects : [],
+      timer: remote?.timer && typeof remote.timer === "object" ? remote.timer : state.timerShadow,
+      storage: nextStorage,
+      clientUpdatedAt: Date.now(),
+    });
   }
 
   function watchRemoteState(onData, onError) {
@@ -369,9 +471,13 @@
         (payload) => {
           const row = payload?.new;
           if (!row) return;
+          const parsed = splitTimerAndStorage(row.timer);
+          state.timerShadow = parsed.timer;
+          state.storageShadow = parsed.storage;
           onData({
             projects: Array.isArray(row.projects) ? row.projects : [],
-            timer: row.timer && typeof row.timer === "object" ? row.timer : null,
+            timer: parsed.timer,
+            storage: parsed.storage,
             clientUpdatedAt: Number(row.client_updated_at) || 0,
           });
         }
@@ -502,6 +608,8 @@
     getCurrentUser,
     pullState,
     pushState,
+    pullStorageState,
+    pushStorageState,
     watchRemoteState,
     bindAuthUI,
   };
