@@ -987,20 +987,33 @@ function applyCloudPayload(payload, projects) {
   let changed = false;
 
   if (Array.isArray(payload.projects)) {
-    const localCoverById = new Map(
+    const localProjectById = new Map(
       projects
         .filter((project) => project && project.id)
-        .map((project) => [String(project.id), String(project.coverImage || "")])
+        .map((project) => [String(project.id), project])
     );
 
-    const normalizedRemote = payload.projects.map((project) => {
-      const next = normalizeProject(project);
-      const localCover = localCoverById.get(String(next.id || ""));
-      if (!next.coverImage && localCover) {
-        next.coverImage = localCover;
-      }
-      return next;
-    }).filter((project) => !isLegacyStarterProject(project));
+    const normalizedRemote = payload.projects
+      .map((project) => {
+        const next = normalizeProject(project);
+        const localProject = localProjectById.get(String(next.id || ""));
+        if (localProject) {
+          if (!next.coverImage && localProject.coverImage) {
+            next.coverImage = String(localProject.coverImage || "");
+          }
+          next.spentSeconds = Math.max(
+            Number(next.spentSeconds) || 0,
+            Number(localProject.spentSeconds) || 0
+          );
+          next.rows = Math.max(Number(next.rows) || 0, Number(localProject.rows) || 0);
+          next.todayRows = Math.max(
+            Number(next.todayRows) || 0,
+            Number(localProject.todayRows) || 0
+          );
+        }
+        return next;
+      })
+      .filter((project) => !isLegacyStarterProject(project));
 
     const remoteIdSet = new Set(normalizedRemote.map((project) => String(project.id || "")));
     const localOnly = projects
@@ -1063,59 +1076,74 @@ function renderTimerState() {
   refs.globalTimerDisplay.textContent = formatTime(timerState.left);
 }
 
-function bindGlobalTimer(project, persist) {
+function bindGlobalTimer(getProject, persist) {
+  const flushPendingProjectTime = () => {
+  if (projectTimeTick <= 0) return;
+  projectTimeTick = 0;
+  persist();
+  };
+
   refs.globalTimerMinutes.addEventListener("change", () => {
-    timerState.minutes = Math.max(1, Number(refs.globalTimerMinutes.value) || 25);
-    if (!timerState.running) timerState.left = timerState.minutes * 60;
-    saveTimerState();
-    renderTimerState();
+  timerState.minutes = Math.max(1, Number(refs.globalTimerMinutes.value) || 25);
+  if (!timerState.running) timerState.left = timerState.minutes * 60;
+  saveTimerState();
+  renderTimerState();
   });
 
   refs.globalStartBtn.addEventListener("click", () => {
-    if (timerState.running) return;
-    timerState.running = true;
-    globalTimerId = setInterval(() => {
-      if (timerState.left > 0) {
-        timerState.left -= 1;
-        project.spentSeconds += 1;
-        projectTimeTick += 1;
-        refs.projectTimeSpent.textContent = `累计用时 ${formatDuration(project.spentSeconds)}`;
-        if (projectTimeTick >= 5) {
-          projectTimeTick = 0;
-          persist();
-        }
-        saveTimerState();
-        renderTimerState();
-        return;
-      }
-      clearInterval(globalTimerId);
-      timerState.running = false;
-      saveTimerState();
-      alert("计时结束，记得活动一下肩颈。");
-    }, 1000);
+  if (timerState.running) return;
+  timerState.running = true;
+  globalTimerId = setInterval(() => {
+  if (timerState.left > 0) {
+  const currentProject = typeof getProject === "function" ? getProject() : null;
+  if (!currentProject) return;
+
+  timerState.left -= 1;
+  currentProject.spentSeconds += 1;
+  projectTimeTick += 1;
+  refs.projectTimeSpent.textContent = "累计用时 " + formatDuration(currentProject.spentSeconds);
+
+  if (projectTimeTick >= 5) {
+  flushPendingProjectTime();
+  }
+
+  saveTimerState();
+  renderTimerState();
+  return;
+  }
+
+  clearInterval(globalTimerId);
+  timerState.running = false;
+  flushPendingProjectTime();
+  saveTimerState();
+  alert("计时结束，记得活动一下肩颈。");
+  }, 1000);
   });
 
   refs.globalPauseBtn.addEventListener("click", () => {
-    clearInterval(globalTimerId);
-    timerState.running = false;
-    if (projectTimeTick > 0) {
-      projectTimeTick = 0;
-      persist();
-    }
-    saveTimerState();
+  clearInterval(globalTimerId);
+  timerState.running = false;
+  flushPendingProjectTime();
+  saveTimerState();
   });
 
   refs.globalResetBtn.addEventListener("click", () => {
-    clearInterval(globalTimerId);
-    timerState.running = false;
-    timerState.left = timerState.minutes * 60;
-    if (projectTimeTick > 0) {
-      projectTimeTick = 0;
-      persist();
-    }
-    saveTimerState();
-    renderTimerState();
+  clearInterval(globalTimerId);
+  timerState.running = false;
+  timerState.left = timerState.minutes * 60;
+  flushPendingProjectTime();
+  saveTimerState();
+  renderTimerState();
   });
+
+  document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+  flushPendingProjectTime();
+  }
+  });
+
+  window.addEventListener("pagehide", flushPendingProjectTime);
+  window.addEventListener("beforeunload", flushPendingProjectTime);
 }
 
 function bindDraggableFloatingTimer() {
@@ -1482,7 +1510,7 @@ function init() {
 
   loadTimerState();
   renderTimerState();
-  bindGlobalTimer(project, persist);
+  bindGlobalTimer(() => project, persist);
   bindDraggableFloatingTimer();
   bindMobileFloatingTimerToggle();
   refreshExportPreview(project);

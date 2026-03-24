@@ -1,0 +1,960 @@
+{
+    "root": {
+        "data": {
+            "id": "dhaoyy91la80",
+            "created": 1774322888574,
+            "text": "织伴"
+        },
+        "children": [
+            {
+                "data": {
+                    "id": "dhaoz24qqr40",
+                    "created": 1774322897021,
+                    "text": "目标层"
+                },
+                "children": [
+                    {
+                        "data": {
+                            "id": "dhapbwxtkdc0",
+                            "created": 1774323904452,
+                            "text": "用户目标"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhapcb8m5jc0",
+                                    "created": 1774323935580,
+                                    "text": "快速记录编制进度"
+                                },
+                                "children": []
+                            },
+                            {
+                                "data": {
+                                    "id": "dhapcf8i2m80",
+                                    "created": 1774323944280,
+                                    "text": "减少重复输入"
+                                },
+                                "children": []
+                            },
+                            {
+                                "data": {
+                                    "id": "dhapcingfwo0",
+                                    "created": 1774323951715,
+                                    "text": "跨设备使用"
+                                },
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "data": {
+                            "id": "dhapbz9vxv40",
+                            "created": 1774323909535,
+                            "text": "产品目标"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhapfxqf01s0",
+                                    "created": 1774324219638,
+                                    "text": "低学习成本"
+                                },
+                                "children": []
+                            },
+                            {
+                                "data": {
+                                    "id": "dhapg3s3b3c0",
+                                    "created": 1774324232800,
+                                    "text": "高使用频率"
+                                },
+                                "children": []
+                            },
+                            {
+                                "data": {
+                                    "id": "dhapg7mm0jc0",
+                                    "created": 1774324241176,
+                                    "text": "长期沉淀项目资产"
+                                },
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "data": {
+                            "id": "dhapc1rx8vc0",
+                            "created": 1774323914980,
+                            "text": "设计原则"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhaph5kfrc00",
+                                    "created": 1774324315055,
+                                    "text": "先核心后扩展"
+                                },
+                                "children": []
+                            },
+                            {
+                                "data": {
+                                    "id": "dhaph8wogb40",
+                                    "created": 1774324322325,
+                                    "text": "一屏完成高频任务"
+                                },
+                                "children": []
+                            },
+                            {
+                                "data": {
+                                    "id": "dhaphew6h3c0",
+                                    "created": 1774324335356,
+                                    "text": "反馈明确状态可见"
+                                },
+                                "children": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "data": {
+                    "id": "dhaoz5pd1m80",
+                    "created": 1774322904798,
+                    "text": "页面设计思路"
+                },
+                "children": [
+                    {
+                        "data": {
+                            "id": "dhaphxvygkg0",
+                            "created": 1774324376701,
+                            "text": "信息架构"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhapjslmipc0",
+                                    "created": 1774324521921,
+                                    "text": "首页"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhapkmqlkaw0",
+                                            "created": 1774324587525,
+                                            "text": "概览"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhapksfikn40",
+                                            "created": 1774324599916,
+                                            "text": "项目筛选"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhapkv9ncp40",
+                                            "created": 1774324606091,
+                                            "text": "新建"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhapjwiv2ig0",
+                                    "created": 1774324530461,
+                                    "text": "项目详情页"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhapk20vq600",
+                                            "created": 1774324542435,
+                                            "text": "编辑区+计数区+导出区+计时区"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhapo9xboi00",
+                                    "created": 1774324873090,
+                                    "text": "毛线管理页",
+                                    "background": "#92d050"
+                                },
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "data": {
+                            "id": "dhapi0hqi000",
+                            "created": 1774324382372,
+                            "text": "布局策略"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhapmsopfyw0",
+                                    "created": 1774324757200,
+                                    "text": "桌面端"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhapnj8u9a00",
+                                            "created": 1774324815014,
+                                            "text": "双栏/多区并行"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhapmvbjy340",
+                                    "created": 1774324762935,
+                                    "text": "移动端"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhapnrkwp400",
+                                            "created": 1774324833158,
+                                            "text": "单列流式布局"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "data": {
+                            "id": "dhapi72f1cw0",
+                            "created": 1774324396683,
+                            "text": "视觉策略"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhapn34anxk0",
+                                    "created": 1774324779910,
+                                    "text": "暖色氛围"
+                                },
+                                "children": []
+                            },
+                            {
+                                "data": {
+                                    "id": "dhapn8csdhs0",
+                                    "created": 1774324791308,
+                                    "text": "卡片化层级"
+                                },
+                                "children": []
+                            },
+                            {
+                                "data": {
+                                    "id": "dhapncuaihs0",
+                                    "created": 1774324801073,
+                                    "text": "字体分层"
+                                },
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "data": {
+                            "id": "dhapia2x2y00",
+                            "created": 1774324403244,
+                            "text": "交互策略"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhapoybqsrs0",
+                                    "created": 1774324926205,
+                                    "text": "高优先操作固定可达"
+                                },
+                                "children": []
+                            },
+                            {
+                                "data": {
+                                    "id": "dhapp32jr000",
+                                    "created": 1774324936534,
+                                    "text": "输入项就近反馈"
+                                },
+                                "children": []
+                            },
+                            {
+                                "data": {
+                                    "id": "dhapp9v7g7c0",
+                                    "created": 1774324951327,
+                                    "text": "弹窗与提示不打断主流程"
+                                },
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "data": {
+                            "id": "dhapid2ucaw0",
+                            "created": 1774324409769,
+                            "text": "可用性策略"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhaqml5slg80",
+                                    "created": 1774327561929,
+                                    "text": "按钮尺寸满足手机触控"
+                                },
+                                "children": []
+                            },
+                            {
+                                "data": {
+                                    "id": "dhaqmr2onls0",
+                                    "created": 1774327574801,
+                                    "text": "表单间距平衡"
+                                },
+                                "children": []
+                            },
+                            {
+                                "data": {
+                                    "id": "dhaqn1osyww0",
+                                    "created": 1774327597907,
+                                    "text": "状态标签语义清晰"
+                                },
+                                "children": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "data": {
+                    "id": "dhaoz8o7sow0",
+                    "created": 1774322911259,
+                    "text": "功能设计思路"
+                },
+                "children": [
+                    {
+                        "data": {
+                            "id": "dhapihmxn280",
+                            "created": 1774324419691,
+                            "text": "功能分级"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhaqne8jys00",
+                                    "created": 1774327625222,
+                                    "text": "核心功能"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhaqol9jetk0",
+                                            "created": 1774327718883,
+                                            "text": "项目创建与编辑"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhaqoosg05s0",
+                                            "created": 1774327726557,
+                                            "text": "行数计数与累计用时"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhaqou5lq1s0",
+                                            "created": 1774327738237,
+                                            "text": "自动预览与导出"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhaqnia68g00",
+                                    "created": 1774327634027,
+                                    "text": "支撑功能"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhaqnu3bmjc0",
+                                            "created": 1774327659734,
+                                            "text": "登录与云同步"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhaqo5zqalc0",
+                                            "created": 1774327685639,
+                                            "text": "封面上传与文字图解"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhaqoaogtcw0",
+                                            "created": 1774327695842,
+                                            "text": "状态筛选与反馈提示"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhaqnkrwu000",
+                                    "created": 1774327639453,
+                                    "text": "增强功能"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhaqnnd1wiw0",
+                                            "created": 1774327645085,
+                                            "text": "多导出风格"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhaqp5kt9b40",
+                                            "created": 1774327763101,
+                                            "text": "模板、归档、标签",
+                                            "background": "#92d050"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "data": {
+                            "id": "dhapil6tjnk0",
+                            "created": 1774324427424,
+                            "text": "数据设计"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhaqr07kdrs0",
+                                    "created": 1774327908144,
+                                    "text": "本地优先"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhaqriy9pgw0",
+                                            "created": 1774327948941,
+                                            "text": "离线可用"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhaqrl7o51s0",
+                                            "created": 1774327953863,
+                                            "text": "快速读写"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhaqr3ylsh40",
+                                    "created": 1774327916310,
+                                    "text": "云端同步"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhaqrnrbeiw0",
+                                            "created": 1774327959404,
+                                            "text": "同账号多端一致"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhaqrs3dg0w0",
+                                            "created": 1774327968841,
+                                            "text": "冲突时保留有效进度"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhaqr6h5jew0",
+                                    "created": 1774327921785,
+                                    "text": "媒体资源"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhaqr9sd90w0",
+                                            "created": 1774327928993,
+                                            "text": "封面单独存储"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhaqrecxfq80",
+                                            "created": 1774327938943,
+                                            "text": "项目引用地址"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "data": {
+                            "id": "dhapinacda00",
+                            "created": 1774324431991,
+                            "text": "流程设计"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhaqsakf5a80",
+                                    "created": 1774328009054,
+                                    "text": "新建流程"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhaqsl1irew0",
+                                            "created": 1774328031855,
+                                            "text": "入口统一"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhaqsmyrmg00",
+                                            "created": 1774328036042,
+                                            "text": "创建后直达详情"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhaqsdv6j4o0",
+                                    "created": 1774328016235,
+                                    "text": "记录流程"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhaqsro6tqo0",
+                                            "created": 1774328046287,
+                                            "text": "填表保存"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhaqsu96d280",
+                                            "created": 1774328051909,
+                                            "text": "计数推荐"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhaqswf3qo80",
+                                            "created": 1774328056621,
+                                            "text": "自动反馈"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhaqsft1bpc0",
+                                    "created": 1774328020458,
+                                    "text": "分享流程"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhaqszwncjs0",
+                                            "created": 1774328064212,
+                                            "text": "选择风格"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhaqt99hr2o0",
+                                            "created": 1774328084580,
+                                            "text": "预览确认"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhaqtbhqako0",
+                                            "created": 1774328089432,
+                                            "text": "一键下载"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "data": {
+                            "id": "dhapiqmdwp40",
+                            "created": 1774324439249,
+                            "text": "异常与容错"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhaquhpdjbk0",
+                                    "created": 1774328181319,
+                                    "text": "网络波动"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhaqz06rl880",
+                                            "created": 1774328535009,
+                                            "text": "本地继续可用"
+                                        },
+                                        "children": []
+                                    },
+                                    {
+                                        "data": {
+                                            "id": "dhaqz3eoaig0",
+                                            "created": 1774328542018,
+                                            "text": "恢复后自动同步"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhaquk8qsko0",
+                                    "created": 1774328186844,
+                                    "text": "刷新/切后台"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhaqyrcdrnc0",
+                                            "created": 1774328515758,
+                                            "text": "关键状态及时落盘"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhaquowa61s0",
+                                    "created": 1774328196974,
+                                    "text": "操作失误"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhaquqybfyw0",
+                                            "created": 1774328201451,
+                                            "text": "重要操作给确认或可撤销提示"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "data": {
+                    "id": "dhaozbqy8e80",
+                    "created": 1774322917954,
+                    "text": "页面与功能的映射"
+                },
+                "children": [
+                    {
+                        "data": {
+                            "id": "dhapj4tyn600",
+                            "created": 1774324470182,
+                            "text": "首页模块"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhaqzdtbleo0",
+                                    "created": 1774328564671,
+                                    "text": "统计卡"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhar08nhrew0",
+                                            "created": 1774328631799,
+                                            "text": "快速判断当前工作量"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhaqzjq9e5s0",
+                                    "created": 1774328577547,
+                                    "text": "筛选栏"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhaqzufaj480",
+                                            "created": 1774328600828,
+                                            "text": "快速定位项目"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhaqzmyxpw00",
+                                    "created": 1774328584602,
+                                    "text": "新建入口"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhaqzpu2rts0",
+                                            "created": 1774328590838,
+                                            "text": "降低启动成本"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "data": {
+                            "id": "dhapj8qzbmo0",
+                            "created": 1774324478709,
+                            "text": "项目详情模块"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhar0j6paqo0",
+                                    "created": 1774328654728,
+                                    "text": "项目信息卡"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhar1pcysf40",
+                                            "created": 1774328746532,
+                                            "text": "结构化记录"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhar0mtjyxs0",
+                                    "created": 1774328662641,
+                                    "text": "行数计数器"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhar1kfsh600",
+                                            "created": 1774328735819,
+                                            "text": "实时推进"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhar0p1mips0",
+                                    "created": 1774328667482,
+                                    "text": "导出卡片"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhar13ryffs0",
+                                            "created": 1774328699549,
+                                            "text": "结果沉淀与分享"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            },
+                            {
+                                "data": {
+                                    "id": "dhar0wdf0jc0",
+                                    "created": 1774328683433,
+                                    "text": "计时器"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhar10217aw0",
+                                            "created": 1774328691451,
+                                            "text": "行为量化"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "data": {
+                            "id": "dhapjcoyr5c0",
+                            "created": 1774324487294,
+                            "text": "状态反馈模块"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhar1v13dqw0",
+                                    "created": 1774328758875,
+                                    "text": "toast/同步提示"
+                                },
+                                "children": [
+                                    {
+                                        "data": {
+                                            "id": "dhar20u51gg0",
+                                            "created": 1774328771515,
+                                            "text": "建立系统信任感"
+                                        },
+                                        "children": []
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "data": {
+                    "id": "dhaozh4r65c0",
+                    "created": 1774322929673,
+                    "text": "迭代路径"
+                },
+                "children": [
+                    {
+                        "data": {
+                            "id": "dhaozpxxe740",
+                            "created": 1774322948851,
+                            "text": "短期"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhaozwb32940",
+                                    "created": 1774322962708,
+                                    "text": "自动草稿与恢复"
+                                },
+                                "children": []
+                            },
+                            {
+                                "data": {
+                                    "id": "dhap02f10fk0",
+                                    "created": 1774322976007,
+                                    "text": "归档与标签检索"
+                                },
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "data": {
+                            "id": "dhaozu44dz40",
+                            "created": 1774322957933,
+                            "text": "中期"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhap129vmow0",
+                                    "created": 1774323054059,
+                                    "text": "毛线仓库"
+                                },
+                                "children": []
+                            },
+                            {
+                                "data": {
+                                    "id": "dhap17aq25c0",
+                                    "created": 1774323064994,
+                                    "text": "小样仓库"
+                                },
+                                "children": []
+                            }
+                        ]
+                    },
+                    {
+                        "data": {
+                            "id": "dhaozr9t4m80",
+                            "created": 1774322951746,
+                            "text": "长期",
+                            "expandState": "expand"
+                        },
+                        "children": [
+                            {
+                                "data": {
+                                    "id": "dhap0opnv600",
+                                    "created": 1774323024539,
+                                    "text": "毛线仓库与项目联动"
+                                },
+                                "children": []
+                            },
+                            {
+                                "data": {
+                                    "id": "dhap0hbtf0w0",
+                                    "created": 1774323008464,
+                                    "text": "数据周报"
+                                },
+                                "children": []
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "template": "default",
+    "theme": "fresh-blue",
+    "version": "1.4.43"
+}

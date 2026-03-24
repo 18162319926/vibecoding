@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>织伴 | 小样仓库</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Outfit:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-storage-page="swatch">
+    <div class="bg-shape bg-shape-a"></div>
+    <div class="bg-shape bg-shape-b"></div>
+
+    <nav class="top-nav" aria-label="页面导航">
+      <div class="brand">织伴</div>
+      <div class="nav-auth">
+        <span class="account-chip" id="accountChip">当前账号：未登录</span>
+        <a class="btn ghost" href="index.html">返回主页</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <p class="eyebrow">SWATCH LIBRARY</p>
+        <h1>小样仓库</h1>
+        <p class="subtitle">记录针号、密度和规格，便于后续项目复用</p>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel storage-panel">
+        <h2>小样条目</h2>
+        <p class="helper-text">建议字段：线材、针号、规格、针数/行数密度、备注。</p>
+        <form class="grid-form" id="storageForm">
+          <label>
+            线材
+            <input id="swatchYarn" type="text" placeholder="例如：羊毛混纺" required />
+          </label>
+          <label>
+            针号
+            <input id="swatchNeedle" type="text" placeholder="例如：4.0mm" />
+          </label>
+          <label>
+            规格
+            <input id="swatchSpec" type="text" placeholder="例如：10cm x 10cm" />
+          </label>
+          <label>
+            密度（针/10cm）
+            <input id="swatchGauge" type="number" min="0" placeholder="例如：22" />
+          </label>
+          <label class="full-span">
+            备注
+            <textarea id="swatchNotes" rows="4" placeholder="记录手感、回弹、洗后变化等"></textarea>
+          </label>
+          <div class="full-span">
+            <div class="storage-form-actions">
+              <button class="btn primary" id="submitBtn" type="submit">新增小样条目</button>
+              <button class="btn ghost" id="cancelEditBtn" type="button" hidden>取消编辑</button>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel storage-panel">
+        <h2>小样列表</h2>
+        <p class="helper-text">共 <strong id="storageCount">0</strong> 条，可编辑或删除。</p>
+        <div class="storage-list" id="storageList"></div>
+      </section>
+    </main>
+
+    <script src="supabase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      if (!window.supabase || typeof window.supabase.createClient !== "function") {
+        document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\\/script>');
+      }
+    </script>
+    <script src="cloud-sync.js"></script>
+    <script src="storage-account.js"></script>
+    <script src="storage.js"></script>
+  </body>
+</html>

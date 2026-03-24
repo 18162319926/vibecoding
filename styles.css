@@ -130,7 +130,7 @@ body.homepage {
   background: #f5ece1;
   border: 1px solid #e9dbc8;
   color: #5a4837;
-  font-family: "Outfit", sans-serif;
+  font-family: "ZCOOL XiaoWei", serif;
   font-size: 0.95rem;
   font-weight: 600;
   white-space: nowrap;
@@ -180,6 +180,12 @@ body.homepage {
 h1 {
   margin: 4px 0;
   font-size: clamp(2rem, 5vw, 3.1rem);
+  font-family: "ZCOOL XiaoWei", serif;
+  font-weight: 400;
+}
+
+h2,
+h3 {
   font-family: "ZCOOL XiaoWei", serif;
   font-weight: 400;
 }
@@ -328,23 +334,70 @@ body.homepage .layout {
   grid-column: span 12;
 }
 
-.dashboard-panel,
-.dashboard-panel * {
-  font-family: "Outfit", sans-serif;
+.storage-panel {
+  grid-column: span 12;
 }
 
-.project-panel,
-.project-panel *,
-.counter-panel,
-.counter-panel *,
-.export-image-panel,
-.export-image-panel * {
-  font-family: "Outfit", sans-serif;
+.storage-form-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.floating-timer,
-.floating-timer * {
-  font-family: "Outfit", sans-serif;
+.storage-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.storage-item {
+  border: 1px solid #eddcc7;
+  border-radius: 14px;
+  padding: 12px;
+  background: #fffefb;
+}
+
+.storage-item-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.storage-item-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.storage-item-meta {
+  color: #6f7980;
+  font-size: 0.82rem;
+}
+
+.storage-item-line {
+  margin: 4px 0;
+  color: #4f5b66;
+  font-size: 0.9rem;
+}
+
+.storage-progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #f2e5d6;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.storage-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d35c2f, #f3a274);
+}
+
+.storage-item-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .floating-timer .timer {
@@ -435,7 +488,7 @@ body.homepage .project-cards {
 
 .project-card h3 {
   margin: 6px 0;
-  font-size: 1rem;
+  font-size: 1.18rem;
 }
 
 .project-meta {
@@ -482,11 +535,12 @@ body.homepage .project-cards {
 .export-style-select {
   grid-column: 1 / -1;
   width: 100%;
+  min-height: 46px;
   border: 1px solid #d8c7b1;
   border-radius: 10px;
   background: #fffdfa;
   color: #4b3a2c;
-  padding: 8px 10px;
+  padding: 11px 12px;
   font: inherit;
   margin-bottom: 2px;
 }
@@ -720,7 +774,7 @@ textarea {
   border-radius: 12px;
   padding: 10px 14px;
   font: inherit;
-  font-family: "Outfit", sans-serif;
+  font-family: "ZCOOL XiaoWei", serif;
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
@@ -1365,7 +1419,7 @@ body.homepage .footer {
   }
 
   body.homepage .project-card h3 {
-    font-size: 1.08rem;
+    font-size: 1.2rem;
   }
 
   body.homepage .project-meta {
@@ -1417,7 +1471,7 @@ body.homepage .footer {
   }
 
   body.homepage .project-card h3 {
-    font-size: 1.12rem;
+    font-size: 1.24rem;
   }
 
   body.homepage .project-meta {

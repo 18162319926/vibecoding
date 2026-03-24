@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>织伴 | 毛线仓库</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=Outfit:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-storage-page="yarn">
+    <div class="bg-shape bg-shape-a"></div>
+    <div class="bg-shape bg-shape-b"></div>
+
+    <nav class="top-nav" aria-label="页面导航">
+      <div class="brand">织伴</div>
+      <div class="nav-auth">
+        <span class="account-chip" id="accountChip">当前账号：未登录</span>
+        <a class="btn ghost" href="index.html">返回主页</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <p class="eyebrow">YARN INVENTORY</p>
+        <h1>毛线仓库</h1>
+        <p class="subtitle">管理库存、品牌色号与消耗进度</p>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel storage-panel">
+        <h2>毛线条目</h2>
+        <p class="helper-text">建议字段：线材类型、品牌/色号、重量、针号、季节、消耗进度。</p>
+        <form class="grid-form" id="storageForm">
+          <label>
+            线材类型
+            <input id="yarnType" type="text" placeholder="例如：美丽诺羊毛" required />
+          </label>
+          <label>
+            品牌/色号
+            <input id="yarnRef" type="text" placeholder="例如：DMC 716" />
+          </label>
+          <label>
+            适用针号
+            <input id="needleSize" type="text" placeholder="例如：3.5mm" />
+          </label>
+          <label>
+            重量（g）
+            <input id="weight" type="number" min="0" placeholder="例如：50" />
+          </label>
+          <label>
+            使用季节
+            <select id="season">
+              <option>春秋</option>
+              <option>夏季</option>
+              <option>冬季</option>
+              <option>四季通用</option>
+            </select>
+          </label>
+          <label>
+            消耗进度（%）
+            <input id="progress" type="number" min="0" max="100" placeholder="0-100" />
+          </label>
+          <div class="full-span">
+            <div class="storage-form-actions">
+              <button class="btn primary" id="submitBtn" type="submit">新增毛线条目</button>
+              <button class="btn ghost" id="cancelEditBtn" type="button" hidden>取消编辑</button>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel storage-panel">
+        <h2>库存列表</h2>
+        <p class="helper-text">共 <strong id="storageCount">0</strong> 条，可编辑或删除。</p>
+        <div class="storage-list" id="storageList"></div>
+      </section>
+    </main>
+
+    <script src="supabase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      if (!window.supabase || typeof window.supabase.createClient !== "function") {
+        document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\\/script>');
+      }
+    </script>
+    <script src="cloud-sync.js"></script>
+    <script src="storage-account.js"></script>
+    <script src="storage.js"></script>
+  </body>
+</html>
