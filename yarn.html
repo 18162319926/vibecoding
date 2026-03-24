@@ -37,12 +37,16 @@
         <h2>毛线条目</h2>
         <form class="grid-form" id="storageForm">
           <label>
+            品牌
+            <input id="yarnBrand" type="text" placeholder="例如：DMC" required />
+          </label>
+          <label>
             线材类型
             <input id="yarnType" type="text" placeholder="例如：美丽诺羊毛" required />
           </label>
           <label>
-            品牌/色号
-            <input id="yarnRef" type="text" placeholder="例如：DMC 716" />
+            色号
+            <input id="yarnColorNo" type="text" placeholder="例如：716" />
           </label>
           <label>
             适用针号
@@ -68,7 +72,10 @@
           <label class="full-span">
             毛线实拍图
             <input id="photoInput" type="file" accept="image/*" />
-            <img id="photoPreview" class="storage-form-photo" alt="毛线实拍图预览" hidden />
+            <div class="storage-form-photo-wrap" id="photoWrap" hidden>
+              <img id="photoPreview" class="storage-form-photo" alt="毛线实拍图预览" hidden />
+              <button id="removePhotoBtn" class="storage-photo-remove" type="button" hidden aria-label="删除毛线图片">×</button>
+            </div>
           </label>
           <div class="full-span">
             <div class="storage-form-actions">
@@ -80,8 +87,10 @@
       </section>
 
       <section class="panel storage-panel storage-list-panel">
-        <h2>库存列表</h2>
-        <p class="helper-text">共 <strong id="storageCount">0</strong> 条，可编辑或删除。</p>
+        <div class="storage-list-head">
+          <h2>库存列表</h2>
+          <p class="helper-text">共 <strong id="storageCount">0</strong> 条，可编辑或删除。</p>
+        </div>
         <div class="storage-list" id="storageList"></div>
       </section>
     </main>

@@ -63,7 +63,10 @@
           <label class="full-span">
             小样实拍图
             <input id="photoInput" type="file" accept="image/*" />
-            <img id="photoPreview" class="storage-form-photo" alt="小样实拍图预览" hidden />
+            <div class="storage-form-photo-wrap" id="photoWrap" hidden>
+              <img id="photoPreview" class="storage-form-photo" alt="小样实拍图预览" hidden />
+              <button id="removePhotoBtn" class="storage-photo-remove" type="button" hidden aria-label="删除小样图片">×</button>
+            </div>
           </label>
           <div class="full-span">
             <div class="storage-form-actions">
@@ -75,8 +78,10 @@
       </section>
 
       <section class="panel storage-panel storage-list-panel">
-        <h2>小样列表</h2>
-        <p class="helper-text">共 <strong id="storageCount">0</strong> 条，可编辑或删除。</p>
+        <div class="storage-list-head">
+          <h2>小样列表</h2>
+          <p class="helper-text">共 <strong id="storageCount">0</strong> 条，可编辑或删除。</p>
+        </div>
         <div class="storage-list" id="storageList"></div>
       </section>
     </main>

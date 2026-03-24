@@ -431,17 +431,30 @@ body[data-storage-page] .storage-list-panel {
   display: none;
 }
 
+.storage-form-photo-wrap {
+  position: relative;
+  width: min(220px, 100%);
+  margin-top: 8px;
+}
+
 .storage-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 10px;
+  column-width: 240px;
+  column-gap: 10px;
 }
 
 .storage-item {
   border: 1px solid #eddcc7;
   border-radius: 14px;
-  padding: 12px;
+  padding: 12px 18px;
   background: #fffefb;
+  break-inside: avoid;
+  margin: 0 0 10px;
+  display: inline-block;
+  width: 100%;
+}
+
+.storage-item-photo-wrap {
+  position: relative;
 }
 
 .storage-item-photo {
@@ -464,12 +477,12 @@ body[data-storage-page] .storage-list-panel {
 
 .storage-item-head h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.1rem;
 }
 
 .storage-item-meta {
   color: #6f7980;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
 }
 
 .storage-item-line {
@@ -479,7 +492,7 @@ body[data-storage-page] .storage-list-panel {
 }
 
 .storage-progress-track {
-  height: 14px;
+  height: 8px;
   border-radius: 999px;
   background: linear-gradient(180deg, #f6ecdf, #efdfcc);
   border: 1px solid #e2d0b9;
@@ -495,20 +508,20 @@ body[data-storage-page] .storage-list-panel {
   background:
     repeating-linear-gradient(
       135deg,
-      #c3532e 0 7px,
-      #df7b4f 7px 14px,
-      #c3532e 14px 21px
+      #b77761 0 7px,
+      #c89a87 7px 14px,
+      #b77761 14px 21px
     );
 }
 
 .storage-progress-fill::before {
   content: "";
   position: absolute;
-  right: -2px;
+  right: -1px;
   top: 50%;
-  width: 14px;
+  width: 10px;
   height: 2px;
-  background: #c65a34;
+  background: #b17762;
   border-radius: 999px;
   transform-origin: left center;
   transform: translateY(-50%) rotate(0deg);
@@ -518,10 +531,10 @@ body[data-storage-page] .storage-list-panel {
 .storage-progress-fill::after {
   content: "🧶";
   position: absolute;
-  right: -10px;
+  right: -8px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 14px;
+  font-size: 12px;
   animation: yarn-ball-bob 1.1s ease-in-out infinite;
 }
 
@@ -553,6 +566,26 @@ body[data-storage-page] .storage-list-panel {
   display: flex;
   gap: 8px;
   margin-top: 8px;
+}
+
+.storage-item-actions .btn {
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  border-radius: 10px;
+}
+
+.storage-list-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.storage-list-head h2,
+.storage-list-head .helper-text {
+  margin: 0;
 }
 
 .floating-timer .timer {
@@ -660,16 +693,50 @@ body.homepage .project-cards {
 }
 
 .progress-track {
-  height: 10px;
+  height: 8px;
   border-radius: 999px;
-  background: #f2e5d6;
-  overflow: hidden;
+  background: linear-gradient(180deg, #f6ecdf, #efdfcc);
+  border: 1px solid #e2d0b9;
+  box-shadow: inset 0 1px 2px rgba(112, 78, 49, 0.15);
+  overflow: visible;
   margin: 10px 0 6px;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #d35c2f, #f3a274);
+  border-radius: 999px;
+  position: relative;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      #b77761 0 7px,
+      #c89a87 7px 14px,
+      #b77761 14px 21px
+    );
+}
+
+.progress-fill::before {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  width: 10px;
+  height: 2px;
+  background: #b17762;
+  border-radius: 999px;
+  transform-origin: left center;
+  transform: translateY(-50%) rotate(0deg);
+  animation: yarn-tail-sway 1.1s ease-in-out infinite;
+}
+
+.progress-fill::after {
+  content: "🧶";
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  animation: yarn-ball-bob 1.1s ease-in-out infinite;
 }
 
 .project-card-actions {
@@ -861,6 +928,10 @@ textarea {
   width: 100%;
 }
 
+#projectCoverRemoveBtn {
+  width: 100%;
+}
+
 .cover-frame {
   position: relative;
   border: 1px dashed #d8c7b1;
@@ -924,7 +995,8 @@ textarea {
   object-fit: cover;
 }
 
-.diagram-image-remove {
+.diagram-image-remove,
+.storage-photo-remove {
   position: absolute;
   top: 6px;
   right: 6px;

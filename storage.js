@@ -16,6 +16,8 @@ const refs = {
   cancelEditBtn: document.getElementById("cancelEditBtn"),
   photoInput: document.getElementById("photoInput"),
   photoPreview: document.getElementById("photoPreview"),
+  photoWrap: document.getElementById("photoWrap"),
+  removePhotoBtn: document.getElementById("removePhotoBtn"),
 };
 
 const state = {
@@ -55,16 +57,70 @@ function normalizeItem(item) {
   return normalized;
 }
 
+function parseYarnRef(value) {
+  const source = String(value || "").trim();
+  if (!source) {
+    return { brand: "-", colorNo: "-" };
+  }
+
+  const slashParts = source.split(/[\/|｜]/).map((part) => part.trim()).filter(Boolean);
+  if (slashParts.length >= 2) {
+    return {
+      brand: slashParts[0] || "-",
+      colorNo: slashParts[1] || "-",
+    };
+  }
+
+  const dashParts = source.split(/[\-—]/).map((part) => part.trim()).filter(Boolean);
+  if (dashParts.length >= 2) {
+    return {
+      brand: dashParts[0] || "-",
+      colorNo: dashParts[dashParts.length - 1] || "-",
+    };
+  }
+
+  const spaceParts = source.split(/\s+/).filter(Boolean);
+  if (spaceParts.length >= 2) {
+    return {
+      brand: spaceParts[0] || "-",
+      colorNo: spaceParts[spaceParts.length - 1] || "-",
+    };
+  }
+
+  return {
+    brand: source,
+    colorNo: "-",
+  };
+}
+
+function parseYarnInfo(item) {
+  const brand = String(item?.yarnBrand || "").trim();
+  const colorNo = String(item?.yarnColorNo || "").trim();
+  if (brand || colorNo) {
+    return {
+      brand: brand || "-",
+      colorNo: colorNo || "-",
+    };
+  }
+  return parseYarnRef(item?.yarnRef);
+}
+
 function saveItems() {
   localStorage.setItem(STORAGE_KEYS[pageType], JSON.stringify(state.items));
 }
 
 function collectFormData() {
   if (pageType === "yarn") {
+    const yarnBrand = document.getElementById("yarnBrand").value.trim();
+    const yarnType = document.getElementById("yarnType").value.trim();
+    const yarnColorNo = document.getElementById("yarnColorNo").value.trim();
+    const yarnRef = [yarnBrand, yarnColorNo].filter(Boolean).join(" / ");
     return {
       id: state.editingId || makeId(),
-      yarnType: document.getElementById("yarnType").value.trim(),
-      yarnRef: document.getElementById("yarnRef").value.trim(),
+      yarnBrand,
+      yarnType,
+      yarnColorNo,
+      yarnRef,
       needleSize: document.getElementById("needleSize").value.trim(),
       weight: Math.max(0, Number(document.getElementById("weight").value) || 0),
       season: document.getElementById("season").value,
@@ -102,8 +158,10 @@ function resetForm() {
 
 function fillForm(item) {
   if (pageType === "yarn") {
+    const yarnInfo = parseYarnInfo(item);
+    document.getElementById("yarnBrand").value = yarnInfo.brand === "-" ? "" : yarnInfo.brand;
     document.getElementById("yarnType").value = item.yarnType || "";
-    document.getElementById("yarnRef").value = item.yarnRef || "";
+    document.getElementById("yarnColorNo").value = yarnInfo.colorNo === "-" ? "" : yarnInfo.colorNo;
     document.getElementById("needleSize").value = item.needleSize || "";
     document.getElementById("weight").value = item.weight || "";
     document.getElementById("season").value = item.season || "春秋";
@@ -127,8 +185,14 @@ function fillForm(item) {
 function renderPhotoPreview(dataUrl) {
   if (!refs.photoPreview) return;
   const src = String(dataUrl || "").trim();
+  if (refs.photoWrap) {
+    refs.photoWrap.hidden = !src;
+  }
   refs.photoPreview.hidden = !src;
   refs.photoPreview.classList.toggle("show", Boolean(src));
+  if (refs.removePhotoBtn) {
+    refs.removePhotoBtn.hidden = !src;
+  }
   if (src) {
     refs.photoPreview.src = src;
   } else {
@@ -168,14 +232,16 @@ function deleteItem(id) {
 
 function buildYarnCard(item) {
   const photo = getItemPhoto(item);
+  const ref = parseYarnInfo(item);
   return `
     <article class="storage-item" data-id="${item.id}">
       ${photo ? `<img class="storage-item-photo" src="${escapeHtml(photo)}" alt="${escapeHtml(item.yarnType || "毛线实拍图")}" />` : ""}
       <div class="storage-item-head">
-        <h3>${escapeHtml(item.yarnType || "未命名线材")}</h3>
+        <h3> ${escapeHtml(ref.brand)}</h3>
         <span class="storage-item-meta">${escapeHtml(item.season || "")}</span>
       </div>
-      <p class="storage-item-line">品牌/色号：${escapeHtml(item.yarnRef || "-")}</p>
+      <p class="storage-item-line">线材类型：${escapeHtml(item.yarnType || "-")}</p>
+      <p class="storage-item-line">色号：${escapeHtml(ref.colorNo)}</p>
       <p class="storage-item-line">针号：${escapeHtml(item.needleSize || "-")}</p>
       <p class="storage-item-line">重量：${Number(item.weight) || 0}g</p>
       <p class="storage-item-line">消耗进度：${Number(item.progress) || 0}%</p>
@@ -253,6 +319,16 @@ if (refs.photoInput) {
       state.photoData = "";
       renderPhotoPreview("");
     }
+  });
+}
+
+if (refs.removePhotoBtn) {
+  refs.removePhotoBtn.addEventListener("click", () => {
+    state.photoData = "";
+    if (refs.photoInput) {
+      refs.photoInput.value = "";
+    }
+    renderPhotoPreview("");
   });
 }
 

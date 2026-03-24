@@ -23,6 +23,7 @@ const refs = {
   diagramImagePlaceholder: document.getElementById("diagramImagePlaceholder"),
   exportStyle: document.getElementById("exportStyle"),
   projectCoverInput: document.getElementById("projectCoverInput"),
+  projectCoverRemoveBtn: document.getElementById("projectCoverRemoveBtn"),
   projectCoverPreview: document.getElementById("projectCoverPreview"),
   rowCounter: document.getElementById("rowCounter"),
   progressText: document.getElementById("progressText"),
@@ -398,9 +399,11 @@ function renderProject(project) {
   if (project.coverImage) {
     refs.projectCoverPreview.src = project.coverImage;
     refs.projectCoverPreview.classList.add("show");
+    if (refs.projectCoverRemoveBtn) refs.projectCoverRemoveBtn.hidden = false;
   } else {
     refs.projectCoverPreview.classList.remove("show");
     refs.projectCoverPreview.removeAttribute("src");
+    if (refs.projectCoverRemoveBtn) refs.projectCoverRemoveBtn.hidden = true;
   }
 
   renderDiagramImages(project);
@@ -1640,6 +1643,20 @@ function init() {
 
     refs.projectCoverInput.value = "";
   });
+
+  if (refs.projectCoverRemoveBtn) {
+    refs.projectCoverRemoveBtn.addEventListener("click", () => {
+      const previousCover = project.coverImage;
+      syncDraftFields(project);
+      project.coverImage = "";
+      if (!persist()) {
+        project.coverImage = previousCover;
+        persist();
+        alert("删除封面失败，请稍后重试。");
+      }
+      refs.projectCoverInput.value = "";
+    });
+  }
 
   if (refs.diagramImageInput) {
     refs.diagramImageInput.addEventListener("change", async (event) => {
