@@ -26,3 +26,6 @@ Thumbs.db
 # 依赖等
 node_modules/
 .env
+
+# 思维导图
+.km
