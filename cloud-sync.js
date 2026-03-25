@@ -78,23 +78,10 @@
     const source = item && typeof item === "object" ? item : {};
     const next = { ...source };
 
-    // Avoid oversized row payload: do not persist local base64 photos in table JSON.
-    // Keep only remote URLs, clear data URLs.
+    // Keep image fields so photo add/edit can sync across devices.
     ["photo", "photoData", "image", "coverImage", "diagramImage"].forEach((key) => {
-      const value = String(next[key] || "").trim();
-      if (!value) {
-        next[key] = "";
-        return;
-      }
-      if (/^data:image\//i.test(value)) {
-        next[key] = "";
-        return;
-      }
-      if (/^https?:\/\//i.test(value)) {
-        next[key] = value;
-        return;
-      }
-      next[key] = "";
+      if (!(key in next)) return;
+      next[key] = String(next[key] || "").trim();
     });
 
     if (next.notes) next.notes = trimText(next.notes, 1200);
@@ -312,6 +299,70 @@
     return String(publicData?.publicUrl || "");
   }
 
+  async function uploadStoragePhotoAndGetUrl(item, kind, config) {
+    const itemId = String(item?.id || "");
+    if (!itemId) return "";
+
+    const candidates = [item?.photo, item?.photoData, item?.image, item?.coverImage, item?.diagramImage];
+    let source = "";
+    for (const candidate of candidates) {
+      const value = String(candidate || "").trim();
+      if (!value) continue;
+      source = value;
+      break;
+    }
+
+    if (!source) return "";
+    if (looksLikeRemoteUrl(source)) return source;
+    if (!isDataUrlImage(source)) return "";
+
+    const data = dataUrlToBlobWithMeta(source);
+    if (!data) return "";
+
+    const userId = String(state.currentUser?.id || "");
+    if (!userId) return "";
+
+    const safeKind = kind === "swatch" ? "swatch" : "yarn";
+    const objectPath = `storage/${safeKind}/${userId}/${itemId}.${data.ext}`;
+
+    const { error: uploadError } = await state.client.storage
+      .from(config.coversBucket)
+      .upload(objectPath, data.blob, {
+        upsert: true,
+        contentType: data.mime,
+      });
+
+    if (uploadError) {
+      throw new Error(`仓库图片上传失败：${extractErrorMessage(uploadError)}`);
+    }
+
+    const { data: publicData } = state.client.storage
+      .from(config.coversBucket)
+      .getPublicUrl(objectPath);
+
+    return String(publicData?.publicUrl || "");
+  }
+
+  async function prepareStoragePayloadForCloud(storage, config) {
+    const source = normalizeStoragePayload(storage);
+
+    const toCloudItem = async (item, kind) => {
+      const next = sanitizeStorageItemForCloud(item);
+      const photoUrl = await uploadStoragePhotoAndGetUrl(item, kind, config);
+      next.photo = photoUrl || String(next.photo || "").trim();
+      next.photoData = "";
+      next.image = "";
+      next.coverImage = "";
+      next.diagramImage = "";
+      return next;
+    };
+
+    const yarn = await Promise.all(source.yarn.map((item) => toCloudItem(item, "yarn")));
+    const swatch = await Promise.all(source.swatch.map((item) => toCloudItem(item, "swatch")));
+
+    return { yarn, swatch };
+  }
+
   async function prepareProjectsForCloud(projects, config) {
     const source = Array.isArray(projects) ? projects : [];
     const output = [];
@@ -507,7 +558,9 @@
     } else if (hasParsedTimerStorage) {
       state.storageShadow = parsedTimer.storage;
     }
-    const timer = combineTimerAndStorage(nextTimer, state.storageShadow);
+    const cloudStorage = await prepareStoragePayloadForCloud(state.storageShadow, config);
+    state.storageShadow = cloudStorage;
+    const timer = combineTimerAndStorage(nextTimer, cloudStorage);
 
     state.timerShadow = nextTimer || null;
     const baseProjects = Array.isArray(payload?.projects)

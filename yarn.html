@@ -33,6 +33,22 @@
       </div>
     </header>
 
+    <section class="panel sync-diagnostics" id="syncDiagnosticsPanel">
+      <details>
+        <summary>同步诊断面板</summary>
+        <div class="sync-diagnostics-grid">
+          <p>本地条目：<strong id="diagLocalCount">0</strong></p>
+          <p>云端条目：<strong id="diagRemoteCount">0</strong></p>
+          <p>最近推送：<strong id="diagLastPush">-</strong></p>
+          <p>最近拉取：<strong id="diagLastPull">-</strong></p>
+          <p class="full">最后错误：<strong id="diagLastError">无</strong></p>
+        </div>
+        <div class="sync-diagnostics-actions">
+          <button class="btn ghost" id="storageDiagRefreshBtn" type="button">立即拉取云端</button>
+        </div>
+      </details>
+    </section>
+
     <main class="layout storage-layout">
       <section class="panel storage-panel storage-form-panel">
         <h2>毛线条目</h2>

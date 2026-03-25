@@ -202,6 +202,71 @@ h3 {
   font-family: "ZCOOL XiaoWei", "KaiTi", cursive;
 }
 
+body[data-storage-page] .sync-diagnostics {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 60;
+  margin: 0;
+  width: min(360px, calc(100vw - 24px));
+  padding: 0;
+  border-radius: 14px;
+  background: rgba(255, 252, 247, 0.94);
+  border: 1px solid var(--line);
+  box-shadow: 0 14px 30px rgba(90, 63, 44, 0.2);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+body[data-storage-page] .sync-diagnostics details {
+  padding: 10px 12px;
+}
+
+body[data-storage-page] .sync-diagnostics details > summary {
+  cursor: pointer;
+  color: #6a4a35;
+  font-family: "ZCOOL XiaoWei", "KaiTi", cursive;
+  font-size: 0.98rem;
+  list-style: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+body[data-storage-page] .sync-diagnostics details > summary::-webkit-details-marker {
+  display: none;
+}
+
+body[data-storage-page] .sync-diagnostics details > summary::after {
+  content: "展开";
+  float: right;
+  color: #8b6a54;
+  font-size: 0.82rem;
+}
+
+body[data-storage-page] .sync-diagnostics details[open] > summary::after {
+  content: "收起";
+}
+
+body[data-storage-page] .sync-diagnostics-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+}
+
+body[data-storage-page] .sync-diagnostics-grid p {
+  margin: 0;
+  color: #5f6670;
+}
+
+body[data-storage-page] .sync-diagnostics-grid p.full {
+  grid-column: 1 / -1;
+}
+
+body[data-storage-page] .sync-diagnostics-actions {
+  margin-top: 12px;
+}
+
 .subtitle {
   margin: 0;
   font-size: 1rem;
@@ -1796,6 +1861,12 @@ body.homepage .footer {
 
   .export-image-actions .btn {
     width: 100%;
+  }
+
+  body[data-storage-page] .sync-diagnostics {
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    width: calc(100vw - 24px);
   }
 }
 

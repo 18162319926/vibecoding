@@ -13,6 +13,12 @@ const refs = {
   list: document.getElementById("storageList"),
   count: document.getElementById("storageCount"),
   syncHint: document.getElementById("storageSyncHint"),
+  diagLocalCount: document.getElementById("diagLocalCount"),
+  diagRemoteCount: document.getElementById("diagRemoteCount"),
+  diagLastPush: document.getElementById("diagLastPush"),
+  diagLastPull: document.getElementById("diagLastPull"),
+  diagLastError: document.getElementById("diagLastError"),
+  diagRefreshBtn: document.getElementById("storageDiagRefreshBtn"),
   submitBtn: document.getElementById("submitBtn"),
   cancelEditBtn: document.getElementById("cancelEditBtn"),
   photoInput: document.getElementById("photoInput"),
@@ -31,7 +37,34 @@ const syncState = {
   pushTimerId: null,
   lastSeenCloudStamp: 0,
   remoteUnsubscribe: null,
+  lastPushAt: 0,
+  lastPullAt: 0,
+  lastError: "",
+  remoteCount: 0,
 };
+
+function formatDiagTime(value) {
+  const stamp = Number(value) || 0;
+  if (!stamp) return "-";
+  const date = new Date(stamp);
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  return `${hh}:${mm}:${ss}`;
+}
+
+function renderDiagnostics() {
+  if (refs.diagLocalCount) refs.diagLocalCount.textContent = String(state.items.length);
+  if (refs.diagRemoteCount) refs.diagRemoteCount.textContent = String(syncState.remoteCount || 0);
+  if (refs.diagLastPush) refs.diagLastPush.textContent = formatDiagTime(syncState.lastPushAt);
+  if (refs.diagLastPull) refs.diagLastPull.textContent = formatDiagTime(syncState.lastPullAt);
+  if (refs.diagLastError) refs.diagLastError.textContent = syncState.lastError || "无";
+}
+
+function setDiagError(error) {
+  syncState.lastError = String(error || "").trim();
+  renderDiagnostics();
+}
 
 function setStorageSyncHint(text) {
   if (!refs.syncHint) return;
@@ -48,6 +81,9 @@ async function pushStorageNow() {
   } else {
     await window.cloudSync.pushStorageState({ swatch: state.items });
   }
+  syncState.lastPushAt = Date.now();
+  syncState.lastError = "";
+  renderDiagnostics();
   setStorageSyncHint("已同步到云端");
 }
 
@@ -60,6 +96,7 @@ async function flushStorageCloudPush() {
     await pushStorageNow();
   } catch (error) {
     console.error("storage cloud flush failed", error);
+    setDiagError(error?.message || "写入云端失败");
     setStorageSyncHint(`同步失败：${error?.message || "请稍后重试"}`);
   }
 }
@@ -154,6 +191,7 @@ function setStorageItems(items, options = {}) {
   state.items = Array.isArray(items) ? items.map(normalizeItem) : [];
   saveItems({ scheduleCloud: options.scheduleCloud !== false });
   renderList();
+  renderDiagnostics();
 }
 
 function scheduleStorageCloudPush() {
@@ -170,6 +208,7 @@ function scheduleStorageCloudPush() {
       await pushStorageNow();
     } catch (error) {
       console.error("storage cloud push failed", error);
+      setDiagError(error?.message || "写入云端失败");
       setStorageSyncHint(`同步失败：${error?.message || "请稍后重试"}`);
     } finally {
       syncState.pushTimerId = null;
@@ -184,9 +223,13 @@ async function pullStorageNow() {
 
   try {
     const remote = await window.cloudSync.pullStorageState();
+    syncState.lastPullAt = Date.now();
+    syncState.lastError = "";
     applyCloudStoragePayload(remote);
+    renderDiagnostics();
   } catch (error) {
     console.error("storage cloud pull failed", error);
+    setDiagError(error?.message || "拉取云端失败");
     setStorageSyncHint(`拉取失败：${error?.message || "请稍后重试"}`);
   }
 }
@@ -198,12 +241,13 @@ function applyCloudStoragePayload(payload) {
 
   const incoming = pageType === "yarn" ? payload.yarn : payload.swatch;
   if (!Array.isArray(incoming)) return;
+  syncState.remoteCount = incoming.length;
 
   const remoteList = incoming.map(normalizeItem);
   const localList = state.items.map(normalizeItem);
 
-  // Keep local data when cloud storage is still empty for this section.
-  if (!remoteList.length && localList.length) {
+  // Keep local data only when cloud payload has no valid timestamp yet (uninitialized state).
+  if (!remoteList.length && localList.length && !stamp) {
     if (stamp) {
       syncState.lastSeenCloudStamp = stamp;
     }
@@ -233,13 +277,21 @@ function applyCloudStoragePayload(payload) {
   });
 
   const remoteIds = new Set(mergedRemote.map((item) => String(item.id || "")));
-  const localOnly = localList.filter((item) => item && item.id && !remoteIds.has(String(item.id)));
+  // Keep local-only items only when they are newer than this cloud snapshot.
+  // This prevents deleted remote items from being reintroduced locally.
+  const localOnly = localList.filter((item) => {
+    if (!item || !item.id) return false;
+    if (remoteIds.has(String(item.id))) return false;
+    const localUpdatedAt = Number(item.updatedAt) || 0;
+    return !stamp || localUpdatedAt > stamp;
+  });
   const merged = [...mergedRemote, ...localOnly];
 
   setStorageItems(merged, { scheduleCloud: false });
   if (stamp) {
     syncState.lastSeenCloudStamp = stamp;
   }
+  renderDiagnostics();
   setStorageSyncHint("已从云端同步");
 }
 
@@ -273,6 +325,7 @@ function setupStorageCloudSync() {
         },
         (error) => {
           console.error("storage cloud watch failed", error);
+          setDiagError(error?.message || "监听同步失败");
           setStorageSyncHint(`监听失败：${error?.message || "请稍后重试"}`);
         }
       );
@@ -519,6 +572,12 @@ if (refs.removePhotoBtn) {
   });
 }
 
+if (refs.diagRefreshBtn) {
+  refs.diagRefreshBtn.addEventListener("click", () => {
+    void pullStorageNow();
+  });
+}
+
 refs.list.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-action]");
   if (!button) return;
@@ -543,4 +602,5 @@ refs.list.addEventListener("click", (event) => {
 
 renderList();
 setStorageSyncHint("离线模式");
+renderDiagnostics();
 setupStorageCloudSync();
