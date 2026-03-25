@@ -1576,20 +1576,26 @@ body.homepage .footer {
   body.homepage .import-export-actions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas: "yarn swatch create";
     gap: 8px;
     width: 100%;
   }
 
-  body.homepage .import-export-actions > a:nth-child(1) {
-    order: 1;
+  body.homepage .import-export-actions > a[href="yarn.html"] {
+    grid-area: yarn;
   }
 
-  body.homepage .import-export-actions > a:nth-child(2) {
-    order: 2;
+  body.homepage .import-export-actions > a[href="swatch.html"] {
+    grid-area: swatch;
   }
 
   body.homepage .import-export-actions > .create-menu-wrap {
-    order: 3;
+    grid-area: create;
+  }
+
+  body.homepage .import-export-actions > a,
+  body.homepage .import-export-actions > .create-menu-wrap {
+    width: 100%;
   }
 
   body.homepage .import-export-actions .btn,
@@ -1597,9 +1603,11 @@ body.homepage .footer {
   body.homepage .import-export-actions #createProjectBtn {
     width: 100%;
     min-width: 0;
-    min-height: 36px;
-    padding: 6px 8px;
+    height: 44px;
+    min-height: 44px;
+    padding: 8px 10px;
     font-size: 14px;
+    border-radius: 12px;
   }
 
   .project-page .project-hero-stats {
@@ -1712,21 +1720,17 @@ body.homepage .footer {
   .inline-form,
   .timer-controls,
   .projects-toolbar,
-  .import-export-actions,
   .dashboard-toolbar,
   .project-card-actions {
     flex-direction: column;
   }
 
-  body.homepage .status-filters .create-menu-wrap {
-    flex: 0 0 auto;
-  }
-
-  body.homepage .status-filters #createProjectBtn {
-    min-width: 72px;
-    min-height: 36px;
-    padding: 6px 8px;
-    font-size: 14px;
+  body.homepage .import-export-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas: "yarn swatch create";
+    gap: 8px;
+    width: 100%;
   }
 
   body.homepage .create-menu .btn {
@@ -1816,16 +1820,16 @@ body.homepage .footer {
     width: 100%;
   }
 
+  body.homepage .import-export-actions .btn,
+  body.homepage .import-export-actions #createProjectBtn {
+    height: 44px;
+    min-height: 44px;
+    border-radius: 12px;
+  }
+
   body.homepage .status-filters .btn {
     width: auto;
     min-width: 58px;
-    min-height: 34px;
-    padding: 5px 7px;
-    font-size: 13px;
-  }
-
-  body.homepage .status-filters #createProjectBtn {
-    min-width: 66px;
     min-height: 34px;
     padding: 5px 7px;
     font-size: 13px;
