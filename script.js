@@ -1159,29 +1159,7 @@ function bindActions() {
     refs.createProjectBtn.setAttribute("aria-expanded", "true");
   };
 
-  const originalCreateMenuParent = refs.createMenuWrap.parentElement;
-  const mobileFilterQuery = window.matchMedia("(max-width: 620px)");
-
-  const placeCreateButtonForCurrentViewport = () => {
-    if (mobileFilterQuery.matches) {
-      if (refs.createMenuWrap.parentElement !== refs.statusFilters) {
-        refs.statusFilters.appendChild(refs.createMenuWrap);
-      }
-      refs.createMenuWrap.classList.add("in-filter-row");
-      return;
-    }
-
-    if (originalCreateMenuParent && refs.createMenuWrap.parentElement !== originalCreateMenuParent) {
-      originalCreateMenuParent.appendChild(refs.createMenuWrap);
-    }
-    refs.createMenuWrap.classList.remove("in-filter-row");
-  };
-
-  placeCreateButtonForCurrentViewport();
-  mobileFilterQuery.addEventListener("change", () => {
-    closeCreateMenu();
-    placeCreateButtonForCurrentViewport();
-  });
+  // Keep create button in its original action row across all viewports.
 
   const createAndOpenProject = (project) => {
     touchProject(project);
