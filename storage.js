@@ -221,9 +221,15 @@ function applyCloudStoragePayload(payload) {
     const local = localById.get(String(item.id || ""));
     if (!local) return item;
 
+    const localPhoto = getItemPhoto(local);
+    const remotePhoto = getItemPhoto(item);
+    if (!remotePhoto && localPhoto) {
+      item.photo = localPhoto;
+    }
+
     const localUpdatedAt = Number(local.updatedAt) || 0;
     const remoteUpdatedAt = Number(item.updatedAt) || 0;
-    return localUpdatedAt > remoteUpdatedAt ? local : item;
+    return localUpdatedAt >= remoteUpdatedAt ? local : item;
   });
 
   const remoteIds = new Set(mergedRemote.map((item) => String(item.id || "")));
@@ -240,13 +246,18 @@ function applyCloudStoragePayload(payload) {
 function setupStorageCloudSync() {
   if (!window.cloudSync || typeof window.cloudSync.onAuthStateChanged !== "function") return;
 
+  setStorageSyncHint("正在恢复登录...");
+
   window.cloudSync.onAuthStateChanged(async (user) => {
     if (typeof syncState.remoteUnsubscribe === "function") {
       syncState.remoteUnsubscribe();
       syncState.remoteUnsubscribe = null;
     }
 
-    if (!user) return;
+    if (!user) {
+      setStorageSyncHint("离线模式");
+      return;
+    }
 
     setStorageSyncHint("正在同步云端数据...");
 

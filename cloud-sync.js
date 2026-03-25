@@ -8,6 +8,8 @@
     realtimeChannel: null,
     timerShadow: null,
     storageShadow: { yarn: [], swatch: [] },
+    authResolved: false,
+    initPromise: null,
   };
 
   function getConfig() {
@@ -104,19 +106,41 @@
     return next;
   }
 
-  function normalizeStorageCollection(value) {
+  function normalizeStorageCollection(value, options = {}) {
+    const forCloudWrite = options.forCloudWrite === true;
     return Array.isArray(value)
       ? value
           .filter((item) => item && typeof item === "object")
-          .map((item) => sanitizeStorageItemForCloud(item))
+          .map((item) => (forCloudWrite ? sanitizeStorageItemForCloud(item) : { ...item }))
       : [];
   }
 
-  function normalizeStoragePayload(value) {
+  function normalizeStoragePayload(value, options = {}) {
     const source = value && typeof value === "object" ? value : {};
     return {
-      yarn: normalizeStorageCollection(source.yarn),
-      swatch: normalizeStorageCollection(source.swatch),
+      yarn: normalizeStorageCollection(source.yarn, options),
+      swatch: normalizeStorageCollection(source.swatch, options),
+    };
+  }
+
+  function readJsonArrayFromLocalStorage(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      const data = raw ? JSON.parse(raw) : [];
+      return Array.isArray(data) ? data.filter((item) => item && typeof item === "object") : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function readLocalProjectsFallback() {
+    return readJsonArrayFromLocalStorage("knit-helper-state");
+  }
+
+  function readLocalStorageShadowFallback() {
+    return {
+      yarn: readJsonArrayFromLocalStorage("knit-yarn-storage"),
+      swatch: readJsonArrayFromLocalStorage("knit-swatch-storage"),
     };
   }
 
@@ -139,7 +163,7 @@
   }
 
   function combineTimerAndStorage(timer, storage) {
-    const normalizedStorage = normalizeStoragePayload(storage);
+    const normalizedStorage = normalizeStoragePayload(storage, { forCloudWrite: true });
     const hasStorage = normalizedStorage.yarn.length > 0 || normalizedStorage.swatch.length > 0;
     const baseTimer = timer && typeof timer === "object" ? { ...timer } : null;
 
@@ -313,11 +337,13 @@
 
     if (!hasValidConfig(config)) {
       state.initError = "缺少 Supabase 配置，请检查 supabase-config.js";
+      state.authResolved = true;
       return;
     }
 
     if (!window.supabase || typeof window.supabase.createClient !== "function") {
       state.initError = "Supabase SDK 未加载，请检查网络或 CDN";
+      state.authResolved = true;
       return;
     }
 
@@ -328,9 +354,15 @@
     state.ready = true;
     state.initError = "";
 
-    const { data } = await state.client.auth.getSession();
-    state.currentUser = normalizeUser(data?.session?.user || null);
-    notifyAuthListeners(state.currentUser);
+    try {
+      const { data } = await state.client.auth.getSession();
+      state.currentUser = normalizeUser(data?.session?.user || null);
+    } catch {
+      state.currentUser = null;
+    } finally {
+      state.authResolved = true;
+      notifyAuthListeners(state.currentUser);
+    }
 
     state.client.auth.onAuthStateChange((_event, session) => {
       state.currentUser = normalizeUser(session?.user || null);
@@ -344,10 +376,31 @@
 
   function onAuthStateChanged(callback) {
     state.authListeners.push(callback);
-    callback(state.currentUser);
+
+    const emitCurrentUser = () => {
+      try {
+        callback(state.currentUser);
+      } catch (error) {
+        console.error("auth listener immediate callback error", error);
+      }
+    };
+
+    if (state.authResolved) {
+      emitCurrentUser();
+    } else if (state.initPromise && typeof state.initPromise.finally === "function") {
+      state.initPromise.finally(() => {
+        if (!state.authListeners.includes(callback)) return;
+        emitCurrentUser();
+      });
+    }
+
     return function unsubscribe() {
       state.authListeners = state.authListeners.filter((listener) => listener !== callback);
     };
+  }
+
+  function isAuthResolved() {
+    return state.authResolved;
   }
 
   function getCurrentUser() {
@@ -424,6 +477,7 @@
   async function pushState(payload) {
     if (!state.ready || !state.currentUser) return false;
     const config = getConfig();
+    let remoteSnapshot = null;
 
     const parsedTimer = splitTimerAndStorage(payload?.timer);
     const payloadHasStorage = Boolean(
@@ -433,10 +487,10 @@
 
     // When caller only updates projects/timer, pull latest storage snapshot first
     // to avoid overwriting newer yarn/swatch data from another device.
-    if (!payloadHasStorage) {
+    if (!payloadHasStorage || !Array.isArray(payload?.projects) || !(payload?.timer && typeof payload.timer === "object")) {
       try {
-        const remote = await pullState();
-        const latestStorage = normalizeStoragePayload(remote?.storage);
+        remoteSnapshot = await pullState();
+        const latestStorage = normalizeStoragePayload(remoteSnapshot?.storage);
         if (latestStorage.yarn.length > 0 || latestStorage.swatch.length > 0) {
           state.storageShadow = latestStorage;
         }
@@ -445,7 +499,7 @@
       }
     }
 
-    const nextTimer = parsedTimer.timer || state.timerShadow;
+    const nextTimer = parsedTimer.timer || remoteSnapshot?.timer || state.timerShadow;
     const incomingStorage = normalizeStoragePayload(payload?.storage);
     const hasParsedTimerStorage = parsedTimer.storage.yarn.length > 0 || parsedTimer.storage.swatch.length > 0;
     if (payloadHasStorage) {
@@ -456,7 +510,12 @@
     const timer = combineTimerAndStorage(nextTimer, state.storageShadow);
 
     state.timerShadow = nextTimer || null;
-    const preparedProjects = await prepareProjectsForCloud(payload?.projects, config);
+    const baseProjects = Array.isArray(payload?.projects)
+      ? payload.projects
+      : Array.isArray(remoteSnapshot?.projects)
+        ? remoteSnapshot.projects
+        : readLocalProjectsFallback();
+    const preparedProjects = await prepareProjectsForCloud(baseProjects, config);
     const cloudProjects = fitProjectsToSize(preparedProjects, timer, 5_000_000);
     const clientUpdatedAt = Number(payload?.clientUpdatedAt) || Date.now();
 
@@ -527,9 +586,12 @@
     } catch {
       // Fallback to local shadows so storage sync still has a chance to proceed.
       remote = {
-        projects: [],
+        projects: readLocalProjectsFallback(),
         timer: state.timerShadow,
-        storage: state.storageShadow,
+        storage: {
+          ...readLocalStorageShadowFallback(),
+          ...state.storageShadow,
+        },
       };
     }
     const currentStorage = normalizeStoragePayload(remote?.storage);
@@ -750,10 +812,11 @@
     };
   }
 
-  init();
+  state.initPromise = init();
 
   window.cloudSync = {
     isReady,
+    isAuthResolved,
     onAuthStateChanged,
     signIn,
     signUp,
