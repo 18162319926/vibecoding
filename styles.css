@@ -1532,13 +1532,18 @@ body.homepage .footer {
 
   body[data-storage-page] .storage-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr);
-    height: calc(100vh - 214px);
+    grid-template-rows: auto auto;
+    height: auto;
+    overflow: visible;
   }
 
   body[data-storage-page] .storage-form-panel,
   body[data-storage-page] .storage-list-panel {
     grid-column: 1;
+  }
+
+  body[data-storage-page] .storage-panel {
+    overflow: visible;
   }
 
   .project-page .project-hero-stats {
@@ -1657,18 +1662,42 @@ body.homepage .footer {
     flex-direction: column;
   }
 
+  body.homepage .dashboard-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    align-items: stretch;
+  }
+
   body.homepage .status-filters {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    white-space: nowrap;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    overflow: visible;
+    white-space: normal;
     width: 100%;
   }
 
   body.homepage .status-filters .btn {
-    flex: 0 0 auto;
-    min-width: 64px;
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    padding: 6px 8px;
+    font-size: 14px;
+  }
+
+  body.homepage .import-export-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  body.homepage .import-export-actions .btn,
+  body.homepage .import-export-actions .create-menu-wrap,
+  body.homepage .import-export-actions #createProjectBtn {
+    width: 100%;
+    min-width: 0;
     min-height: 36px;
     padding: 6px 8px;
     font-size: 14px;
