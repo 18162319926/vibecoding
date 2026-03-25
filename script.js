@@ -1096,6 +1096,25 @@ function setupCloudSync() {
   if (refs.closeAuthDialogBtn) {
     refs.closeAuthDialogBtn.addEventListener("click", closeAuthDialog);
   }
+  if (refs.logoutBtn && !refs.logoutBtn.dataset.logoutBound) {
+    refs.logoutBtn.dataset.logoutBound = "1";
+    refs.logoutBtn.addEventListener("click", async () => {
+      if (!window.cloudSync || typeof window.cloudSync.signOut !== "function") {
+        setSyncHint("云同步未就绪");
+        return;
+      }
+      try {
+        await window.cloudSync.signOut();
+        setSyncHint("已退出登录");
+      } catch (error) {
+        const message = error?.message || "请稍后重试";
+        setSyncHint(`退出失败：${message}`);
+        if (refs.authStatus) {
+          refs.authStatus.textContent = `退出失败：${message}`;
+        }
+      }
+    });
+  }
   if (refs.authDialog) {
     refs.authDialog.addEventListener("click", (event) => {
       if (event.target === refs.authDialog) closeAuthDialog();

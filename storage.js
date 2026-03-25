@@ -12,6 +12,7 @@ const refs = {
   form: document.getElementById("storageForm"),
   list: document.getElementById("storageList"),
   count: document.getElementById("storageCount"),
+  syncHint: document.getElementById("storageSyncHint"),
   submitBtn: document.getElementById("submitBtn"),
   cancelEditBtn: document.getElementById("cancelEditBtn"),
   photoInput: document.getElementById("photoInput"),
@@ -32,6 +33,11 @@ const syncState = {
   remoteUnsubscribe: null,
 };
 
+function setStorageSyncHint(text) {
+  if (!refs.syncHint) return;
+  refs.syncHint.textContent = text;
+}
+
 async function pushStorageNow() {
   if (!window.cloudSync || !window.cloudSync.isReady()) return;
   if (!window.cloudSync.getCurrentUser()) return;
@@ -42,6 +48,7 @@ async function pushStorageNow() {
   } else {
     await window.cloudSync.pushStorageState({ swatch: state.items });
   }
+  setStorageSyncHint("已同步到云端");
 }
 
 async function flushStorageCloudPush() {
@@ -53,6 +60,7 @@ async function flushStorageCloudPush() {
     await pushStorageNow();
   } catch (error) {
     console.error("storage cloud flush failed", error);
+    setStorageSyncHint(`同步失败：${error?.message || "请稍后重试"}`);
   }
 }
 
@@ -162,6 +170,7 @@ function scheduleStorageCloudPush() {
       await pushStorageNow();
     } catch (error) {
       console.error("storage cloud push failed", error);
+      setStorageSyncHint(`同步失败：${error?.message || "请稍后重试"}`);
     } finally {
       syncState.pushTimerId = null;
     }
@@ -178,6 +187,7 @@ async function pullStorageNow() {
     applyCloudStoragePayload(remote);
   } catch (error) {
     console.error("storage cloud pull failed", error);
+    setStorageSyncHint(`拉取失败：${error?.message || "请稍后重试"}`);
   }
 }
 
@@ -224,6 +234,7 @@ function applyCloudStoragePayload(payload) {
   if (stamp) {
     syncState.lastSeenCloudStamp = stamp;
   }
+  setStorageSyncHint("已从云端同步");
 }
 
 function setupStorageCloudSync() {
@@ -237,6 +248,8 @@ function setupStorageCloudSync() {
 
     if (!user) return;
 
+    setStorageSyncHint("正在同步云端数据...");
+
     await pullStorageNow();
 
     if (typeof window.cloudSync.watchRemoteState === "function") {
@@ -249,6 +262,7 @@ function setupStorageCloudSync() {
         },
         (error) => {
           console.error("storage cloud watch failed", error);
+          setStorageSyncHint(`监听失败：${error?.message || "请稍后重试"}`);
         }
       );
     }
@@ -377,6 +391,7 @@ function upsertItem(next) {
     state.items.unshift(next);
   }
   saveItems();
+  void flushStorageCloudPush();
   renderList();
   resetForm();
 }
@@ -384,6 +399,7 @@ function upsertItem(next) {
 function deleteItem(id) {
   state.items = state.items.filter((item) => item.id !== id);
   saveItems();
+  void flushStorageCloudPush();
   renderList();
   if (state.editingId === id) {
     resetForm();
@@ -515,4 +531,5 @@ refs.list.addEventListener("click", (event) => {
 });
 
 renderList();
+setStorageSyncHint("离线模式");
 setupStorageCloudSync();

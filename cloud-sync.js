@@ -17,6 +17,9 @@
       supabaseAnonKey: String(raw.supabaseAnonKey || "").trim(),
       stateTable: String(raw.stateTable || "knit_user_state").trim(),
       coversBucket: String(raw.coversBucket || "knit-covers").trim(),
+      // Realtime can be unstable in some local/dev networks; keep it opt-in.
+      realtimeEnabled: Boolean(raw.realtimeEnabled),
+      pollIntervalMs: Math.max(3000, Number(raw.pollIntervalMs) || 10000),
     };
   }
 
@@ -69,8 +72,44 @@
     return text.slice(0, maxLength);
   }
 
+  function sanitizeStorageItemForCloud(item) {
+    const source = item && typeof item === "object" ? item : {};
+    const next = { ...source };
+
+    // Avoid oversized row payload: do not persist local base64 photos in table JSON.
+    // Keep only remote URLs, clear data URLs.
+    ["photo", "photoData", "image", "coverImage", "diagramImage"].forEach((key) => {
+      const value = String(next[key] || "").trim();
+      if (!value) {
+        next[key] = "";
+        return;
+      }
+      if (/^data:image\//i.test(value)) {
+        next[key] = "";
+        return;
+      }
+      if (/^https?:\/\//i.test(value)) {
+        next[key] = value;
+        return;
+      }
+      next[key] = "";
+    });
+
+    if (next.notes) next.notes = trimText(next.notes, 1200);
+    if (next.yarnType) next.yarnType = trimText(next.yarnType, 200);
+    if (next.yarnBrand) next.yarnBrand = trimText(next.yarnBrand, 120);
+    if (next.yarnColorNo) next.yarnColorNo = trimText(next.yarnColorNo, 120);
+    if (next.pattern) next.pattern = trimText(next.pattern, 200);
+
+    return next;
+  }
+
   function normalizeStorageCollection(value) {
-    return Array.isArray(value) ? value.filter((item) => item && typeof item === "object") : [];
+    return Array.isArray(value)
+      ? value
+          .filter((item) => item && typeof item === "object")
+          .map((item) => sanitizeStorageItemForCloud(item))
+      : [];
   }
 
   function normalizeStoragePayload(value) {
@@ -363,6 +402,8 @@
       .from(config.stateTable)
       .select("projects, timer, client_updated_at")
       .eq("user_id", state.currentUser.id)
+      .order("client_updated_at", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (error) throw new Error(extractErrorMessage(error));
@@ -385,12 +426,31 @@
     const config = getConfig();
 
     const parsedTimer = splitTimerAndStorage(payload?.timer);
+    const payloadHasStorage = Boolean(
+      (payload && payload.storage && typeof payload.storage === "object") ||
+      (payload && payload.timer && typeof payload.timer === "object" && payload.timer.__storage)
+    );
+
+    // When caller only updates projects/timer, pull latest storage snapshot first
+    // to avoid overwriting newer yarn/swatch data from another device.
+    if (!payloadHasStorage) {
+      try {
+        const remote = await pullState();
+        const latestStorage = normalizeStoragePayload(remote?.storage);
+        if (latestStorage.yarn.length > 0 || latestStorage.swatch.length > 0) {
+          state.storageShadow = latestStorage;
+        }
+      } catch {
+        // Keep current shadow as a fallback; push should still proceed.
+      }
+    }
+
     const nextTimer = parsedTimer.timer || state.timerShadow;
     const incomingStorage = normalizeStoragePayload(payload?.storage);
-    const hasIncomingStorage = incomingStorage.yarn.length > 0 || incomingStorage.swatch.length > 0;
-    if (hasIncomingStorage) {
+    const hasParsedTimerStorage = parsedTimer.storage.yarn.length > 0 || parsedTimer.storage.swatch.length > 0;
+    if (payloadHasStorage) {
       state.storageShadow = incomingStorage;
-    } else if (parsedTimer.storage.yarn.length > 0 || parsedTimer.storage.swatch.length > 0) {
+    } else if (hasParsedTimerStorage) {
       state.storageShadow = parsedTimer.storage;
     }
     const timer = combineTimerAndStorage(nextTimer, state.storageShadow);
@@ -409,7 +469,34 @@
 
     const { error } = await state.client.from(config.stateTable).upsert(row, { onConflict: "user_id" });
     if (error) {
-      throw new Error(`同步写入失败：${extractErrorMessage(error)}`);
+      const message = extractErrorMessage(error);
+
+      // Fallback for tables missing unique index on user_id.
+      if (/on conflict|unique|constraint|conflict/i.test(message)) {
+        const { data: updatedRows, error: updateError } = await state.client
+          .from(config.stateTable)
+          .update({
+            projects: row.projects,
+            timer: row.timer,
+            client_updated_at: row.client_updated_at,
+          })
+          .eq("user_id", state.currentUser.id)
+          .select("user_id")
+          .limit(1);
+
+        if (updateError) {
+          throw new Error(`同步写入失败：${extractErrorMessage(updateError)}`);
+        }
+
+        if (!Array.isArray(updatedRows) || updatedRows.length === 0) {
+          const { error: insertError } = await state.client.from(config.stateTable).insert(row);
+          if (insertError) {
+            throw new Error(`同步写入失败：${extractErrorMessage(insertError)}`);
+          }
+        }
+      } else {
+        throw new Error(`同步写入失败：${message}`);
+      }
     }
 
     return true;
@@ -434,7 +521,17 @@
 
   async function pushStorageState(payload) {
     if (!state.ready || !state.currentUser) return false;
-    const remote = await pullState();
+    let remote = null;
+    try {
+      remote = await pullState();
+    } catch {
+      // Fallback to local shadows so storage sync still has a chance to proceed.
+      remote = {
+        projects: [],
+        timer: state.timerShadow,
+        storage: state.storageShadow,
+      };
+    }
     const currentStorage = normalizeStoragePayload(remote?.storage);
     const nextStorage = {
       yarn: payload && Array.isArray(payload.yarn) ? normalizeStorageCollection(payload.yarn) : currentStorage.yarn,
@@ -452,6 +549,50 @@
   function watchRemoteState(onData, onError) {
     if (!state.ready || !state.currentUser) return function noop() {};
     const config = getConfig();
+
+    let pollTimerId = null;
+    let pollingStopped = false;
+    let lastSeenStamp = 0;
+
+    const startPolling = () => {
+      if (pollTimerId || pollingStopped) return;
+      const run = async () => {
+        try {
+          const remote = await pullState();
+          if (!remote) return;
+          const stamp = Number(remote.clientUpdatedAt) || 0;
+          if (stamp && stamp <= lastSeenStamp) return;
+          if (stamp) {
+            lastSeenStamp = stamp;
+          }
+          onData(remote);
+        } catch (error) {
+          if (typeof onError === "function") {
+            onError(error instanceof Error ? error : new Error("轮询同步失败"));
+          }
+        }
+      };
+
+      void run();
+      pollTimerId = setInterval(() => {
+        void run();
+      }, config.pollIntervalMs);
+    };
+
+    const stopPolling = () => {
+      pollingStopped = true;
+      if (pollTimerId) {
+        clearInterval(pollTimerId);
+        pollTimerId = null;
+      }
+    };
+
+    if (!config.realtimeEnabled) {
+      startPolling();
+      return function unsubscribePolling() {
+        stopPolling();
+      };
+    }
 
     if (state.realtimeChannel) {
       state.client.removeChannel(state.realtimeChannel);
@@ -483,14 +624,26 @@
         }
       )
       .subscribe((status) => {
-        if (status === "CHANNEL_ERROR" && typeof onError === "function") {
-          onError(new Error("实时同步通道连接失败"));
+        if (status === "SUBSCRIBED") {
+          stopPolling();
+          return;
+        }
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          if (typeof onError === "function") {
+            onError(new Error("实时同步不可用，已切换到轮询"));
+          }
+          if (state.realtimeChannel === channel) {
+            state.client.removeChannel(channel);
+            state.realtimeChannel = null;
+          }
+          startPolling();
         }
       });
 
     state.realtimeChannel = channel;
 
     return function unsubscribe() {
+      stopPolling();
       if (!state.client || !channel) return;
       state.client.removeChannel(channel);
       if (state.realtimeChannel === channel) {
