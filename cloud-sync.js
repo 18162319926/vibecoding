@@ -8,6 +8,7 @@
     realtimeChannel: null,
     timerShadow: null,
     storageShadow: { yarn: [], swatch: [] },
+    lastSyncWarning: "",
     authResolved: false,
     initPromise: null,
   };
@@ -345,11 +346,21 @@
 
   async function prepareStoragePayloadForCloud(storage, config) {
     const source = normalizeStoragePayload(storage);
+    const warnings = [];
 
     const toCloudItem = async (item, kind) => {
       const next = sanitizeStorageItemForCloud(item);
-      const photoUrl = await uploadStoragePhotoAndGetUrl(item, kind, config);
-      next.photo = photoUrl || String(next.photo || "").trim();
+      try {
+        const photoUrl = await uploadStoragePhotoAndGetUrl(item, kind, config);
+        next.photo = photoUrl || String(next.photo || "").trim();
+      } catch (error) {
+        const existing = String(next.photo || "").trim();
+        next.photo = looksLikeRemoteUrl(existing) ? existing : "";
+        const itemId = String(item?.id || "unknown");
+        const message = `${kind}:${itemId} 图片上传失败，已降级为文本同步（${extractErrorMessage(error)}）`;
+        warnings.push(message);
+        console.warn(message);
+      }
       next.photoData = "";
       next.image = "";
       next.coverImage = "";
@@ -360,7 +371,10 @@
     const yarn = await Promise.all(source.yarn.map((item) => toCloudItem(item, "yarn")));
     const swatch = await Promise.all(source.swatch.map((item) => toCloudItem(item, "swatch")));
 
-    return { yarn, swatch };
+    return {
+      payload: { yarn, swatch },
+      warnings,
+    };
   }
 
   async function prepareProjectsForCloud(projects, config) {
@@ -558,8 +572,12 @@
     } else if (hasParsedTimerStorage) {
       state.storageShadow = parsedTimer.storage;
     }
-    const cloudStorage = await prepareStoragePayloadForCloud(state.storageShadow, config);
+    const cloudStorageResult = await prepareStoragePayloadForCloud(state.storageShadow, config);
+    const cloudStorage = cloudStorageResult.payload;
     state.storageShadow = cloudStorage;
+    state.lastSyncWarning = cloudStorageResult.warnings.length
+      ? cloudStorageResult.warnings[0]
+      : "";
     const timer = combineTimerAndStorage(nextTimer, cloudStorage);
 
     state.timerShadow = nextTimer || null;
@@ -767,6 +785,10 @@
     };
   }
 
+  function getLastSyncWarning() {
+    return String(state.lastSyncWarning || "");
+  }
+
   function bindAuthUI(options) {
     const emailInput = options?.emailInput;
     const passwordInput = options?.passwordInput;
@@ -879,6 +901,7 @@
     pushState,
     pullStorageState,
     pushStorageState,
+    getLastSyncWarning,
     watchRemoteState,
     bindAuthUI,
   };

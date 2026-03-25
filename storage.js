@@ -81,10 +81,13 @@ async function pushStorageNow() {
   } else {
     await window.cloudSync.pushStorageState({ swatch: state.items });
   }
+  const warning = typeof window.cloudSync.getLastSyncWarning === "function"
+    ? window.cloudSync.getLastSyncWarning()
+    : "";
   syncState.lastPushAt = Date.now();
-  syncState.lastError = "";
+  syncState.lastError = warning || "";
   renderDiagnostics();
-  setStorageSyncHint("已同步到云端");
+  setStorageSyncHint(warning ? "已同步（图片已降级）" : "已同步到云端");
 }
 
 async function flushStorageCloudPush() {

@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=ZCOOL+XiaoWei&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=ZCOOL+KuHei&family=ZCOOL+XiaoWei&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="styles.css" />
@@ -17,8 +17,18 @@
     <div class="bg-shape bg-shape-b"></div>
 
     <nav class="top-nav" aria-label="主导航">
-      <div class="brand">织伴</div>
+      <div class="brand-wrap">
+        <div class="brand">织伴</div>
+        <p class="brand-subtitle">把时间织成柔软的样子</p>
+      </div>
+      <div class="nav-center" aria-label="页面标签">
+        <a class="btn ghost is-tab-active" href="#dashboardPanel">项目仪表盘</a>
+        <a class="btn ghost" href="yarn.html">毛线仓库</a>
+        <a class="btn ghost" href="swatch.html">小样仓库</a>
+        <a class="btn ghost" href="stats.html">数据统计</a>
+      </div>
       <div class="nav-auth" id="navAuth">
+        <button class="sync-state sync-state-idle" id="syncHint" type="button" title="点击立即同步">☁️ 离线模式</button>
         <span class="account-chip" id="accountChip" hidden>未登录</span>
         <button class="btn ghost" id="openLoginBtn" type="button">登录</button>
         <button class="btn ghost" id="openRegisterBtn" type="button">注册</button>
@@ -26,35 +36,14 @@
       </div>
     </nav>
 
-    <header class="hero">
+    <header class="hero homepage-hero">
       <div>
         <p class="eyebrow">KNIT COMPANION</p>
-        <h1>织伴</h1>
-        <p class="subtitle">把时间织成柔软的样子</p>
-      </div>
-      <div class="hero-stats" aria-label="今日进度">
-        <div class="stat-card stat-card-core">
-          <span>项目总数</span>
-          <strong id="projectCount">0</strong>
-        </div>
-        <div class="stat-card stat-card-core">
-          <span>进行中</span>
-          <strong id="activeCount">0</strong>
-        </div>
-        <div class="stat-card stat-card-today">
-          <span>今日时长</span>
-          <strong id="todayDuration">00:00:00</strong>
-        </div>
-        <div class="stat-card stat-card-today">
-          <span>今日行数</span>
-          <strong id="todayRows">0</strong>
-        </div>
       </div>
     </header>
 
     <main class="layout">
-      <section class="panel dashboard-panel reveal">
-        <h2>项目仪表盘</h2>
+      <section class="panel dashboard-panel reveal" id="dashboardPanel">
         <div class="dashboard-toolbar">
           <div class="status-filters" id="statusFilters">
             <button class="btn ghost is-active" type="button" data-filter="all">全部</button>
@@ -62,20 +51,20 @@
             <button class="btn ghost" type="button" data-filter="paused">搁置</button>
             <button class="btn ghost" type="button" data-filter="done">已完成</button>
           </div>
-          <div class="import-export-actions">
-            <a class="btn ghost" href="yarn.html">毛线仓库</a>
-            <a class="btn ghost" href="swatch.html">小样仓库</a>
-            <div class="create-menu-wrap" id="createMenuWrap">
-              <button class="btn primary" id="createProjectBtn" type="button" aria-haspopup="true" aria-expanded="false">新建项目</button>
-              <div class="create-menu" id="createProjectMenu" hidden>
-                <button class="btn ghost" id="createBlankOption" type="button">空白项目</button>
-                <button class="btn ghost" id="createFromImageOption" type="button">导入图片图解</button>
-                <button class="btn ghost" id="createFromTextOption" type="button">导入文字图解</button>
-              </div>
+          <div class="dashboard-stats-group">
+          <div class="dashboard-inline-stats" aria-label="项目统计">
+            <div class="inline-stat-pill">
+              <span>项目总数</span>
+              <strong id="projectCount">0</strong>
+            </div>
+            <div class="inline-stat-pill">
+              <span>进行中</span>
+              <strong id="activeCount">0</strong>
             </div>
           </div>
+          <div class="today-summary-pill" aria-label="今日统计">今日统计：<strong id="todayDuration">00:00:00</strong> / <strong><span id="todayRows">0</span>行</strong></div>
+          </div>
         </div>
-        <p class="helper-text">支持鼠标滚轮上下滚动来横向浏览项目；点击卡片“进入项目”查看详情。</p>
         <div id="projectCards" class="project-cards"></div>
       </section>
 
@@ -118,7 +107,16 @@
       </div>
     </div>
 
-    <footer class="footer">愿你的每一针，都织进生活的温度。<span id="syncHint" class="sync-hint inline">离线模式</span></footer>
+    <div class="create-menu-wrap fab-create-wrap" id="createMenuWrap">
+      <button class="btn primary fab-create-btn" id="createProjectBtn" type="button" aria-haspopup="true" aria-expanded="false" title="新建项目">＋</button>
+      <div class="create-menu" id="createProjectMenu" hidden>
+        <button class="btn ghost" id="createBlankOption" type="button">空白项目</button>
+        <button class="btn ghost" id="createFromImageOption" type="button">导入图片图解</button>
+        <button class="btn ghost" id="createFromTextOption" type="button">导入文字图解</button>
+      </div>
+    </div>
+
+    <footer class="footer">愿你的每一针，都织进生活的温度。</footer>
 
     <script src="supabase-config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

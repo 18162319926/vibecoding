@@ -783,8 +783,16 @@ function renderDashboard() {
   refs.activeCount.textContent = String(state.projects.filter((project) => project.status === "active").length);
   const todayRowTotal = state.projects.reduce((sum, project) => sum + Math.max(0, Number(project.todayRows) || 0), 0);
   const todaySecondsTotal = state.projects.reduce((sum, project) => sum + Math.max(0, Number(project.todaySeconds) || 0), 0);
-  if (refs.todayRows) refs.todayRows.textContent = String(todayRowTotal);
-  if (refs.todayDuration) refs.todayDuration.textContent = formatDuration(todaySecondsTotal);
+  if (refs.todayRows) {
+    refs.todayRows.textContent = String(todayRowTotal);
+    const scarfRatio = (todayRowTotal / 36).toFixed(2);
+    refs.todayRows.title = `相当于完成了 ${scarfRatio} 片围巾`;
+  }
+  if (refs.todayDuration) {
+    refs.todayDuration.textContent = formatDuration(todaySecondsTotal);
+    const pomodoros = (todaySecondsTotal / 1500).toFixed(1);
+    refs.todayDuration.title = `约 ${pomodoros} 个番茄钟`;
+  }
 
   if (!filtered.length) {
     const tip = document.createElement("p");
@@ -807,15 +815,22 @@ function renderDashboard() {
     title.textContent = project.projectName || "未命名作品";
 
     const statusMeta = STATUS_MAP[project.status] || STATUS_MAP.active;
-    const meta = document.createElement("p");
-    meta.className = "project-meta";
-    meta.textContent = `${statusMeta.icon} ${statusMeta.label} · ${project.projectType || "其他"}`;
+    const meta = document.createElement("div");
+    meta.className = "project-meta-row";
+    const statusPill = document.createElement("span");
+    statusPill.className = `status-pill status-${project.status || "active"}`;
+    statusPill.textContent = statusMeta.label;
+    const typeText = document.createElement("span");
+    typeText.className = "project-meta";
+    typeText.textContent = project.projectType || "其他";
+    meta.append(statusPill, typeText);
 
     const progress = getProjectProgress(project);
     const track = document.createElement("div");
     track.className = "progress-track";
     const fill = document.createElement("div");
     fill.className = "progress-fill";
+    fill.classList.add(`status-${project.status || "active"}`);
     fill.style.width = `${progress}%`;
     track.appendChild(fill);
 
@@ -842,7 +857,7 @@ function renderDashboard() {
     });
 
     const openBtn = document.createElement("a");
-    openBtn.className = "btn ghost";
+    openBtn.className = "btn primary";
     openBtn.href = `project.html?id=${encodeURIComponent(project.id)}`;
     openBtn.textContent = "进入项目";
 
@@ -883,10 +898,37 @@ function renderDashboard() {
       renderDashboard();
     });
 
-    actions.append(exportStyleSelect, openBtn, statusBtn, exportBtn, deleteBtn);
+    const moreWrap = document.createElement("div");
+    moreWrap.className = "card-more-wrap";
+    const moreBtn = document.createElement("button");
+    moreBtn.className = "btn ghost more-trigger";
+    moreBtn.type = "button";
+    moreBtn.textContent = "更多";
+    const moreMenu = document.createElement("div");
+    moreMenu.className = "card-more-menu";
+    moreMenu.hidden = true;
+
+    const closeAllMoreMenus = () => {
+      document.querySelectorAll(".card-more-menu").forEach((menu) => {
+        menu.hidden = true;
+      });
+    };
+
+    moreBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const nextHidden = !moreMenu.hidden;
+      closeAllMoreMenus();
+      moreMenu.hidden = nextHidden;
+    });
+
+    moreMenu.append(exportStyleSelect, exportBtn, deleteBtn);
+    moreWrap.append(moreBtn, moreMenu);
+
+    actions.append(openBtn, statusBtn, moreWrap);
     card.append(cover, title, meta, track, progressText, actions);
     refs.projectCards.appendChild(card);
   });
+
 }
 
 function saveTimerState(options = {}) {
@@ -960,7 +1002,21 @@ function bindGlobalTimer() {
 
 function setSyncHint(text) {
   if (!refs.syncHint) return;
-  refs.syncHint.textContent = text;
+  const raw = String(text || "").trim();
+  let icon = "☁️";
+  let cls = "sync-state-idle";
+  if (/失败|错误|不可用/.test(raw)) {
+    icon = "❌";
+    cls = "sync-state-error";
+  } else if (/正在|监听|同步中/.test(raw)) {
+    icon = "🔄";
+    cls = "sync-state-syncing";
+  } else if (/已同步|已初始化/.test(raw)) {
+    icon = "✅";
+    cls = "sync-state-ok";
+  }
+  refs.syncHint.className = `sync-state ${cls}`;
+  refs.syncHint.textContent = `${icon} ${raw || "离线模式"}`;
 }
 
 function setAuthNav(user) {
@@ -1177,6 +1233,25 @@ function readImageFileAsDataUrl(file) {
 }
 
 function bindActions() {
+  if (refs.syncHint) {
+    refs.syncHint.addEventListener("click", async () => {
+      if (!window.cloudSync || !window.cloudSync.getCurrentUser()) {
+        setSyncHint("离线模式");
+        return;
+      }
+      setSyncHint("正在同步云端数据...");
+      try {
+        const remote = await window.cloudSync.pullState();
+        if (remote) {
+          applyCloudPayload(remote);
+        }
+        scheduleCloudPush();
+      } catch (error) {
+        setSyncHint(`拉取云端失败：${error.message || "请稍后重试"}`);
+      }
+    });
+  }
+
   refs.statusFilters.addEventListener("click", (event) => {
     const target = event.target.closest("button[data-filter]");
     if (!target) return;
@@ -1251,6 +1326,13 @@ function bindActions() {
     if (!refs.createMenuWrap.contains(event.target)) {
       closeCreateMenu();
     }
+
+    document.querySelectorAll(".card-more-menu").forEach((menu) => {
+      if (menu.contains(event.target)) return;
+      const wrap = menu.closest(".card-more-wrap");
+      if (wrap && wrap.contains(event.target)) return;
+      menu.hidden = true;
+    });
   });
 
   refs.diagramImageInput.addEventListener("change", async (event) => {
@@ -1278,12 +1360,6 @@ function bindActions() {
       refs.diagramImageInput.value = "";
     }
   });
-
-  refs.projectCards.addEventListener("wheel", (event) => {
-    if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-    event.preventDefault();
-    refs.projectCards.scrollBy({ left: event.deltaY, behavior: "auto" });
-  }, { passive: false });
 
   if (refs.exportChoiceDialog) {
     const dialogCard = refs.exportChoiceDialog.querySelector(".dialog-card");

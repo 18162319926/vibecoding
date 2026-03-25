@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>织伴 | 数据统计</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=ZCOOL+XiaoWei&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-shape bg-shape-a"></div>
+    <div class="bg-shape bg-shape-b"></div>
+
+    <nav class="top-nav" aria-label="页面导航">
+      <div class="brand">织伴</div>
+      <div class="nav-auth">
+        <a class="btn ghost" href="index.html">返回主页</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <p class="eyebrow">KNIT ANALYTICS</p>
+        <h1>数据统计</h1>
+        <p class="subtitle">查看你的编织投入、进度和产出趋势</p>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel dashboard-panel">
+        <div class="dashboard-toolbar">
+          <h2>时间周期</h2>
+          <div class="status-filters" id="periodFilters">
+            <button class="btn ghost is-active" type="button" data-period="today">今日</button>
+            <button class="btn ghost" type="button" data-period="week">本周</button>
+            <button class="btn ghost" type="button" data-period="month">本月</button>
+            <button class="btn ghost" type="button" data-period="all">全部历史</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel dashboard-panel">
+        <h2>总览</h2>
+        <div class="hero-stats stats-analytics-grid">
+          <div class="stat-card stat-card-core"><span>项目总数</span><strong id="statProjectCount">0</strong></div>
+          <div class="stat-card stat-card-core"><span>进行中</span><strong id="statActiveCount">0</strong></div>
+          <div class="stat-card stat-card-today"><span>累计时长</span><strong id="statTotalDuration">00:00:00</strong></div>
+          <div class="stat-card stat-card-today"><span>累计行数</span><strong id="statTotalRows">0</strong></div>
+        </div>
+      </section>
+
+      <section class="panel dashboard-panel">
+        <h2>项目排行</h2>
+        <div id="projectRanking" class="storage-list"></div>
+      </section>
+
+      <section class="panel dashboard-panel">
+        <h2>本日分布</h2>
+        <canvas id="todayTrendCanvas" width="980" height="320"></canvas>
+      </section>
+    </main>
+
+    <script src="stats.js"></script>
+  </body>
+</html>
