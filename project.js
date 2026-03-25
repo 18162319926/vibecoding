@@ -81,6 +81,102 @@ function getToday() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function makeHourlyBuckets() {
+  const buckets = {};
+  for (let hour = 0; hour < 24; hour += 1) {
+    const key = `h${String(hour).padStart(2, "0")}`;
+    buckets[key] = 0;
+  }
+  return buckets;
+}
+
+function getHourKey(hour) {
+  const value = Number(hour);
+  if (!Number.isFinite(value)) return "h20";
+  const normalized = Math.max(0, Math.min(23, Math.floor(value)));
+  return `h${String(normalized).padStart(2, "0")}`;
+}
+
+function getHourBucket(hour) {
+  return getHourKey(hour);
+}
+
+function ensureProjectAnalytics(project) {
+  if (!project || typeof project !== "object") return;
+  if (!project.dailyStats || typeof project.dailyStats !== "object") {
+    project.dailyStats = {};
+  }
+  const sourceBuckets = project.timeBuckets && typeof project.timeBuckets === "object" ? project.timeBuckets : {};
+  const nextBuckets = makeHourlyBuckets();
+
+  let hasHourly = false;
+  for (let hour = 0; hour < 24; hour += 1) {
+    const key = getHourKey(hour);
+    const value = Math.max(0, Number(sourceBuckets[key]) || 0);
+    if (value > 0) hasHourly = true;
+    nextBuckets[key] = value;
+  }
+
+  if (!hasHourly) {
+    // Legacy migration: old buckets were morning/afternoon/evening.
+    const morning = Math.max(0, Number(sourceBuckets.morning) || 0);
+    const afternoon = Math.max(0, Number(sourceBuckets.afternoon) || 0);
+    const evening = Math.max(0, Number(sourceBuckets.evening) || 0);
+
+    const morningUnit = morning / 12;
+    const afternoonUnit = afternoon / 6;
+    const eveningUnit = evening / 6;
+
+    for (let hour = 0; hour <= 11; hour += 1) {
+      nextBuckets[getHourKey(hour)] += morningUnit;
+    }
+    for (let hour = 12; hour <= 17; hour += 1) {
+      nextBuckets[getHourKey(hour)] += afternoonUnit;
+    }
+    for (let hour = 18; hour <= 23; hour += 1) {
+      nextBuckets[getHourKey(hour)] += eveningUnit;
+    }
+  }
+
+  project.timeBuckets = nextBuckets;
+  if (!Number.isFinite(Number(project.createdAt)) || Number(project.createdAt) <= 0) {
+    project.createdAt = Date.now();
+  }
+  if (project.completedAt != null && (!Number.isFinite(Number(project.completedAt)) || Number(project.completedAt) <= 0)) {
+    project.completedAt = null;
+  }
+}
+
+function ensureProjectDailyEntry(project, dateKey) {
+  ensureProjectAnalytics(project);
+  const key = String(dateKey || getToday());
+  const entry = project.dailyStats[key];
+  if (!entry || typeof entry !== "object") {
+    project.dailyStats[key] = { seconds: 0, rows: 0 };
+  }
+  project.dailyStats[key].seconds = Math.max(0, Number(project.dailyStats[key].seconds) || 0);
+  project.dailyStats[key].rows = Math.max(0, Number(project.dailyStats[key].rows) || 0);
+  return project.dailyStats[key];
+}
+
+function recordProjectSeconds(project, seconds) {
+  const amount = Math.max(0, Number(seconds) || 0);
+  if (!amount) return;
+  const today = getToday();
+  const entry = ensureProjectDailyEntry(project, today);
+  entry.seconds += amount;
+  const bucket = getHourBucket(new Date().getHours());
+  project.timeBuckets[bucket] = Math.max(0, Number(project.timeBuckets[bucket]) || 0) + amount;
+}
+
+function recordProjectRows(project, rows) {
+  const amount = Math.max(0, Number(rows) || 0);
+  if (!amount) return;
+  const today = getToday();
+  const entry = ensureProjectDailyEntry(project, today);
+  entry.rows += amount;
+}
+
 function formatTime(seconds) {
   const min = Math.floor(seconds / 60).toString().padStart(2, "0");
   const sec = Math.floor(seconds % 60).toString().padStart(2, "0");
@@ -88,6 +184,7 @@ function formatTime(seconds) {
 }
 
 function createProject(name = "我的新作品") {
+  const now = Date.now();
   return {
     id: makeId(),
     projectName: name,
@@ -111,7 +208,11 @@ function createProject(name = "我的新作品") {
     spentSeconds: 0,
     exportStyle: "classic",
     lastDate: getToday(),
-    updatedAt: Date.now(),
+    createdAt: now,
+    completedAt: null,
+    dailyStats: {},
+    timeBuckets: makeHourlyBuckets(),
+    updatedAt: now,
   };
 }
 
@@ -155,6 +256,7 @@ function normalizeProject(project) {
     : fallbackDiagramImage
       ? [fallbackDiagramImage]
       : [];
+  ensureProjectAnalytics(normalized);
   applyProgressStatus(normalized);
   return normalized;
 }
@@ -185,6 +287,14 @@ function applyProgressStatus(project) {
   const rows = Math.max(0, Number(project.rows) || 0);
   if (total > 0 && rows >= total) {
     project.status = "done";
+  }
+  ensureProjectAnalytics(project);
+  if (project.status === "done") {
+    if (!Number(project.completedAt)) {
+      project.completedAt = Date.now();
+    }
+  } else {
+    project.completedAt = null;
   }
 }
 
@@ -1292,6 +1402,8 @@ function bindGlobalTimer(getProject, persist) {
   const currentProject = typeof getProject === "function" ? getProject() : null;
   if (!currentProject) return;
 
+  ensureProjectAnalytics(currentProject);
+
   if (currentProject.lastDate !== getToday()) {
   currentProject.todayRows = 0;
   currentProject.todaySeconds = 0;
@@ -1301,6 +1413,7 @@ function bindGlobalTimer(getProject, persist) {
   timerState.left -= 1;
   currentProject.spentSeconds += 1;
   currentProject.todaySeconds = Math.max(0, Number(currentProject.todaySeconds) || 0) + 1;
+  recordProjectSeconds(currentProject, 1);
   projectTimeTick += 1;
   refs.projectTimeSpent.textContent = "累计用时 " + formatDuration(currentProject.spentSeconds);
 
@@ -1751,6 +1864,7 @@ function init() {
     project.rows += 1;
     project.todayRows += 1;
     project.lastDate = getToday();
+    recordProjectRows(project, 1);
     persistWithCelebration(before);
   });
 
@@ -1765,6 +1879,7 @@ function init() {
     project.rows += step;
     project.todayRows += step;
     project.lastDate = getToday();
+    recordProjectRows(project, step);
     persistWithCelebration(before);
   });
 

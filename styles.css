@@ -1201,6 +1201,14 @@ body.homepage .fab-create-wrap .create-menu {
   width: 100%;
 }
 
+.stats-storage-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+#trendCanvas,
+#preferredSlotCanvas,
+#yarnBrandBarCanvas,
+#yarnTypePieCanvas,
 #todayTrendCanvas {
   width: 100%;
   max-width: 100%;
@@ -1208,6 +1216,53 @@ body.homepage .fab-create-wrap .create-menu {
   border-radius: 14px;
   border: 1px solid #ead7c0;
   background: #fff9f2;
+}
+
+.stats-ranking-layout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.stats-ranking-panel {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
+}
+
+.stats-ranking-panel h3 {
+  margin: 0 0 8px;
+  color: #5e4331;
+}
+
+#achievementText {
+  margin-top: 12px;
+}
+
+.trend-tooltip {
+  position: absolute;
+  z-index: 120;
+  pointer-events: none;
+  min-width: 140px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #e4cdb2;
+  background: rgba(255, 252, 247, 0.96);
+  color: #5f4938;
+  box-shadow: 0 8px 18px rgba(120, 83, 49, 0.2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .stats-storage-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stats-ranking-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (min-width: 901px) {

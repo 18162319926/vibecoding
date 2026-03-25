@@ -51,26 +51,121 @@
       </section>
 
       <section class="panel dashboard-panel">
-        <h2>总览</h2>
-        <div class="hero-stats stats-analytics-grid">
+        <h2>数据总览</h2>
+        <div class="hero-stats stats-analytics-grid stats-storage-grid">
           <div class="stat-card stat-card-core"><span>项目总数</span><strong id="statProjectCount">0</strong></div>
-          <div class="stat-card stat-card-core"><span>进行中</span><strong id="statActiveCount">0</strong></div>
-          <div class="stat-card stat-card-today"><span>累计时长</span><strong id="statTotalDuration">00:00:00</strong></div>
-          <div class="stat-card stat-card-today"><span>累计行数</span><strong id="statTotalRows">0</strong></div>
+          <div class="stat-card stat-card-core"><span>累计编织时长</span><strong id="statTotalDuration">00:00:00</strong></div>
+          <div class="stat-card stat-card-today"><span>历史总编织行数</span><strong id="statTotalRows">0</strong></div>
+          <div class="stat-card stat-card-today"><span>累计已用毛线</span><strong id="statTotalYarnUsed">0g</strong></div>
         </div>
       </section>
 
       <section class="panel dashboard-panel">
-        <h2>项目排行</h2>
-        <div id="projectRanking" class="storage-list"></div>
+        <h2>时间投入统计</h2>
+        <div class="hero-stats stats-analytics-grid stats-storage-grid">
+          <div class="stat-card stat-card-core"><span>今日时长</span><strong id="statTodayDuration">00:00:00</strong></div>
+          <div class="stat-card stat-card-core"><span>本周时长</span><strong id="statWeekDuration">00:00:00</strong></div>
+          <div class="stat-card stat-card-today"><span>本月时长</span><strong id="statMonthDuration">00:00:00</strong></div>
+          <div class="stat-card stat-card-today"><span>累计时长</span><strong id="statAllDuration">00:00:00</strong></div>
+          <div class="stat-card stat-card-core"><span>平均每次编织</span><strong id="statAvgSessionDuration">00:00:00</strong></div>
+          <div class="stat-card stat-card-core"><span>偏好时段</span><strong id="statPreferredSlot">暂无数据</strong></div>
+          <div class="stat-card stat-card-today"><span>最近7天平均日时长</span><strong id="statAvgDailyDuration">00:00:00</strong></div>
+          <div class="stat-card stat-card-today"><span>最近7天平均日行数</span><strong id="statAvgDailyRows">0</strong></div>
+        </div>
       </section>
 
       <section class="panel dashboard-panel">
-        <h2>本日分布</h2>
-        <canvas id="todayTrendCanvas" width="980" height="320"></canvas>
+        <h2>偏好时段分布</h2>
+        <canvas id="preferredSlotCanvas" width="980" height="260"></canvas>
+        <p class="helper-text" id="preferredSlotHint">按累计编织时长统计早上 / 下午 / 晚上分布。</p>
+      </section>
+
+      <section class="panel dashboard-panel">
+        <h2 id="trendTitle">最近 7 天趋势</h2>
+        <canvas id="trendCanvas" width="980" height="320"></canvas>
+        <p class="helper-text" id="trendHint">时长与行数采用双折线趋势展示。</p>
+      </section>
+
+      <section class="panel dashboard-panel">
+        <h2>项目进度统计</h2>
+        <div class="hero-stats stats-analytics-grid stats-storage-grid">
+          <div class="stat-card stat-card-core"><span>进行中</span><strong id="statActiveCount">0</strong></div>
+          <div class="stat-card stat-card-core"><span>已完成</span><strong id="statDoneCount">0</strong></div>
+          <div class="stat-card stat-card-today"><span>搁置</span><strong id="statPausedCount">0</strong></div>
+          <div class="stat-card stat-card-today"><span>项目完成率</span><strong id="statCompletionRate">0%</strong></div>
+          <div class="stat-card stat-card-core"><span>平均完成天数</span><strong id="statAvgCompletionDays">0天</strong></div>
+        </div>
+      </section>
+
+      <section class="panel dashboard-panel">
+        <h2>项目耗时排行</h2>
+        <div class="stats-ranking-layout">
+          <section class="panel stats-ranking-panel">
+            <h3>耗时最长</h3>
+            <div id="longestProjects" class="storage-list"></div>
+          </section>
+          <section class="panel stats-ranking-panel">
+            <h3>耗时最短</h3>
+            <div id="shortestProjects" class="storage-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="panel dashboard-panel">
+        <h2>用线统计</h2>
+        <div class="stats-ranking-layout">
+          <section class="panel stats-ranking-panel">
+            <h3>品牌 / 色号消耗排行</h3>
+            <canvas id="yarnBrandBarCanvas" width="980" height="320"></canvas>
+          </section>
+          <section class="panel stats-ranking-panel">
+            <h3>线材类型占比</h3>
+            <canvas id="yarnTypePieCanvas" width="980" height="320"></canvas>
+          </section>
+        </div>
+        <p class="helper-text" id="yarnUsageHint">基于当前毛线仓库条目统计。</p>
+      </section>
+
+      <section class="panel dashboard-panel">
+        <h2>编织行为统计</h2>
+        <div class="hero-stats stats-analytics-grid stats-storage-grid">
+          <div class="stat-card stat-card-core"><span>历史总编织行数</span><strong id="statBehaviorTotalRows">0</strong></div>
+          <div class="stat-card stat-card-core"><span>平均每天编织行数</span><strong id="statBehaviorAvgRows">0</strong></div>
+          <div class="stat-card stat-card-today"><span>最常织品类</span><strong id="statFavoriteType">暂无</strong></div>
+          <div class="stat-card stat-card-today"><span>活跃编织天数</span><strong id="statActiveDays">0天</strong></div>
+        </div>
+        
       </section>
     </main>
 
+    <div class="dialog-backdrop" id="authDialog" hidden>
+      <div class="dialog-card auth-dialog-card" role="dialog" aria-modal="true" aria-labelledby="authDialogTitle">
+        <h3 id="authDialogTitle">账号登录</h3>
+        <p id="authStatus" class="auth-status">未登录（当前仅本地保存）</p>
+        <label>
+          邮箱
+          <input id="authEmail" type="email" placeholder="请输入邮箱" autocomplete="email" />
+        </label>
+        <label>
+          密码
+          <input id="authPassword" type="password" placeholder="请输入密码" autocomplete="current-password" />
+        </label>
+        <div class="dialog-actions">
+          <button class="btn primary" id="loginBtn" type="button">登录</button>
+          <button class="btn ghost" id="registerBtn" type="button">注册</button>
+          <button class="btn danger" id="closeAuthDialogBtn" type="button">关闭</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="supabase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      if (!window.supabase || typeof window.supabase.createClient !== "function") {
+        document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\\/script>');
+      }
+    </script>
+    <script src="cloud-sync.js"></script>
     <script src="stats.js"></script>
   </body>
 </html>

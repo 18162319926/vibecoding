@@ -1,5 +1,6 @@
 const STORAGE_KEY = "knit-helper-state";
 const GLOBAL_TIMER_KEY = "knit-global-timer";
+const STATS_BOOTSTRAP_DATE_KEY = "knit-stats-bootstrap-date";
 
 const STATUS_MAP = {
   active: { label: "进行中", icon: "🧶" },
@@ -16,6 +17,7 @@ const EXPORT_STYLE_OPTIONS = [
 const state = {
   projects: [],
   dashboardFilter: "all",
+  bootstrapDate: "",
 };
 
 const syncRuntime = {
@@ -93,6 +95,31 @@ function makeId() {
 
 function getToday() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function ensureStatsBootstrapDate() {
+  const today = getToday();
+  let saved = "";
+  try {
+    saved = String(localStorage.getItem(STATS_BOOTSTRAP_DATE_KEY) || "").trim();
+  } catch {
+    saved = "";
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(saved)) {
+    saved = today;
+    try {
+      localStorage.setItem(STATS_BOOTSTRAP_DATE_KEY, saved);
+    } catch {
+      // Ignore write failure; fallback still works in memory.
+    }
+  }
+
+  state.bootstrapDate = saved;
+}
+
+function isTodayBootstrapDay() {
+  return state.bootstrapDate && state.bootstrapDate === getToday();
 }
 
 function formatTime(seconds) {
@@ -781,8 +808,14 @@ function renderDashboard() {
   refs.projectCards.innerHTML = "";
   refs.projectCount.textContent = String(state.projects.length);
   refs.activeCount.textContent = String(state.projects.filter((project) => project.status === "active").length);
-  const todayRowTotal = state.projects.reduce((sum, project) => sum + Math.max(0, Number(project.todayRows) || 0), 0);
-  const todaySecondsTotal = state.projects.reduce((sum, project) => sum + Math.max(0, Number(project.todaySeconds) || 0), 0);
+  const todayRowTotal = state.projects.reduce(
+    (sum, project) => sum + Math.max(0, Number(isTodayBootstrapDay() ? project.rows : project.todayRows) || 0),
+    0
+  );
+  const todaySecondsTotal = state.projects.reduce(
+    (sum, project) => sum + Math.max(0, Number(isTodayBootstrapDay() ? project.spentSeconds : project.todaySeconds) || 0),
+    0
+  );
   if (refs.todayRows) {
     refs.todayRows.textContent = String(todayRowTotal);
     const scarfRatio = (todayRowTotal / 36).toFixed(2);
@@ -1410,6 +1443,7 @@ function bindActions() {
 }
 
 function init() {
+  ensureStatsBootstrapDate();
   loadProjects();
   loadTimerState();
   renderDashboard();
