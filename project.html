@@ -17,9 +17,23 @@
     <div class="bg-shape bg-shape-b"></div>
 
     <nav class="top-nav" aria-label="主导航">
-      <div class="brand">织伴</div>
+      <div class="brand-wrap">
+        <div class="brand">织伴</div>
+        <p class="brand-subtitle">把时间织成柔软的样子</p>
+        <p class="eyebrow nav-eyebrow">KNIT COMPANION</p>
+      </div>
+      <div class="nav-center" aria-label="页面标签">
+        <a class="btn ghost is-tab-active" href="index.html#dashboardPanel">项目仪表盘</a>
+        <a class="btn ghost" href="yarn.html">毛线仓库</a>
+        <a class="btn ghost" href="swatch.html">小样仓库</a>
+        <a class="btn ghost" href="stats.html">数据统计</a>
+      </div>
       <div class="nav-auth" id="navAuth">
+        <button class="sync-state sync-state-idle" id="syncHint" type="button" title="点击立即同步">☁️ 离线模式</button>
         <span class="account-chip" id="accountChip">当前账号：未登录</span>
+        <button class="btn ghost" id="openLoginBtn" type="button">登录</button>
+        <button class="btn ghost" id="openRegisterBtn" type="button">注册</button>
+        <button class="btn primary" id="logoutBtn" type="button" hidden>退出</button>
       </div>
     </nav>
 
@@ -188,7 +202,7 @@
       </div>
     </div>
 
-    <footer class="footer">愿你的每一针，都织进生活的温度。<span id="syncHint" class="sync-hint inline">离线模式</span></footer>
+    <footer class="footer">愿你的每一针，都织进生活的温度。</footer>
 
     <script src="supabase-config.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

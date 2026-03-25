@@ -2244,6 +2244,7 @@ body.homepage .nav-center .btn {
   padding: 0 16px;
   font-size: 19px;
   font-weight: 500;
+  font-family: "ZCOOL XiaoWei", serif;
   white-space: nowrap;
   box-shadow: none;
   transition: color 0.2s ease, transform 0.2s ease;
@@ -2257,7 +2258,13 @@ body.homepage .nav-center .is-tab-active {
 }
 
 body.homepage .nav-center .btn:hover {
+  color: #6a4b37;
+  transform: translateY(-2px);
+}
+
+body.homepage .nav-center .btn.is-tab-active:hover {
   color: #7a5a43;
+  transform: translateY(1px);
 }
 
 body.homepage .nav-center .btn + .btn {
@@ -2410,9 +2417,9 @@ body.homepage .today-summary-pill {
   border-radius: 10px;
   border: 1px solid var(--line);
   background: #fff9f0;
-  color: #6a513f;
+  color: #998b7d;
   font-size: 13px;
-  font-weight: 400;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
@@ -2700,5 +2707,364 @@ body.homepage .footer {
 
   body.homepage .project-cards {
     grid-template-columns: 1fr;
+  }
+}
+
+/* 2026-03 Storage Relayout */
+body[data-storage-page] {
+  background: var(--bg);
+}
+
+body.project-page {
+  background: var(--bg);
+}
+
+body[data-storage-page] .nav-center,
+body[data-stats-page] .nav-center,
+body.project-page .nav-center {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: nowrap;
+}
+
+body[data-storage-page] .nav-center .btn,
+body[data-stats-page] .nav-center .btn,
+body.project-page .nav-center .btn {
+  min-height: 40px;
+  border: none;
+  background: transparent;
+  color: #7a5a43;
+  padding: 0 16px;
+  font-size: 20px;
+  font-weight: 500;
+  font-family: "ZCOOL XiaoWei", serif;
+  white-space: nowrap;
+  box-shadow: none;
+  transform: translateY(0);
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+body[data-storage-page] .nav-center .btn.is-tab-active,
+body[data-stats-page] .nav-center .btn.is-tab-active,
+body.project-page .nav-center .btn.is-tab-active {
+  transform: translateY(1px);
+  color: #7a5a43;
+}
+
+body[data-storage-page] .nav-center .btn:hover,
+body[data-stats-page] .nav-center .btn:hover,
+body.project-page .nav-center .btn:hover {
+  color: #6a4b37;
+  transform: translateY(-2px);
+}
+
+body[data-storage-page] .nav-center .btn.is-tab-active:hover,
+body[data-stats-page] .nav-center .btn.is-tab-active:hover,
+body.project-page .nav-center .btn.is-tab-active:hover {
+  color: #7a5a43;
+  transform: translateY(1px);
+}
+
+body[data-storage-page] .top-nav,
+body[data-storage-page] .hero,
+body[data-storage-page] .layout {
+  max-width: 1200px;
+}
+
+body[data-stats-page] .top-nav,
+body.project-page .top-nav,
+body[data-stats-page] .layout {
+  max-width: 1200px;
+}
+
+body.project-page .layout {
+  max-width: 1200px;
+}
+
+body[data-storage-page] .top-nav {
+  margin: 0 auto 10px;
+  min-height: 80px;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+body[data-stats-page] .top-nav {
+  margin: 0 auto 10px;
+  min-height: 80px;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+body.project-page .top-nav {
+  margin: 0 auto 10px;
+  min-height: 80px;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+body[data-storage-page] .brand {
+  font-size: 40px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+body[data-stats-page] .brand {
+  font-size: 40px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+body[data-storage-page] .brand-wrap,
+body[data-stats-page] .brand-wrap,
+body.project-page .brand-wrap {
+  min-width: 170px;
+  display: grid;
+  row-gap: 8px;
+}
+
+body[data-storage-page] .brand-subtitle,
+body[data-stats-page] .brand-subtitle,
+body.project-page .brand-subtitle {
+  margin: 0;
+  color: #998b7d;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: "ZCOOL XiaoWei", serif;
+  line-height: 1.2;
+}
+
+body[data-storage-page] .nav-eyebrow,
+body[data-stats-page] .nav-eyebrow,
+body.project-page .nav-eyebrow {
+  margin: 0;
+  color: #2f7d6b;
+  letter-spacing: 0.22em;
+  font-size: 0.76rem;
+  line-height: 1.2;
+}
+
+body.project-page .brand {
+  font-size: 40px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+body[data-storage-page] .nav-auth {
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-items: center;
+}
+
+body[data-stats-page] .nav-auth {
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-items: center;
+}
+
+body.project-page .nav-auth {
+  flex-wrap: nowrap;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+body[data-storage-page] .nav-auth .btn,
+body[data-storage-page] .nav-auth .account-chip,
+body[data-storage-page] .nav-auth .sync-state {
+  white-space: nowrap;
+}
+
+body[data-stats-page] .nav-auth .btn {
+  white-space: nowrap;
+}
+
+body[data-stats-page] .nav-auth .account-chip,
+body[data-stats-page] .nav-auth .sync-state {
+  white-space: nowrap;
+}
+
+body.project-page .nav-auth .btn,
+body.project-page .nav-auth .account-chip {
+  white-space: nowrap;
+}
+
+body.project-page .nav-auth .sync-state {
+  white-space: nowrap;
+}
+
+body[data-storage-page] .hero {
+  margin: 0 auto 12px;
+  align-items: flex-end;
+}
+
+body[data-storage-page] .hero > div {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 6px;
+  align-items: end;
+}
+
+body[data-storage-page] .hero .eyebrow,
+body[data-storage-page] .hero h1,
+body[data-storage-page] .hero .subtitle {
+  grid-column: 1;
+  text-align: left;
+}
+
+body[data-storage-page] .subtitle {
+  color: #7b6d5f;
+}
+
+body[data-storage-page] .storage-layout {
+  height: calc(100vh - 178px);
+  grid-template-columns: minmax(360px, 0.95fr) minmax(460px, 1.35fr);
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+body[data-storage-page] .storage-panel {
+  border-radius: 16px;
+}
+
+body[data-storage-page] .storage-form-panel {
+  position: sticky;
+  top: 0;
+}
+
+body[data-storage-page] .storage-form-panel h2,
+body[data-storage-page] .storage-list-panel h2 {
+  font-size: 26px;
+  color: #3d2b1f;
+}
+
+body[data-storage-page] .storage-form-panel .grid-form {
+  row-gap: 12px;
+}
+
+body[data-storage-page] .storage-form-panel .storage-form-actions {
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+body[data-storage-page] .storage-list-panel {
+  background: #f9f1e7;
+}
+
+body[data-storage-page] .storage-list {
+  column-width: 240px;
+  column-gap: 10px;
+  display: block;
+}
+
+body[data-storage-page] .storage-item {
+  margin: 0 0 10px;
+  display: inline-block;
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+body[data-storage-page] .storage-item-actions {
+  margin-top: 10px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+body[data-storage-page] .storage-item-actions .btn {
+  min-height: 34px;
+  font-size: 13px;
+}
+
+@media (max-width: 1100px) {
+  body[data-storage-page] .nav-auth {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  body[data-stats-page] .nav-auth {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  body.project-page .nav-auth {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  body[data-storage-page] .nav-center,
+  body[data-stats-page] .nav-center,
+  body.project-page .nav-center {
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  body[data-storage-page] .storage-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    height: auto;
+    overflow: visible;
+  }
+
+  body[data-storage-page] .storage-form-panel {
+    position: static;
+  }
+
+  body[data-storage-page] .storage-panel {
+    overflow: visible;
+  }
+
+  body[data-storage-page] .storage-list {
+    column-width: 220px;
+  }
+}
+
+@media (max-width: 760px) {
+  body[data-storage-page] .top-nav {
+    min-height: 0;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  body[data-stats-page] .top-nav {
+    min-height: 0;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  body.project-page .top-nav {
+    min-height: 0;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  body[data-storage-page] .nav-auth {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  body[data-stats-page] .nav-auth {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  body.project-page .nav-auth {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  body[data-storage-page] .nav-center .btn,
+  body[data-stats-page] .nav-center .btn,
+  body.project-page .nav-center .btn {
+    font-size: 16px;
+    padding: 0 10px;
+  }
+
+  body[data-storage-page] .storage-list {
+    column-width: 100%;
   }
 }
