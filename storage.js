@@ -32,6 +32,30 @@ const syncState = {
   remoteUnsubscribe: null,
 };
 
+async function pushStorageNow() {
+  if (!window.cloudSync || !window.cloudSync.isReady()) return;
+  if (!window.cloudSync.getCurrentUser()) return;
+  if (typeof window.cloudSync.pushStorageState !== "function") return;
+
+  if (pageType === "yarn") {
+    await window.cloudSync.pushStorageState({ yarn: state.items });
+  } else {
+    await window.cloudSync.pushStorageState({ swatch: state.items });
+  }
+}
+
+async function flushStorageCloudPush() {
+  if (syncState.pushTimerId) {
+    clearTimeout(syncState.pushTimerId);
+    syncState.pushTimerId = null;
+  }
+  try {
+    await pushStorageNow();
+  } catch (error) {
+    console.error("storage cloud flush failed", error);
+  }
+}
+
 function makeId() {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -135,15 +159,26 @@ function scheduleStorageCloudPush() {
 
   syncState.pushTimerId = setTimeout(async () => {
     try {
-      if (pageType === "yarn") {
-        await window.cloudSync.pushStorageState({ yarn: state.items });
-      } else {
-        await window.cloudSync.pushStorageState({ swatch: state.items });
-      }
+      await pushStorageNow();
     } catch (error) {
       console.error("storage cloud push failed", error);
+    } finally {
+      syncState.pushTimerId = null;
     }
   }, 700);
+}
+
+async function pullStorageNow() {
+  if (!window.cloudSync || !window.cloudSync.isReady()) return;
+  if (!window.cloudSync.getCurrentUser()) return;
+  if (typeof window.cloudSync.pullStorageState !== "function") return;
+
+  try {
+    const remote = await window.cloudSync.pullStorageState();
+    applyCloudStoragePayload(remote);
+  } catch (error) {
+    console.error("storage cloud pull failed", error);
+  }
 }
 
 function applyCloudStoragePayload(payload) {
@@ -202,14 +237,7 @@ function setupStorageCloudSync() {
 
     if (!user) return;
 
-    if (typeof window.cloudSync.pullStorageState === "function") {
-      try {
-        const remote = await window.cloudSync.pullStorageState();
-        applyCloudStoragePayload(remote);
-      } catch (error) {
-        console.error("storage cloud pull failed", error);
-      }
-    }
+    await pullStorageNow();
 
     if (typeof window.cloudSync.watchRemoteState === "function") {
       syncState.remoteUnsubscribe = window.cloudSync.watchRemoteState(
@@ -226,6 +254,20 @@ function setupStorageCloudSync() {
     }
   });
 }
+
+window.addEventListener("pagehide", () => {
+  void flushStorageCloudPush();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    void flushStorageCloudPush();
+    return;
+  }
+  if (document.visibilityState === "visible") {
+    void pullStorageNow();
+  }
+});
 
 function collectFormData() {
   if (pageType === "yarn") {

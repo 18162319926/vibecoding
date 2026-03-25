@@ -105,6 +105,7 @@ function createProject(name = "我的新作品") {
     diagramImages: [],
     rows: 0,
     todayRows: 0,
+    todaySeconds: 0,
     materials: [],
     notes: "",
     spentSeconds: 0,
@@ -139,6 +140,7 @@ function normalizeProject(project) {
     totalRows: Math.max(0, Number(project.totalRows) || 0),
     rows: Math.max(0, Number(project.rows) || 0),
     todayRows: Math.max(0, Number(project.todayRows) || 0),
+    todaySeconds: Math.max(0, Number(project.todaySeconds) || 0),
     spentSeconds: Math.max(0, Number(project.spentSeconds) || 0),
     materials: Array.isArray(project.materials) ? project.materials : [],
     lastDate: project.lastDate || getToday(),
@@ -1184,6 +1186,10 @@ function applyCloudPayload(payload, projects) {
             Number(next.todayRows) || 0,
             Number(localProject.todayRows) || 0
           );
+          next.todaySeconds = Math.max(
+            Number(next.todaySeconds) || 0,
+            Number(localProject.todaySeconds) || 0
+          );
         }
         return next;
       })
@@ -1272,8 +1278,15 @@ function bindGlobalTimer(getProject, persist) {
   const currentProject = typeof getProject === "function" ? getProject() : null;
   if (!currentProject) return;
 
+  if (currentProject.lastDate !== getToday()) {
+  currentProject.todayRows = 0;
+  currentProject.todaySeconds = 0;
+  currentProject.lastDate = getToday();
+  }
+
   timerState.left -= 1;
   currentProject.spentSeconds += 1;
+  currentProject.todaySeconds = Math.max(0, Number(currentProject.todaySeconds) || 0) + 1;
   projectTimeTick += 1;
   refs.projectTimeSpent.textContent = "累计用时 " + formatDuration(currentProject.spentSeconds);
 
@@ -1575,6 +1588,12 @@ function init() {
     alert("未找到该项目，已返回首页。");
     window.location.href = "index.html";
     return;
+  }
+
+  if (project.lastDate !== getToday()) {
+    project.todayRows = 0;
+    project.todaySeconds = 0;
+    project.lastDate = getToday();
   }
 
   const persist = () => {

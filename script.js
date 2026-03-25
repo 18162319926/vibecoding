@@ -52,6 +52,8 @@ const refs = {
   statusFilters: document.getElementById("statusFilters"),
   projectCount: document.getElementById("projectCount"),
   activeCount: document.getElementById("activeCount"),
+  todayDuration: document.getElementById("todayDuration"),
+  todayRows: document.getElementById("todayRows"),
   createProjectBtn: document.getElementById("createProjectBtn"),
   createMenuWrap: document.getElementById("createMenuWrap"),
   createProjectMenu: document.getElementById("createProjectMenu"),
@@ -99,6 +101,14 @@ function formatTime(seconds) {
   return `${min}:${sec}`;
 }
 
+function formatDuration(seconds) {
+  const safe = Math.max(0, Number(seconds) || 0);
+  const hh = Math.floor(safe / 3600).toString().padStart(2, "0");
+  const mm = Math.floor((safe % 3600) / 60).toString().padStart(2, "0");
+  const ss = Math.floor(safe % 60).toString().padStart(2, "0");
+  return `${hh}:${mm}:${ss}`;
+}
+
 function createProject(name = "我的新作品") {
   return {
     id: makeId(),
@@ -117,6 +127,7 @@ function createProject(name = "我的新作品") {
     diagramImages: [],
     rows: 0,
     todayRows: 0,
+    todaySeconds: 0,
     materials: [],
     notes: "",
     spentSeconds: 0,
@@ -153,6 +164,7 @@ function normalizeProject(project) {
     totalRows: Math.max(0, Number(project.totalRows) || 0),
     rows: Math.max(0, Number(project.rows) || 0),
     todayRows: Math.max(0, Number(project.todayRows) || 0),
+    todaySeconds: Math.max(0, Number(project.todaySeconds) || 0),
     spentSeconds: Math.max(0, Number(project.spentSeconds) || 0),
     materials: Array.isArray(project.materials) ? project.materials : [],
     lastDate: project.lastDate || getToday(),
@@ -733,6 +745,7 @@ function loadProjects() {
   state.projects.forEach((project) => {
     if (project.lastDate !== getToday()) {
       project.todayRows = 0;
+      project.todaySeconds = 0;
       project.lastDate = getToday();
       changed = true;
     }
@@ -768,6 +781,10 @@ function renderDashboard() {
   refs.projectCards.innerHTML = "";
   refs.projectCount.textContent = String(state.projects.length);
   refs.activeCount.textContent = String(state.projects.filter((project) => project.status === "active").length);
+  const todayRowTotal = state.projects.reduce((sum, project) => sum + Math.max(0, Number(project.todayRows) || 0), 0);
+  const todaySecondsTotal = state.projects.reduce((sum, project) => sum + Math.max(0, Number(project.todaySeconds) || 0), 0);
+  if (refs.todayRows) refs.todayRows.textContent = String(todayRowTotal);
+  if (refs.todayDuration) refs.todayDuration.textContent = formatDuration(todaySecondsTotal);
 
   if (!filtered.length) {
     const tip = document.createElement("p");

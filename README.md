@@ -94,8 +94,7 @@ window.__KNIT_SUPABASE_CONFIG__ = {
 - cloud-sync.js：认证、云同步、实时监听
 - supabase-config.js：Supabase 配置
 - styles.css：全局样式
-- site.km：产品功能脑图
-- project.km：项目页面脑图
+
 
 ## 后续规划（来自 site.km）
 

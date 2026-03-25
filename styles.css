@@ -210,9 +210,9 @@ h3 {
 
 .hero-stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(140px, 1fr));
-  gap: 12px;
-  width: min(420px, 100%);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  width: min(640px, 100%);
 }
 
 .project-page .hero {
@@ -243,20 +243,37 @@ h3 {
   -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 14px;
+  border-radius: 14px;
+  padding: 10px 12px;
   box-shadow: var(--shadow);
+}
+
+.stat-card.stat-card-core {
+  background: rgba(255, 252, 247, 0.84);
+}
+
+.stat-card.stat-card-today {
+  background: linear-gradient(145deg, #eef8f3, #e7f4ee);
+  border-color: #b9dccd;
 }
 
 .stat-card span {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   color: #6b737a;
 }
 
+.stat-card.stat-card-today span {
+  color: #2f7d6b;
+}
+
 .stat-card strong {
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   color: var(--accent-deep);
+}
+
+.stat-card.stat-card-today strong {
+  color: #2f7d6b;
 }
 
 .auth-card {
@@ -1596,6 +1613,7 @@ body.homepage .footer {
   body.homepage .import-export-actions > a,
   body.homepage .import-export-actions > .create-menu-wrap {
     width: 100%;
+    align-self: stretch;
   }
 
   body.homepage .import-export-actions .btn,
@@ -1789,9 +1807,22 @@ body.homepage .footer {
   }
 
   .hero-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     width: 100%;
-    gap: 8px;
+    gap: 6px;
+  }
+
+  .stat-card {
+    padding: 8px 8px;
+    border-radius: 12px;
+  }
+
+  .stat-card span {
+    font-size: 0.68rem;
+  }
+
+  .stat-card strong {
+    font-size: 0.98rem;
   }
 
   .stat-card {
