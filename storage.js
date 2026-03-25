@@ -36,6 +36,7 @@ const state = {
   items: loadItems(),
   editingId: "",
   photoData: "",
+  yarnReferences: [],
 };
 
 const syncState = {
@@ -205,6 +206,82 @@ function deriveYarnMetrics(item) {
     stockWeight: roundToSingle(stockWeight),
     progress: computeYarnProgress(originalWeight, stockWeight),
   };
+}
+
+function toCount(value) {
+  return Math.max(0, Math.round(toSafeNumber(value)));
+}
+
+function deriveSwatchGauge(item) {
+  const stitches = toCount(item?.stitches ?? item?.gauge);
+  const rows = toCount(item?.rows);
+  return { stitches, rows };
+}
+
+function parseStorageItemsByKey(storageKey) {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    const data = raw ? JSON.parse(raw) : [];
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function buildYarnReferenceLabel(item) {
+  const info = parseYarnInfo(item);
+  const type = String(item?.yarnType || "").trim();
+  const head = [info.brand !== "-" ? info.brand : "", info.colorNo !== "-" ? info.colorNo : ""]
+    .filter(Boolean)
+    .join(" / ");
+  if (head && type) return `${head} · ${type}`;
+  return head || type || "未命名线材";
+}
+
+function renderSwatchYarnOptions() {
+  if (pageType !== "swatch") return;
+  const list = document.getElementById("yarnReferenceList");
+  if (!list) return;
+
+  const yarnItems = parseStorageItemsByKey(STORAGE_KEYS.yarn).map(normalizeItem);
+  const seen = new Set();
+  const options = [];
+  const references = [];
+  for (const item of yarnItems) {
+    const label = buildYarnReferenceLabel(item);
+    if (!label || seen.has(label)) continue;
+    seen.add(label);
+    options.push(`<option value="${escapeHtml(label)}"></option>`);
+    references.push({
+      label,
+      needleSize: String(item?.needleSize || "").trim(),
+      spec: "10cm x 10cm",
+    });
+  }
+  list.innerHTML = options.join("");
+  state.yarnReferences = references;
+}
+
+function applySwatchYarnRecommendation() {
+  if (pageType !== "swatch") return;
+
+  const yarnInput = document.getElementById("swatchYarn");
+  const needleInput = document.getElementById("swatchNeedle");
+  const specInput = document.getElementById("swatchSpec");
+  if (!yarnInput || !needleInput || !specInput) return;
+
+  const selected = String(yarnInput.value || "").trim();
+  if (!selected) return;
+
+  const matched = state.yarnReferences.find((ref) => ref.label === selected);
+  if (!matched) return;
+
+  if (!needleInput.value.trim() && matched.needleSize) {
+    needleInput.value = matched.needleSize;
+  }
+  if (!specInput.value.trim() && matched.spec) {
+    specInput.value = matched.spec;
+  }
 }
 
 function updateYarnProgressPreview() {
@@ -475,7 +552,9 @@ function collectFormData() {
     pattern: document.getElementById("swatchPattern").value.trim(),
     needle: document.getElementById("swatchNeedle").value.trim(),
     spec: document.getElementById("swatchSpec").value.trim(),
-    gauge: Math.max(0, Number(document.getElementById("swatchGauge").value) || 0),
+    stitches: toCount(document.getElementById("swatchStitches").value),
+    rows: toCount(document.getElementById("swatchRows").value),
+    gauge: toCount(document.getElementById("swatchStitches").value),
     notes: document.getElementById("swatchNotes").value.trim(),
     photo: state.photoData,
     updatedAt: Date.now(),
@@ -511,11 +590,13 @@ function fillForm(item) {
     document.getElementById("season").value = item.season || "春秋";
     if (refs.progress) refs.progress.value = String(metrics.progress);
   } else {
+    const gauge = deriveSwatchGauge(item);
     document.getElementById("swatchYarn").value = item.yarn || "";
     document.getElementById("swatchPattern").value = item.pattern || "";
     document.getElementById("swatchNeedle").value = item.needle || "";
     document.getElementById("swatchSpec").value = item.spec || "";
-    document.getElementById("swatchGauge").value = item.gauge || "";
+    document.getElementById("swatchStitches").value = gauge.stitches || "";
+    document.getElementById("swatchRows").value = gauge.rows || "";
     document.getElementById("swatchNotes").value = item.notes || "";
   }
 
@@ -617,6 +698,8 @@ function buildYarnCard(item) {
 
 function buildSwatchCard(item) {
   const photo = getItemPhoto(item);
+  const gauge = deriveSwatchGauge(item);
+  const gaugeText = `${gauge.stitches || "-"}针 × ${gauge.rows || "-"}行`;
   const editIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h4.5L19 9.5 14.5 5 3 16.5V21z"></path><path d="M13.5 6l4.5 4.5"></path></svg>`;
   const deleteIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M8 7l1 13h6l1-13"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>`;
   return `
@@ -625,7 +708,7 @@ function buildSwatchCard(item) {
       <div class="storage-item-head">
         <h3>${escapeHtml(item.yarn || "未命名小样")}</h3>
         <div class="storage-item-side">
-          <span class="storage-item-meta">密度 ${Number(item.gauge) || 0}</span>
+          <span class="storage-item-meta">密度 ${gaugeText}</span>
           <div class="storage-item-actions storage-item-actions-vertical">
             <button class="btn ghost storage-icon-btn" type="button" data-action="edit" aria-label="编辑" title="编辑">${editIcon}</button>
             <button class="btn danger storage-icon-btn" type="button" data-action="delete" aria-label="删除" title="删除">${deleteIcon}</button>
@@ -635,6 +718,7 @@ function buildSwatchCard(item) {
       <p class="storage-item-line">花型：${escapeHtml(item.pattern || "-")}</p>
       <p class="storage-item-line">针号：${escapeHtml(item.needle || "-")}</p>
       <p class="storage-item-line">规格：${escapeHtml(item.spec || "-")}</p>
+      <p class="storage-item-line">密度：${gaugeText}</p>
       <p class="storage-item-line">备注：${escapeHtml(item.notes || "-")}</p>
     </article>
   `;
@@ -692,6 +776,14 @@ if (refs.openPhotoPickerBtn && refs.photoInput) {
   refs.openPhotoPickerBtn.addEventListener("click", () => {
     refs.photoInput.click();
   });
+}
+
+if (pageType === "swatch") {
+  renderSwatchYarnOptions();
+  const swatchYarnInput = document.getElementById("swatchYarn");
+  swatchYarnInput?.addEventListener("focus", renderSwatchYarnOptions);
+  swatchYarnInput?.addEventListener("change", applySwatchYarnRecommendation);
+  swatchYarnInput?.addEventListener("blur", applySwatchYarnRecommendation);
 }
 
 if (refs.removePhotoBtn) {

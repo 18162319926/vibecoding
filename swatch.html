@@ -43,7 +43,8 @@
         <form class="grid-form" id="storageForm">
           <label>
             线材
-            <input id="swatchYarn" type="text" placeholder="例如：羊毛混纺" required />
+            <input id="swatchYarn" type="text" list="yarnReferenceList" placeholder="可选择毛线仓库已有线材" required />
+            <datalist id="yarnReferenceList"></datalist>
           </label>
           <label>
             花型
@@ -58,24 +59,30 @@
             <input id="swatchSpec" type="text" placeholder="例如：10cm x 10cm" />
           </label>
           <label>
-            密度（针/10cm）
-            <input id="swatchGauge" type="number" min="0" placeholder="例如：22" />
+            针数
+            <input id="swatchStitches" type="number" min="0" step="1" placeholder="例如：22" />
+          </label>
+          <label>
+            行数
+            <input id="swatchRows" type="number" min="0" step="1" placeholder="例如：30" />
           </label>
           <label class="full-span">
             备注
             <textarea id="swatchNotes" rows="4" placeholder="记录手感、回弹、洗后变化等"></textarea>
           </label>
           <label class="full-span">
-            小样实拍图
-            <input id="photoInput" type="file" accept="image/*" />
+            小样实拍
+            <input id="photoInput" class="sr-only-input" type="file" accept="image/*" />
+            <button id="openPhotoPickerBtn" class="btn ghost storage-upload-btn" type="button" aria-label="选择小样实拍图片">选择小样实拍图片</button>
+            <span class="storage-upload-file-name" id="photoFileName">未选择文件</span>
             <div class="storage-form-photo-wrap" id="photoWrap" hidden>
-              <img id="photoPreview" class="storage-form-photo" alt="小样实拍图预览" hidden />
+              <img id="photoPreview" class="storage-form-photo" alt="小样实拍预览" hidden />
               <button id="removePhotoBtn" class="storage-photo-remove" type="button" hidden aria-label="删除小样图片">×</button>
             </div>
           </label>
           <div class="full-span">
             <div class="storage-form-actions">
-              <button class="btn primary" id="submitBtn" type="submit">新增小样条目</button>
+              <button class="btn primary" id="submitBtn" type="submit">新增小样</button>
               <button class="btn ghost" id="cancelEditBtn" type="button" hidden>取消编辑</button>
             </div>
           </div>
