@@ -1088,7 +1088,21 @@ async function exportProjectImage(project) {
 
 function setSyncHint(text) {
   if (!refs.syncHint) return;
-  refs.syncHint.textContent = text;
+  const raw = String(text || "").trim();
+  let icon = "☁️";
+  let cls = "sync-state-idle";
+  if (/失败|错误|不可用/.test(raw)) {
+    icon = "❌";
+    cls = "sync-state-error";
+  } else if (/正在|监听|同步中/.test(raw)) {
+    icon = "🔄";
+    cls = "sync-state-syncing";
+  } else if (/已同步|已初始化/.test(raw)) {
+    icon = "✅";
+    cls = "sync-state-ok";
+  }
+  refs.syncHint.className = `sync-state ${cls}`;
+  refs.syncHint.textContent = `${icon} ${raw || "离线模式"}`;
 }
 
 function setAuthNav(user) {

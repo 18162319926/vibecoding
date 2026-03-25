@@ -598,6 +598,26 @@ body[data-storage-page] .storage-list-panel {
   margin-top: 8px;
 }
 
+.storage-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  margin-top: 8px;
+  border-radius: 12px;
+  font-family: "ZCOOL XiaoWei", "KaiTi", cursive;
+  font-size: 0.95rem;
+}
+
+.storage-upload-file-name {
+  display: inline-block;
+  margin-left: 10px;
+  color: #7c6a58;
+  font-size: 0.88rem;
+  vertical-align: middle;
+}
+
 .storage-list {
   column-width: 240px;
   column-gap: 10px;
@@ -630,10 +650,67 @@ body[data-storage-page] .storage-list-panel {
 
 .storage-item-head {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 6px;
+}
+
+.storage-item-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.storage-item-yarn {
+  position: relative;
+}
+
+.storage-item-yarn .storage-item-head {
+  position: relative;
+  display: block;
+  margin-bottom: 6px;
+  min-height: 24px;
+}
+
+.storage-item-yarn .storage-item-side {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.storage-item-yarn .storage-item-head h3 {
+  margin-right: 86px;
+}
+
+.storage-item-yarn.has-photo .storage-item-head {
+  position: relative;
+}
+
+.storage-item-yarn.has-photo .storage-item-head h3 {
+  margin-right: 86px;
+}
+
+.storage-item-swatch {
+  position: relative;
+}
+
+.storage-item-swatch .storage-item-head {
+  position: relative;
+  display: block;
+  margin-bottom: 6px;
+  min-height: 24px;
+}
+
+.storage-item-swatch .storage-item-side {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.storage-item-swatch .storage-item-head h3 {
+  margin-right: 86px;
 }
 
 .storage-item-head h3 {
@@ -729,10 +806,42 @@ body[data-storage-page] .storage-list-panel {
   margin-top: 8px;
 }
 
+.storage-item-actions-inline {
+  margin-top: 2px;
+  margin-bottom: 6px;
+}
+
+.storage-item-actions-vertical {
+  margin-top: 0;
+  margin-bottom: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
 .storage-item-actions .btn {
   padding: 6px 10px;
   font-size: 0.85rem;
   border-radius: 10px;
+}
+
+.storage-item-actions .storage-icon-btn {
+  min-height: 32px;
+  width: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.storage-item-actions .storage-icon-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .storage-list-head {

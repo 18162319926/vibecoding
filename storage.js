@@ -25,6 +25,11 @@ const refs = {
   photoPreview: document.getElementById("photoPreview"),
   photoWrap: document.getElementById("photoWrap"),
   removePhotoBtn: document.getElementById("removePhotoBtn"),
+  openPhotoPickerBtn: document.getElementById("openPhotoPickerBtn"),
+  photoFileName: document.getElementById("photoFileName"),
+  originalWeight: document.getElementById("originalWeight"),
+  stockWeight: document.getElementById("stockWeight"),
+  progress: document.getElementById("progress"),
 };
 
 const state = {
@@ -68,13 +73,29 @@ function setDiagError(error) {
 
 function setStorageSyncHint(text) {
   if (!refs.syncHint) return;
-  refs.syncHint.textContent = text;
+  const raw = String(text || "").trim();
+  let icon = "☁️";
+  let cls = "sync-state-idle";
+  if (/失败|错误|不可用/.test(raw)) {
+    icon = "❌";
+    cls = "sync-state-error";
+  } else if (/正在|监听|同步中/.test(raw)) {
+    icon = "🔄";
+    cls = "sync-state-syncing";
+  } else if (/已同步|已初始化/.test(raw)) {
+    icon = "✅";
+    cls = "sync-state-ok";
+  }
+  refs.syncHint.className = `sync-state ${cls}`;
+  refs.syncHint.textContent = `${icon} ${raw || "离线模式"}`;
 }
 
 async function pushStorageNow() {
   if (!window.cloudSync || !window.cloudSync.isReady()) return;
   if (!window.cloudSync.getCurrentUser()) return;
   if (typeof window.cloudSync.pushStorageState !== "function") return;
+
+  setStorageSyncHint("同步中...");
 
   if (pageType === "yarn") {
     await window.cloudSync.pushStorageState({ yarn: state.items });
@@ -132,7 +153,76 @@ function normalizeItem(item) {
     ...(item && typeof item === "object" ? item : {}),
   };
   normalized.photo = getItemPhoto(normalized);
+  if (pageType === "yarn") {
+    const metrics = deriveYarnMetrics(normalized);
+    normalized.originalWeight = metrics.originalWeight;
+    normalized.stockWeight = metrics.stockWeight;
+    normalized.weight = metrics.originalWeight;
+    normalized.progress = metrics.progress;
+  }
   return normalized;
+}
+
+function toSafeNumber(value) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function toNonNegative(value) {
+  return Math.max(0, toSafeNumber(value));
+}
+
+function roundToSingle(value) {
+  return Math.round(toSafeNumber(value) * 10) / 10;
+}
+
+function formatWeight(value) {
+  const num = roundToSingle(toNonNegative(value));
+  return Number.isInteger(num) ? String(num) : num.toFixed(1);
+}
+
+function computeYarnProgress(originalWeight, stockWeight) {
+  const original = toNonNegative(originalWeight);
+  if (!original) return 0;
+  const stock = clamp(toNonNegative(stockWeight), 0, original);
+  const consumed = original - stock;
+  return roundToSingle((consumed / original) * 100);
+}
+
+function deriveYarnMetrics(item) {
+  const originalWeight = roundToSingle(toNonNegative(item?.originalWeight ?? item?.weight));
+  const hasStockWeight = item?.stockWeight !== undefined && item?.stockWeight !== null && String(item.stockWeight).trim() !== "";
+  let stockWeight = hasStockWeight
+    ? roundToSingle(toNonNegative(item.stockWeight))
+    : roundToSingle(originalWeight * (1 - clamp(toSafeNumber(item?.progress), 0, 100) / 100));
+
+  if (originalWeight > 0) {
+    stockWeight = clamp(stockWeight, 0, originalWeight);
+  }
+
+  return {
+    originalWeight,
+    stockWeight: roundToSingle(stockWeight),
+    progress: computeYarnProgress(originalWeight, stockWeight),
+  };
+}
+
+function updateYarnProgressPreview() {
+  if (pageType !== "yarn") return;
+  if (!refs.originalWeight || !refs.stockWeight || !refs.progress) return;
+
+  const originalWeight = toNonNegative(refs.originalWeight.value);
+  const stockInput = toNonNegative(refs.stockWeight.value);
+  const stockWeight = originalWeight > 0 ? clamp(stockInput, 0, originalWeight) : stockInput;
+  const progress = computeYarnProgress(originalWeight, stockWeight);
+
+  if (originalWeight > 0) {
+    refs.stockWeight.max = String(roundToSingle(originalWeight));
+  } else {
+    refs.stockWeight.removeAttribute("max");
+  }
+
+  refs.progress.value = String(progress);
 }
 
 function parseYarnRef(value) {
@@ -223,6 +313,8 @@ async function pullStorageNow() {
   if (!window.cloudSync || !window.cloudSync.isReady()) return;
   if (!window.cloudSync.getCurrentUser()) return;
   if (typeof window.cloudSync.pullStorageState !== "function") return;
+
+  setStorageSyncHint("同步中...");
 
   try {
     const remote = await window.cloudSync.pullStorageState();
@@ -356,6 +448,10 @@ function collectFormData() {
     const yarnType = document.getElementById("yarnType").value.trim();
     const yarnColorNo = document.getElementById("yarnColorNo").value.trim();
     const yarnRef = [yarnBrand, yarnColorNo].filter(Boolean).join(" / ");
+    const originalWeight = roundToSingle(toNonNegative(refs.originalWeight?.value));
+    const stockInput = roundToSingle(toNonNegative(refs.stockWeight?.value));
+    const stockWeight = originalWeight > 0 ? roundToSingle(clamp(stockInput, 0, originalWeight)) : stockInput;
+    const progress = computeYarnProgress(originalWeight, stockWeight);
     return {
       id: state.editingId || makeId(),
       yarnBrand,
@@ -363,9 +459,11 @@ function collectFormData() {
       yarnColorNo,
       yarnRef,
       needleSize: document.getElementById("needleSize").value.trim(),
-      weight: Math.max(0, Number(document.getElementById("weight").value) || 0),
+      originalWeight,
+      stockWeight,
+      weight: originalWeight,
       season: document.getElementById("season").value,
-      progress: clamp(Number(document.getElementById("progress").value) || 0, 0, 100),
+      progress,
       photo: state.photoData,
       updatedAt: Date.now(),
     };
@@ -393,20 +491,25 @@ function resetForm() {
   state.editingId = "";
   state.photoData = "";
   renderPhotoPreview("");
+  if (pageType === "yarn") {
+    updateYarnProgressPreview();
+  }
   refs.cancelEditBtn.hidden = true;
   refs.submitBtn.textContent = pageType === "yarn" ? "新增毛线条目" : "新增小样条目";
 }
 
 function fillForm(item) {
   if (pageType === "yarn") {
+    const metrics = deriveYarnMetrics(item);
     const yarnInfo = parseYarnInfo(item);
     document.getElementById("yarnBrand").value = yarnInfo.brand === "-" ? "" : yarnInfo.brand;
     document.getElementById("yarnType").value = item.yarnType || "";
     document.getElementById("yarnColorNo").value = yarnInfo.colorNo === "-" ? "" : yarnInfo.colorNo;
     document.getElementById("needleSize").value = item.needleSize || "";
-    document.getElementById("weight").value = item.weight || "";
+    if (refs.originalWeight) refs.originalWeight.value = metrics.originalWeight ? String(metrics.originalWeight) : "";
+    if (refs.stockWeight) refs.stockWeight.value = metrics.stockWeight ? String(metrics.stockWeight) : "";
     document.getElementById("season").value = item.season || "春秋";
-    document.getElementById("progress").value = Number(item.progress) || 0;
+    if (refs.progress) refs.progress.value = String(metrics.progress);
   } else {
     document.getElementById("swatchYarn").value = item.yarn || "";
     document.getElementById("swatchPattern").value = item.pattern || "";
@@ -436,8 +539,14 @@ function renderPhotoPreview(dataUrl) {
   }
   if (src) {
     refs.photoPreview.src = src;
+    if (refs.photoFileName) {
+      refs.photoFileName.textContent = "已选择图片";
+    }
   } else {
     refs.photoPreview.removeAttribute("src");
+    if (refs.photoFileName) {
+      refs.photoFileName.textContent = "未选择文件";
+    }
   }
 }
 
@@ -476,24 +585,31 @@ function deleteItem(id) {
 function buildYarnCard(item) {
   const photo = getItemPhoto(item);
   const ref = parseYarnInfo(item);
+  const metrics = deriveYarnMetrics(item);
+  const editIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h4.5L19 9.5 14.5 5 3 16.5V21z"></path><path d="M13.5 6l4.5 4.5"></path></svg>`;
+  const deleteIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M8 7l1 13h6l1-13"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>`;
+  const cardClass = photo ? "storage-item storage-item-yarn has-photo" : "storage-item storage-item-yarn";
   return `
-    <article class="storage-item" data-id="${item.id}">
+    <article class="${cardClass}" data-id="${item.id}">
       ${photo ? `<img class="storage-item-photo" src="${escapeHtml(photo)}" alt="${escapeHtml(item.yarnType || "毛线实拍图")}" />` : ""}
       <div class="storage-item-head">
         <h3> ${escapeHtml(ref.brand)}</h3>
-        <span class="storage-item-meta">${escapeHtml(item.season || "")}</span>
+        <div class="storage-item-side">
+          <span class="storage-item-meta">${escapeHtml(item.season || "")}</span>
+          <div class="storage-item-actions storage-item-actions-vertical">
+            <button class="btn ghost storage-icon-btn" type="button" data-action="edit" aria-label="编辑" title="编辑">${editIcon}</button>
+            <button class="btn danger storage-icon-btn" type="button" data-action="delete" aria-label="删除" title="删除">${deleteIcon}</button>
+          </div>
+        </div>
       </div>
       <p class="storage-item-line">线材类型：${escapeHtml(item.yarnType || "-")}</p>
       <p class="storage-item-line">色号：${escapeHtml(ref.colorNo)}</p>
       <p class="storage-item-line">针号：${escapeHtml(item.needleSize || "-")}</p>
-      <p class="storage-item-line">重量：${Number(item.weight) || 0}g</p>
-      <p class="storage-item-line">消耗进度：${Number(item.progress) || 0}%</p>
+      <p class="storage-item-line">原始重量：${formatWeight(metrics.originalWeight)}g</p>
+      <p class="storage-item-line">库存重量：${formatWeight(metrics.stockWeight)}g</p>
+      <p class="storage-item-line">消耗进度：${metrics.progress}%</p>
       <div class="storage-progress-track">
-        <div class="storage-progress-fill" style="width:${clamp(Number(item.progress) || 0, 0, 100)}%"></div>
-      </div>
-      <div class="storage-item-actions">
-        <button class="btn ghost" type="button" data-action="edit">编辑</button>
-        <button class="btn danger" type="button" data-action="delete">删除</button>
+        <div class="storage-progress-fill" style="width:${clamp(metrics.progress, 0, 100)}%"></div>
       </div>
     </article>
   `;
@@ -501,21 +617,25 @@ function buildYarnCard(item) {
 
 function buildSwatchCard(item) {
   const photo = getItemPhoto(item);
+  const editIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h4.5L19 9.5 14.5 5 3 16.5V21z"></path><path d="M13.5 6l4.5 4.5"></path></svg>`;
+  const deleteIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M8 7l1 13h6l1-13"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>`;
   return `
-    <article class="storage-item" data-id="${item.id}">
+    <article class="storage-item storage-item-swatch" data-id="${item.id}">
       ${photo ? `<img class="storage-item-photo" src="${escapeHtml(photo)}" alt="${escapeHtml(item.yarn || "小样实拍图")}" />` : ""}
       <div class="storage-item-head">
         <h3>${escapeHtml(item.yarn || "未命名小样")}</h3>
-        <span class="storage-item-meta">密度 ${Number(item.gauge) || 0}</span>
+        <div class="storage-item-side">
+          <span class="storage-item-meta">密度 ${Number(item.gauge) || 0}</span>
+          <div class="storage-item-actions storage-item-actions-vertical">
+            <button class="btn ghost storage-icon-btn" type="button" data-action="edit" aria-label="编辑" title="编辑">${editIcon}</button>
+            <button class="btn danger storage-icon-btn" type="button" data-action="delete" aria-label="删除" title="删除">${deleteIcon}</button>
+          </div>
+        </div>
       </div>
       <p class="storage-item-line">花型：${escapeHtml(item.pattern || "-")}</p>
       <p class="storage-item-line">针号：${escapeHtml(item.needle || "-")}</p>
       <p class="storage-item-line">规格：${escapeHtml(item.spec || "-")}</p>
       <p class="storage-item-line">备注：${escapeHtml(item.notes || "-")}</p>
-      <div class="storage-item-actions">
-        <button class="btn ghost" type="button" data-action="edit">编辑</button>
-        <button class="btn danger" type="button" data-action="delete">删除</button>
-      </div>
     </article>
   `;
 }
@@ -555,6 +675,9 @@ if (refs.photoInput) {
     const file = event.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) return;
+    if (refs.photoFileName) {
+      refs.photoFileName.textContent = file.name || "已选择图片";
+    }
     try {
       state.photoData = await readImageAsDataUrl(file);
       renderPhotoPreview(state.photoData);
@@ -562,6 +685,12 @@ if (refs.photoInput) {
       state.photoData = "";
       renderPhotoPreview("");
     }
+  });
+}
+
+if (refs.openPhotoPickerBtn && refs.photoInput) {
+  refs.openPhotoPickerBtn.addEventListener("click", () => {
+    refs.photoInput.click();
   });
 }
 
@@ -573,6 +702,11 @@ if (refs.removePhotoBtn) {
     }
     renderPhotoPreview("");
   });
+}
+
+if (pageType === "yarn") {
+  refs.originalWeight?.addEventListener("input", updateYarnProgressPreview);
+  refs.stockWeight?.addEventListener("input", updateYarnProgressPreview);
 }
 
 if (refs.diagRefreshBtn) {
@@ -607,3 +741,6 @@ renderList();
 setStorageSyncHint("离线模式");
 renderDiagnostics();
 setupStorageCloudSync();
+if (pageType === "yarn") {
+  updateYarnProgressPreview();
+}
