@@ -1669,6 +1669,10 @@ function bindMobileFloatingTimerToggle() {
 function setupCloudSync(projects, onRemoteApplied) {
   if (!window.cloudSync) return;
 
+  if (typeof window.cloudSync.ensureSyncStarted === "function") {
+    void window.cloudSync.ensureSyncStarted();
+  }
+
   setAuthNav(window.cloudSync.getCurrentUser());
 
   const handleUserChanged = async (user) => {
@@ -1681,6 +1685,10 @@ function setupCloudSync(projects, onRemoteApplied) {
     if (!user) {
       setSyncHint("离线模式");
       return;
+    }
+
+    if (typeof window.cloudSync.ensureSyncStarted === "function") {
+      void window.cloudSync.ensureSyncStarted();
     }
 
     closeAuthDialog();
@@ -1746,6 +1754,23 @@ function setupCloudSync(projects, onRemoteApplied) {
   }
 
   window.cloudSync.onAuthStateChanged(handleUserChanged);
+
+  const syncEventKey = typeof window.cloudSync.getSyncEventKey === "function"
+    ? window.cloudSync.getSyncEventKey()
+    : "knit-cloud-sync-event";
+
+  window.addEventListener("storage", async (event) => {
+    if (!event || event.key !== syncEventKey) return;
+    if (!window.cloudSync || !window.cloudSync.getCurrentUser()) return;
+    try {
+      const remote = await window.cloudSync.pullState();
+      if (!remote) return;
+      const changed = applyCloudPayload(remote, projects);
+      if (changed) onRemoteApplied();
+    } catch (error) {
+      console.error("cloud broadcast pull failed", error);
+    }
+  });
 }
 
 function init() {

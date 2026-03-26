@@ -246,6 +246,20 @@ function getProjectDailyStats(project) {
     }
   }
 
+  // Legacy compatibility: when dailyStats is missing but aggregate fields exist,
+  // treat all historical values as today's bucket so today/week/month cards don't show 0.
+  const hasAnyDaily = Object.keys(map).length > 0;
+  if (!hasAnyDaily) {
+    const spentSeconds = toNonNegative(project?.spentSeconds);
+    const totalRows = toNonNegative(project?.rows);
+    if (spentSeconds > 0 || totalRows > 0) {
+      map[today] = {
+        seconds: Math.max(spentSeconds, toNonNegative(project?.todaySeconds)),
+        rows: Math.max(totalRows, toNonNegative(project?.todayRows)),
+      };
+    }
+  }
+
   return map;
 }
 
@@ -477,6 +491,10 @@ function setupCloudSync() {
     return;
   }
 
+  if (typeof window.cloudSync.ensureSyncStarted === "function") {
+    void window.cloudSync.ensureSyncStarted();
+  }
+
   setAuthNav(window.cloudSync.getCurrentUser());
 
   if (refs.openLoginBtn) refs.openLoginBtn.addEventListener("click", () => openAuthDialog("login"));
@@ -501,9 +519,21 @@ function setupCloudSync() {
         setStatsSyncHint("离线模式");
         return;
       }
+      if (typeof window.cloudSync.ensureSyncStarted === "function") {
+        void window.cloudSync.ensureSyncStarted();
+      }
       closeAuthDialog();
       setStatsSyncHint("已登录云端");
     },
+  });
+
+  const syncEventKey = typeof window.cloudSync.getSyncEventKey === "function"
+    ? window.cloudSync.getSyncEventKey()
+    : "knit-cloud-sync-event";
+
+  window.addEventListener("storage", (event) => {
+    if (!event || event.key !== syncEventKey) return;
+    refreshStatsData("已同步云端数据");
   });
 }
 
@@ -591,6 +621,36 @@ function getTrendSeries(period = state.period) {
   });
 
   return { days, seconds, rows };
+}
+
+function getTrendComparison(period = state.period) {
+  const dayCount = getTrendDayCount(period);
+  const now = new Date();
+  const prevDays = [];
+  for (let i = dayCount * 2 - 1; i >= dayCount; i -= 1) {
+    const day = new Date(now);
+    day.setDate(now.getDate() - i);
+    prevDays.push(getLocalDateKey(day));
+  }
+
+  let prevSeconds = 0;
+  state.projects.forEach((project) => {
+    const daily = getProjectDailyStats(project);
+    prevDays.forEach((key) => {
+      prevSeconds += toNonNegative(daily[key]?.seconds);
+    });
+  });
+
+  const current = getTrendSeries(period);
+  const currentSeconds = current.seconds.reduce((sum, value) => sum + toNonNegative(value), 0);
+  if (prevSeconds <= 0) {
+    if (currentSeconds <= 0) return { label: "持平 0%" };
+    return { label: "较上周期 新增" };
+  }
+
+  const ratio = ((currentSeconds - prevSeconds) / prevSeconds) * 100;
+  const sign = ratio > 0 ? "+" : "";
+  return { label: `较上周期 ${sign}${roundToSingle(ratio)}%` };
 }
 
 function renderOverview() {
@@ -821,7 +881,8 @@ function renderTrendChart() {
     const totalRows = trend.rows.reduce((sum, v) => sum + v, 0);
     const peakHour = Math.max(...hoursSeries);
     const peakRow = Math.max(...rowsSeries);
-    refs.trendHint.textContent = `最近${trend.days.length}天累计 ${totalHours} 小时，累计 ${totalRows} 行；单日峰值 ${peakHour} 小时 / ${peakRow} 行。`;
+    const comparison = getTrendComparison(state.period);
+    refs.trendHint.textContent = `最近${trend.days.length}天累计 ${totalHours} 小时，累计 ${totalRows} 行；单日峰值 ${peakHour} 小时 / ${peakRow} 行；${comparison.label}。`;
   }
 
   if (refs.trendTitle) {

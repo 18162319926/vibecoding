@@ -11,7 +11,12 @@
     lastSyncWarning: "",
     authResolved: false,
     initPromise: null,
+    globalSyncStarted: false,
+    globalSyncUnsubscribe: null,
+    lastSeenClientUpdatedAt: 0,
   };
+
+  const SYNC_EVENT_KEY = "knit-cloud-sync-event";
 
   function getConfig() {
     const raw = window.__KNIT_SUPABASE_CONFIG__ || {};
@@ -38,6 +43,26 @@
         console.error("auth listener error", error);
       }
     });
+  }
+
+  function emitSyncEvent(type, extra = {}) {
+    const payload = {
+      type: String(type || "updated"),
+      at: Date.now(),
+      userId: String(state.currentUser?.id || ""),
+      ...extra,
+    };
+    try {
+      localStorage.setItem(SYNC_EVENT_KEY, JSON.stringify(payload));
+    } catch {
+      // Ignore broadcast write failures.
+    }
+
+    try {
+      window.dispatchEvent(new CustomEvent("knit-cloud-sync", { detail: payload }));
+    } catch {
+      // Ignore custom event failures.
+    }
   }
 
   function normalizeUser(user) {
@@ -431,8 +456,19 @@
 
     state.client.auth.onAuthStateChange((_event, session) => {
       state.currentUser = normalizeUser(session?.user || null);
+      if (state.currentUser) {
+        void ensureSyncStarted();
+        emitSyncEvent("login");
+      } else {
+        stopGlobalSync();
+        emitSyncEvent("logout");
+      }
       notifyAuthListeners(state.currentUser);
     });
+
+    if (state.currentUser) {
+      void ensureSyncStarted();
+    }
   }
 
   function isReady() {
@@ -509,7 +545,57 @@
     if (!state.ready) throw new Error("云同步未配置");
     const { error } = await state.client.auth.signOut();
     if (error) throw new Error(extractErrorMessage(error));
+    stopGlobalSync();
     return true;
+  }
+
+  function stopGlobalSync() {
+    if (typeof state.globalSyncUnsubscribe === "function") {
+      try {
+        state.globalSyncUnsubscribe();
+      } catch {
+        // Ignore unsubscribe errors.
+      }
+    }
+    state.globalSyncUnsubscribe = null;
+    state.globalSyncStarted = false;
+  }
+
+  async function startGlobalSync() {
+    if (!state.ready || !state.currentUser) return false;
+    if (state.globalSyncStarted) return true;
+
+    state.globalSyncStarted = true;
+
+    try {
+      const remote = await pullState();
+      if (remote) {
+        state.lastSeenClientUpdatedAt = Number(remote.clientUpdatedAt) || 0;
+        emitSyncEvent("pulled", { clientUpdatedAt: state.lastSeenClientUpdatedAt });
+      }
+    } catch {
+      // Keep watcher alive even if initial pull fails.
+    }
+
+    state.globalSyncUnsubscribe = watchRemoteState(
+      (remote) => {
+        const stamp = Number(remote?.clientUpdatedAt) || 0;
+        if (stamp && stamp <= state.lastSeenClientUpdatedAt) return;
+        if (stamp) state.lastSeenClientUpdatedAt = stamp;
+        emitSyncEvent("updated", { clientUpdatedAt: stamp });
+      },
+      () => {
+        emitSyncEvent("watch-error");
+      }
+    );
+
+    emitSyncEvent("started");
+    return true;
+  }
+
+  async function ensureSyncStarted() {
+    if (!state.ready || !state.currentUser) return false;
+    return startGlobalSync();
   }
 
   async function pullState() {
@@ -904,5 +990,7 @@
     getLastSyncWarning,
     watchRemoteState,
     bindAuthUI,
+    ensureSyncStarted,
+    getSyncEventKey: () => SYNC_EVENT_KEY,
   };
 })();

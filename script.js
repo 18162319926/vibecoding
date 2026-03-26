@@ -1220,6 +1220,10 @@ function applyCloudPayload(payload) {
 function setupCloudSync() {
   if (!window.cloudSync) return;
 
+  if (typeof window.cloudSync.ensureSyncStarted === "function") {
+    void window.cloudSync.ensureSyncStarted();
+  }
+
   setAuthNav(window.cloudSync.getCurrentUser());
 
   if (refs.openLoginBtn) {
@@ -1275,6 +1279,10 @@ function setupCloudSync() {
         return;
       }
 
+      if (typeof window.cloudSync.ensureSyncStarted === "function") {
+        void window.cloudSync.ensureSyncStarted();
+      }
+
       closeAuthDialog();
 
       setSyncHint("正在同步云端数据...");
@@ -1301,6 +1309,23 @@ function setupCloudSync() {
         }
       );
     },
+  });
+
+  const syncEventKey = typeof window.cloudSync.getSyncEventKey === "function"
+    ? window.cloudSync.getSyncEventKey()
+    : "knit-cloud-sync-event";
+
+  window.addEventListener("storage", async (event) => {
+    if (!event || event.key !== syncEventKey) return;
+    if (!window.cloudSync || !window.cloudSync.getCurrentUser()) return;
+    try {
+      const remote = await window.cloudSync.pullState();
+      if (remote) {
+        applyCloudPayload(remote);
+      }
+    } catch (error) {
+      console.error("cloud broadcast pull failed", error);
+    }
   });
 }
 
@@ -1500,6 +1525,34 @@ function init() {
   bindActions();
   bindGlobalTimer();
   setupCloudSync();
+
+  // 云同步广播刷新：监听 storage 事件和自定义事件
+  if (window.cloudSync && typeof window.cloudSync.getSyncEventKey === "function") {
+    const syncEventKey = window.cloudSync.getSyncEventKey();
+    window.addEventListener("storage", async (event) => {
+      if (!event || event.key !== syncEventKey) return;
+      if (!window.cloudSync || !window.cloudSync.getCurrentUser()) return;
+      try {
+        const remote = await window.cloudSync.pullState();
+        if (remote) {
+          applyCloudPayload(remote);
+        }
+      } catch (error) {
+        console.error("cloud broadcast pull failed", error);
+      }
+    });
+    window.addEventListener("knit-cloud-sync", async () => {
+      if (!window.cloudSync || !window.cloudSync.getCurrentUser()) return;
+      try {
+        const remote = await window.cloudSync.pullState();
+        if (remote) {
+          applyCloudPayload(remote);
+        }
+      } catch (error) {
+        console.error("cloud broadcast pull failed", error);
+      }
+    });
+  }
 }
 
 init();
