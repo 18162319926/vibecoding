@@ -26,6 +26,10 @@ const syncRuntime = {
   lastSeenCloudStamp: 0,
 };
 
+const runtimeWarnings = {
+  timerStorageWarned: false,
+};
+
 const timerState = {
   minutes: 25,
   left: 25 * 60,
@@ -747,9 +751,43 @@ function getProjectProgress(project) {
   return Math.min(100, Math.round((project.rows / total) * 100));
 }
 
+function classifyStorageError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  const name = String(error?.name || "").toLowerCase();
+  return message.includes("quota") || message.includes("exceeded") || name.includes("quota");
+}
+
+function safeSetLocalStorage(key, value, options = {}) {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch (error) {
+    if (typeof options.onError === "function") {
+      options.onError(error, { isQuota: classifyStorageError(error) });
+    }
+    return false;
+  }
+}
+
+function formatSyncErrorMessage(error, fallback = "请稍后重试") {
+  const raw = String(error?.message || "").trim();
+  const text = raw.toLowerCase();
+  if (!raw) return fallback;
+  if (text.includes("network") || text.includes("fetch") || text.includes("timeout")) {
+    return "网络波动，稍后自动重试";
+  }
+  if (text.includes("auth") || text.includes("token") || text.includes("permission") || text.includes("unauthorized")) {
+    return "登录状态异常，请重新登录";
+  }
+  if (text.includes("quota") || text.includes("storage")) {
+    return "本地存储受限，已切换为轻量同步";
+  }
+  return fallback;
+}
+
 function saveProjects(options = {}) {
   state.projects = state.projects.filter((project) => !isLegacyStarterProject(project));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ projects: state.projects }));
+  safeSetLocalStorage(STORAGE_KEY, JSON.stringify({ projects: state.projects }));
   if (options.scheduleCloud !== false) {
     scheduleCloudPush();
   }
@@ -965,7 +1003,15 @@ function renderDashboard() {
 }
 
 function saveTimerState(options = {}) {
-  localStorage.setItem(GLOBAL_TIMER_KEY, JSON.stringify(timerState));
+  safeSetLocalStorage(GLOBAL_TIMER_KEY, JSON.stringify(timerState), {
+    onError(error, meta) {
+      if (runtimeWarnings.timerStorageWarned) return;
+      runtimeWarnings.timerStorageWarned = true;
+      const notice = meta.isQuota ? "本地临时保存受限，计时将继续运行" : "本地保存暂不可用，计时将继续运行";
+      setSyncHint(notice);
+      console.warn("timer state persistence skipped", error);
+    },
+  });
   if (options.scheduleCloud) {
     scheduleCloudPush();
   }
@@ -1241,7 +1287,8 @@ function setupCloudSync() {
           setSyncHint("云端已初始化");
         }
       } catch (error) {
-        setSyncHint(`拉取云端失败：${error.message || "请稍后重试"}`);
+        console.error("cloud pull failed", error);
+        setSyncHint(`拉取云端失败：${formatSyncErrorMessage(error)}`);
       }
 
       syncRuntime.remoteUnsubscribe = window.cloudSync.watchRemoteState(
@@ -1249,7 +1296,8 @@ function setupCloudSync() {
           applyCloudPayload(payload);
         },
         (error) => {
-          setSyncHint(`监听同步失败：${error.message || "请稍后重试"}`);
+          console.error("cloud watch failed", error);
+          setSyncHint(`监听同步失败：${formatSyncErrorMessage(error)}`);
         }
       );
     },
@@ -1280,7 +1328,8 @@ function bindActions() {
         }
         scheduleCloudPush();
       } catch (error) {
-        setSyncHint(`拉取云端失败：${error.message || "请稍后重试"}`);
+        console.error("manual cloud pull failed", error);
+        setSyncHint(`拉取云端失败：${formatSyncErrorMessage(error)}`);
       }
     });
   }
