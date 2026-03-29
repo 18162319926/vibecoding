@@ -1106,9 +1106,40 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
+
+function resetTodayStatsIfNeeded() {
+  const today = getLocalDateKey();
+  let changed = false;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    const list = Array.isArray(parsed.projects) ? parsed.projects : [];
+    let updated = false;
+    list.forEach((project) => {
+      if (!project || typeof project !== "object") return;
+      // lastDate 字段兼容 project.js 逻辑
+      const lastDate = project.lastDate || project.lastStatDate;
+      if (lastDate && lastDate !== today) {
+        if (project.todayRows || project.todaySeconds) {
+          project.todayRows = 0;
+          project.todaySeconds = 0;
+          changed = true;
+        }
+        // 可选：同步 lastDate 字段到今天，避免重复重置
+        project.lastDate = today;
+      }
+    });
+    if (changed) {
+      parsed.projects = list;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+    }
+  } catch {}
+}
+
 loadProjectState();
 loadYarnState();
 ensureStatsBootstrapDate();
+resetTodayStatsIfNeeded();
 renderAll();
 bindTrendTooltip();
 setupCloudSync();

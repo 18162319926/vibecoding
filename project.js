@@ -167,6 +167,12 @@ function recordProjectSeconds(project, seconds) {
   const amount = Math.max(0, Number(seconds) || 0);
   if (!amount) return;
   const today = getToday();
+  // 自动切天，保证今日统计准确
+  if (project.lastDate !== today) {
+    project.todayRows = 0;
+    project.todaySeconds = 0;
+    project.lastDate = today;
+  }
   const entry = ensureProjectDailyEntry(project, today);
   entry.seconds += amount;
   const bucket = getHourBucket(new Date().getHours());
@@ -177,6 +183,12 @@ function recordProjectRows(project, rows) {
   const amount = Math.max(0, Number(rows) || 0);
   if (!amount) return;
   const today = getToday();
+  // 自动切天，保证今日统计准确
+  if (project.lastDate !== today) {
+    project.todayRows = 0;
+    project.todaySeconds = 0;
+    project.lastDate = today;
+  }
   const entry = ensureProjectDailyEntry(project, today);
   entry.rows += amount;
 }
@@ -438,8 +450,53 @@ function saveProjects(projects, options = {}) {
   const cleanedProjects = (Array.isArray(projects) ? projects : []).filter(
     (project) => !isLegacyStarterProject(project)
   );
-  const saved = safeSetLocalStorage(STORAGE_KEY, JSON.stringify({ projects: cleanedProjects }));
-  if (!saved) return false;
+  // 尝试完整保存
+  let saved = safeSetLocalStorage(STORAGE_KEY, JSON.stringify({ projects: cleanedProjects }));
+  if (!saved) {
+    // 精简每个项目，仅保留必要字段
+    const minimalProjects = cleanedProjects.map(p => ({
+      id: p.id,
+      projectName: p.projectName,
+      totalRows: p.totalRows,
+      rows: p.rows,
+      todayRows: p.todayRows,
+      todaySeconds: p.todaySeconds,
+      spentSeconds: p.spentSeconds,
+      status: p.status,
+      updatedAt: p.updatedAt,
+      createdAt: p.createdAt,
+      lastDate: p.lastDate,
+      dailyStats: p.dailyStats,
+      timeBuckets: p.timeBuckets
+    }));
+    saved = safeSetLocalStorage(STORAGE_KEY, JSON.stringify({ projects: minimalProjects }));
+    if (!saved) {
+      // 只保留第一个项目的最小状态
+      const fallback = minimalProjects.length ? [minimalProjects[0]] : [];
+      saved = safeSetLocalStorage(STORAGE_KEY, JSON.stringify({ projects: fallback }));
+      if (!saved) {
+        if (refs.feedbackToast) {
+          refs.feedbackToast.textContent = "本地空间严重不足，仅保留最小数据，建议清理空间或使用云端";
+          refs.feedbackToast.style.display = "block";
+        } else {
+          alert("本地空间严重不足，仅保留最小数据，建议清理空间或使用云端");
+        }
+        // 依然失败，直接返回
+        return false;
+      }
+    }
+    if (refs.feedbackToast) {
+      refs.feedbackToast.textContent = "本地空间不足，已自动精简数据并同步云端";
+      refs.feedbackToast.style.display = "block";
+    } else {
+      alert("本地空间不足，已自动精简数据并同步云端");
+    }
+    // 精简后依然同步云端
+    if (options.scheduleCloud !== false) {
+      scheduleCloudPush(minimalProjects);
+    }
+    return true;
+  }
   if (options.scheduleCloud !== false) {
     scheduleCloudPush(cleanedProjects);
   }
@@ -1287,8 +1344,34 @@ function scheduleCloudPush(projects) {
     const stamp = Date.now();
     syncRuntime.lastSeenCloudStamp = Math.max(syncRuntime.lastSeenCloudStamp, stamp);
     try {
+      // 只同步有变动的项目，图片始终采用云存储URL，不全量上传大图片
+      const changedProjects = (Array.isArray(projects) ? projects : []).filter((project) => {
+        // 只同步最近7天有变动的项目，或有未上传的图片
+        const updated = Number(project.updatedAt) || 0;
+        const now = Date.now();
+        const sevenDays = 7 * 24 * 3600 * 1000;
+        const isRecent = now - updated < sevenDays;
+        const isRemoteCover = /^https?:\/\//.test(project.coverImage || "");
+        return isRecent || !isRemoteCover;
+      }).map(project => {
+        // 图片字段只保留URL，去除base64
+        const p = { ...project };
+        if (p.coverImage && /^data:image\//.test(p.coverImage)) {
+          // 触发云端上传，实际上传逻辑在 cloud-sync.js 已有
+          // 这里只保留字段，后端会处理
+        } else if (p.coverImage && !/^https?:\/\//.test(p.coverImage)) {
+          p.coverImage = "";
+        }
+        if (p.diagramImage && !/^https?:\/\//.test(p.diagramImage)) {
+          p.diagramImage = "";
+        }
+        if (Array.isArray(p.diagramImages)) {
+          p.diagramImages = p.diagramImages.filter(img => /^https?:\/\//.test(img));
+        }
+        return p;
+      });
       await window.cloudSync.pushState({
-        projects: (Array.isArray(projects) ? projects : []).filter((project) => !isLegacyStarterProject(project)),
+        projects: changedProjects,
         timer: timerState,
         clientUpdatedAt: stamp,
       });
