@@ -169,14 +169,18 @@ function recordProjectSeconds(project, seconds) {
   const today = getToday();
   // 自动切天，保证今日统计准确
   if (project.lastDate !== today) {
-    project.todayRows = 0;
-    project.todaySeconds = 0;
+    // 切天时不清零累计数据，只更新 lastDate，hourBuckets 也不覆盖
     project.lastDate = today;
   }
   const entry = ensureProjectDailyEntry(project, today);
   entry.seconds += amount;
+  // 每次写入都同步 todaySeconds 字段，保证主页面和 dailyStats 一致
+  project.todaySeconds = entry.seconds;
   const bucket = getHourBucket(new Date().getHours());
   project.timeBuckets[bucket] = Math.max(0, Number(project.timeBuckets[bucket]) || 0) + amount;
+  // 写入今日小时分布到 dailyStats[today].hourBuckets
+  if (!entry.hourBuckets) entry.hourBuckets = {};
+  entry.hourBuckets[bucket] = Math.max(0, Number(entry.hourBuckets[bucket]) || 0) + amount;
 }
 
 function recordProjectRows(project, rows) {
@@ -185,12 +189,17 @@ function recordProjectRows(project, rows) {
   const today = getToday();
   // 自动切天，保证今日统计准确
   if (project.lastDate !== today) {
-    project.todayRows = 0;
-    project.todaySeconds = 0;
+    // 切天时不清零累计数据，只更新 lastDate，hourBuckets 也不覆盖
     project.lastDate = today;
   }
   const entry = ensureProjectDailyEntry(project, today);
   entry.rows += amount;
+  // 每次写入都同步 todayRows 字段，保证主页面和 dailyStats 一致
+  project.todayRows = entry.rows;
+  // 行数也写入 hourBuckets，累加 amount，保证今日小时分布正确
+  const bucket = getHourBucket(new Date().getHours());
+  if (!entry.hourBuckets) entry.hourBuckets = {};
+  entry.hourBuckets[bucket] = Math.max(0, Number(entry.hourBuckets[bucket]) || 0) + amount;
 }
 
 function formatTime(seconds) {
@@ -273,6 +282,14 @@ function normalizeProject(project) {
       ? [fallbackDiagramImage]
       : [];
   ensureProjectAnalytics(normalized);
+  // 保证 dailyStats 每天有数据，兼容历史数据
+  const today = getToday();
+  if (!normalized.dailyStats[today]) {
+    normalized.dailyStats[today] = {
+      seconds: Math.max(0, Number(normalized.todaySeconds) || 0),
+      rows: Math.max(0, Number(normalized.todayRows) || 0),
+    };
+  }
   applyProgressStatus(normalized);
   return normalized;
 }
@@ -1009,7 +1026,7 @@ async function drawClassicLayout(ctx, width, height, theme, sections, project, s
 
         ctx.fillStyle = theme.textColor;
         ctx.font = "500 21px sans-serif";
-        ctx.fillText(String(value), 202, y);
+        ctx.fillText(String(value), 72, y);
         y += 32;
       });
     }

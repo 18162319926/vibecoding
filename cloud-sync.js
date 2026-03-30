@@ -885,14 +885,26 @@
     const onUserChanged = options?.onUserChanged;
 
     if (!emailInput || !passwordInput || !statusEl || !loginBtn || !registerBtn || !logoutBtn) {
+      // 按钮失效时也要给出提示
+      if (statusEl) statusEl.textContent = `云同步不可用：控件未加载`;
+      if (loginBtn) loginBtn.disabled = true;
+      if (registerBtn) registerBtn.disabled = true;
+      if (logoutBtn) logoutBtn.disabled = true;
       return function noop() {};
     }
 
     if (!isReady()) {
       statusEl.textContent = `云同步不可用：${state.initError || "请检查配置"}`;
-      loginBtn.disabled = true;
-      registerBtn.disabled = true;
+      loginBtn.disabled = false;
+      registerBtn.disabled = false;
       logoutBtn.disabled = true;
+      // 允许用户点击按钮时弹出详细提示
+      loginBtn.addEventListener("click", () => {
+        statusEl.textContent = `云同步不可用：${state.initError || "请检查 supabase-config.js 配置"}`;
+      });
+      registerBtn.addEventListener("click", () => {
+        statusEl.textContent = `云同步不可用：${state.initError || "请检查 supabase-config.js 配置"}`;
+      });
       return function noop() {};
     }
 
