@@ -30,11 +30,18 @@
         <a class="btn ghost" href="stats.html">数据统计</a>
       </div>
       <div class="nav-auth" id="navAuth">
-        <button class="sync-state sync-state-idle" id="syncHint" type="button" title="点击立即同步">☁️ 离线模式</button>
-        <span class="account-chip" id="accountChip" hidden>未登录</span>
-        <button class="btn ghost" id="openLoginBtn" type="button">登录</button>
-        <button class="btn ghost" id="openRegisterBtn" type="button">注册</button>
-        <button class="btn primary" id="logoutBtn" type="button" hidden>退出</button>
+          <!-- 折叠菜单触发按钮（移动端显示） -->
+          <button class="nav-auth-trigger" id="navAuthTrigger" type="button" aria-label="账号菜单" tabindex="0" style="display:none;">
+            <span>☰</span>
+          </button>
+          <!-- 折叠菜单容器 -->
+          <div class="nav-auth-menu" id="navAuthMenu">
+            <button class="sync-state sync-state-idle" id="syncHint" type="button" title="点击立即同步">☁️ 离线模式</button>
+            <span class="account-chip" id="accountChip" hidden>未登录</span>
+            <button class="btn ghost" id="openLoginBtn" type="button">登录</button>
+            <button class="btn ghost" id="openRegisterBtn" type="button">注册</button>
+            <button class="btn primary" id="logoutBtn" type="button" hidden>退出</button>
+          </div>
       </div>
     </nav>
 

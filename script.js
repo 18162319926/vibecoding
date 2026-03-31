@@ -1,3 +1,39 @@
+// ========== 移动端账号折叠菜单逻辑 ==========
+function setupMobileAuthMenu() {
+  const trigger = document.getElementById('navAuthTrigger');
+  const menu = document.getElementById('navAuthMenu');
+  if (!trigger || !menu) return;
+  // 仅在移动端显示触发按钮
+  function updateTriggerDisplay() {
+    if (window.innerWidth <= 700) {
+      trigger.style.display = '';
+    } else {
+      trigger.style.display = 'none';
+      menu.classList.remove('is-open');
+    }
+  }
+  updateTriggerDisplay();
+  window.addEventListener('resize', updateTriggerDisplay);
+  // 切换菜单显示
+  trigger.addEventListener('click', function(e) {
+    e.stopPropagation();
+    menu.classList.toggle('is-open');
+  });
+  // 点击菜单外关闭
+  document.addEventListener('click', function(e) {
+    if (window.innerWidth > 700) return;
+    if (!menu.contains(e.target) && e.target !== trigger) {
+      menu.classList.remove('is-open');
+    }
+  });
+  // ESC关闭
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') menu.classList.remove('is-open');
+  });
+}
+
+// 页面加载后初始化移动端账号菜单
+window.addEventListener('DOMContentLoaded', setupMobileAuthMenu);
 const STORAGE_KEY = "knit-helper-state";
 const GLOBAL_TIMER_KEY = "knit-global-timer";
 const STATS_BOOTSTRAP_DATE_KEY = "knit-stats-bootstrap-date";

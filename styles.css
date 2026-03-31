@@ -1,115 +1,228 @@
-
-
 @media (max-width: 700px) {
-  .nav-auth {
-    position: absolute;
-    top: 6px;
-    right: 4vw;
-    flex-direction: column;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    gap: 4px;
-    z-index: 100;
+  /* 顶部导航容器 */
+  .top-nav {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    height: 54px !important;
+    padding: 0 10px !important;
+    margin: 0 0 12px 0 !important;
+    background: #fff8efcc !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border-radius: 0 0 16px 16px !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 999 !important;
+    flex-wrap: nowrap !important;
+    overflow: visible !important;
+    gap: 6px !important;
   }
 
-  /* 仪表盘工具栏、统计、筛选按钮堆叠为单列 */
-  body.homepage .dashboard-toolbar {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    width: 100%;
+  /* 隐藏 LOGO 区域 */
+  .brand-wrap,
+  .brand,
+  .brand-subtitle {
+    display: none !important;
   }
-  body.homepage .dashboard-inline-stats {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 8px;
-    width: 100%;
-    margin-left: 0;
-    justify-content: flex-start;
+
+  /* 中间 4 个导航：强制一行、等分 */
+  .nav-center {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-evenly !important;
+    height: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+    flex-wrap: nowrap !important;
+    min-width: 0 !important;
   }
-  .inline-stat-pill {
-    min-width: 0;
-    flex: 1 1 40%;
-    font-size: 1rem;
-    padding: 8px 6px;
-    margin-bottom: 4px;
+
+  /* 导航按钮样式 */
+  .nav-center a.btn.ghost {
+    flex: 1 1 0 !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 14px !important;
+    padding: 0 2px !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    border: none !important;
+    background: transparent !important;
+    color: #a86a3c !important;
   }
-  .today-summary-pill {
-    display: block;
-    margin-top: 6px;
-    font-size: 0.98rem;
-    padding: 8px 0 0 0;
-    word-break: break-all;
+
+  /* 激活态 */
+  .nav-center a.btn.ghost.is-tab-active {
+    color: #be4f27 !important;
+    font-weight: bold !important;
+    border-bottom: 2px solid #be4f27 !important;
   }
-  .status-filters {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    width: 100%;
-    margin-bottom: 2px;
+
+  /* 右侧菜单区域 */
+  .nav-auth {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 100% !important;
+    flex: 0 0 auto !important;
+    min-width: 44px !important;
+    z-index: 1001 !important;
   }
-  .status-filters .btn {
-    width: 100%;
-    min-width: 0;
-    min-height: 38px;
-    font-size: 1rem;
-    padding: 8px 0;
-    border-radius: 10px;
+
+  /* ✅ 强制显示折叠按钮（你原来 inline-style: none 被覆盖） */
+  #navAuthTrigger,
+  .nav-auth-trigger {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 50% !important;
+    background: #ffffff !important;
+    border: 1px solid #e9dbc8 !important;
+    font-size: 18px !important;
+    color: #be4f27 !important;
+    cursor: pointer !important;
+    z-index: 1002 !important;
   }
-  .project-cards {
-    gap: 8px;
-    padding-bottom: 4px;
+
+  /* 折叠菜单 */
+  .nav-auth-menu {
+    position: absolute !important;
+    top: 50px !important;
+    right: 0 !important;
+    min-width: 160px !important;
+    background: white !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important;
+    padding: 10px !important;
+    z-index: 1003 !important;
+    display: none !important;
   }
-  .project-card {
-    min-width: 180px;
-    max-width: 92vw;
-    font-size: 1.04rem;
-    padding: 10px 6px;
-    margin-right: 2px;
+
+  .nav-auth-menu.is-open {
+    display: block !important;
+  }
+
+  /* 布局通用 */
+  .container {
+    padding: 0 12px !important;
+  }
+
+  .card {
+    margin-bottom: 14px !important;
+    border-radius: 16px !important;
+  }
+
+  .grid {
+    display: block !important;
+  }
+
+  .grid > * {
+    width: 100% !important;
+    margin-bottom: 14px !important;
+  }
+}
+  .project-cover {
+    width: 100% !important;
+    aspect-ratio: 16/9 !important;
+    object-fit: cover !important;
+    border-radius: 14px !important;
+    margin-bottom: 12px !important;
   }
   .project-card h3 {
-    font-size: 1.12rem;
+    font-size: 1.2rem !important;
+    margin: 0 0 8px 0 !important;
+    color: #25303b !important;
   }
-  .project-meta-row {
-    gap: 4px;
-    font-size: 0.98rem;
+  .project-meta {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 10px !important;
   }
-  .project-card-actions {
-    flex-direction: column;
-    gap: 6px;
-    align-items: stretch;
-    padding-bottom: 0;
+  .project-status {
+    padding: 4px 10px !important;
+    background: #e8f8f3 !important;
+    color: #2f7d6b !important;
+    border-radius: 20px !important;
+    font-size: 0.85rem !important;
   }
-  .project-card-actions .btn {
-    min-width: 0;
-    width: 100%;
-    font-size: 0.98rem;
-    padding: 10px 0;
-    border-radius: 10px;
+  .progress-bar {
+    height: 10px !important;
+    background: #e9dbc8 !important;
+    border-radius: 5px !important;
+    margin: 8px 0 12px 0 !important;
+    overflow: hidden !important;
   }
-  .card-more-menu {
-    min-width: 110px;
-    right: 0;
-    left: auto;
+  .progress-fill {
+    height: 100% !important;
+    background: #2f7d6b !important;
+    border-radius: 5px !important;
   }
-  .project-cover {
-    aspect-ratio: 16/9;
-    max-height: 110px;
-    border-radius: 8px;
+  .progress-text {
+    font-size: 0.9rem !important;
+    color: #666 !important;
   }
-  /* 横向滚动阴影提示 */
-  .project-cards::after {
-    content: "";
-    display: block;
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: 18px;
-    height: 100%;
-    pointer-events: none;
-    background: linear-gradient(to left, rgba(255,252,247,0.9), transparent 80%);
-    z-index: 2;
+
+  /* ==========================================
+     5. 项目操作按钮（一行、均分）
+  ========================================== */
+  .project-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 10px !important;
+    margin-top: 12px !important;
+  }
+  .project-actions .btn {
+    flex: 1 !important;
+    padding: 12px 8px !important;
+    font-size: 0.95rem !important;
+    border-radius: 14px !important;
+    text-align: center !important;
+    border: none !important;
+    cursor: pointer !important;
+  }
+  .btn-primary {
+    background: #be4f27 !important;
+    color: #fff !important;
+  }
+  .btn-secondary {
+    background: #fff8ef !important;
+    color: #be4f27 !important;
+  }
+  .btn-more {
+    background: #fff !important;
+    color: #a86a3c !important;
+    border: 1px solid #e9dbc8 !important;
+  }
+
+  /* ==========================================
+     6. 底部加号按钮
+  ========================================== */
+  .add-btn {
+    position: fixed !important;
+    bottom: 24px !important;
+    right: 24px !important;
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 50% !important;
+    background: #be4f27 !important;
+    color: #fff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.8rem !important;
+    box-shadow: 0 4px 16px rgba(190, 79, 39, 0.3) !important;
+    z-index: 999 !important;
   }
 }
 
@@ -1514,6 +1627,49 @@ body.homepage .project-cards {
   .project-cards::after {
     z-index: 3;
   }
+    /* 仪表盘筛选和统计模块整体缩小 */
+    .dashboard-toolbar {
+      gap: 4px !important;
+      padding: 2px 0 !important;
+      border-radius: 8px !important;
+      margin-bottom: 6px !important;
+    }
+    .status-filters {
+      gap: 2px !important;
+      margin: 4px 0 !important;
+      padding: 1px 0 !important;
+      border-radius: 8px !important;
+      min-height: 32px !important;
+    }
+    .status-filters .btn {
+      padding: 2px 6px !important;
+      font-size: 0.90rem !important;
+      border-radius: 6px !important;
+      min-width: 44px !important;
+      height: 28px !important;
+      line-height: 28px !important;
+    }
+    .dashboard-inline-stats {
+      gap: 4px !important;
+      margin: 0 0 4px 0 !important;
+      padding: 0 !important;
+      border-radius: 8px !important;
+    }
+    .inline-stat-pill {
+      font-size: 0.92rem !important;
+      padding: 4px 0 !important;
+      border-radius: 6px !important;
+      min-width: 0 !important;
+    }
+    .inline-stat-pill strong {
+      font-size: 1.08rem !important;
+    }
+    .today-summary-pill {
+      font-size: 0.92rem !important;
+      padding: 4px 0 2px 0 !important;
+      border-radius: 6px !important;
+      margin: 1px 0 0 0 !important;
+    }
 }
 
 .project-card-actions .btn {
@@ -1695,8 +1851,31 @@ body.homepage .fab-create-wrap .create-menu {
 }
 
 @media (max-width: 900px) {
+  /* nav-auth-menu 默认隐藏，is-open 时显示 */
+  .nav-auth-menu {
+    display: none !important;
+  }
+  .nav-auth-menu.is-open {
+    display: block !important;
+  }
+  /* nav-auth-trigger 只在移动端显示 */
+  .nav-auth-trigger {
+    display: flex !important;
+  }
+  /* nav-auth-menu 之外的 nav-auth 子元素在移动端隐藏（只保留 trigger 和菜单） */
+  .nav-auth > :not(.nav-auth-trigger):not(.nav-auth-menu) {
+    display: none !important;
+  }
   .stats-storage-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* PC端 nav-auth-trigger、nav-auth-menu 隐藏，恢复原有按钮 */
+  .nav-auth-trigger,
+  .nav-auth-menu {
+    display: none !important;
+  }
+  .nav-auth > *:not(.nav-auth-trigger):not(.nav-auth-menu) {
+    display: inline-flex !important;
   }
 
   .stats-ranking-layout {
@@ -2576,39 +2755,41 @@ body.homepage .footer {
 }
 
 @media (max-width: 620px) {
-  body {
-    padding: 14px;
-  }
-
-  body.homepage .hero {
-    margin: 6px auto 12px;
-  }
-
-  body.homepage .hero > div:first-child {
-    display: none;
-  }
-
-  .top-nav {
-    align-items: flex-start;
-  }
-
   .nav-auth {
-    flex-wrap: wrap;
-    justify-content: flex-end;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    width: 100%;
+    gap: 6px;
+    margin-top: 8px;
+    margin-bottom: 0;
+    background: none;
+    box-shadow: none;
+    z-index: 120;
   }
-
-  input,
-  select,
-  textarea,
-  .btn {
-    min-height: 44px;
-    font-size: 16px;
+  .nav-auth > * {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin: 0;
+    box-sizing: border-box;
+    display: block;
+    text-align: center;
   }
-
-  .grid-form {
-    grid-template-columns: 1fr;
+  .nav-auth .btn, .nav-auth .account-chip {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    font-size: 1.04rem;
+    padding: 8px 0;
+    border-radius: 10px;
+    margin-bottom: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-
   .diagram-split {
     grid-template-columns: 1fr;
   }
