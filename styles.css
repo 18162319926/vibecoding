@@ -1,6 +1,145 @@
 
 
 @media (max-width: 700px) {
+  /* 顶部导航栏单独一行，用户区单独一行，Tab单独一行，统计区单独一行，全部分块排列，避免重叠 */
+  .top-nav {
+    flex-direction: row;
+    align-items: center;
+    padding: 0 8px;
+    height: 54px;
+    min-height: 54px;
+    position: relative;
+    z-index: 100;
+    background: #fff8efcc;
+    box-shadow: 0 2px 12px rgba(180,120,80,0.06);
+    width: 100vw;
+    margin: 0 -8px 0 -8px;
+  }
+  .brand-wrap {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .brand {
+    font-size: 1.18rem;
+    letter-spacing: 0.04em;
+  }
+  .brand-subtitle {
+    display: none;
+  }
+  /* 用户区单独一行 */
+  .mobile-userbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    width: 100vw;
+    background: #fff8efcc;
+    padding: 4px 8px 2px 8px;
+    margin: 0 -8px 0 -8px;
+    z-index: 101;
+    position: relative;
+    box-shadow: 0 1px 6px rgba(180,120,80,0.04);
+  }
+  .mobile-userbar > * {
+    margin-left: 6px;
+  }
+  .mobile-userbar .btn, .mobile-userbar .account-chip {
+    font-size: 0.98rem;
+    padding: 4px 8px;
+    min-width: 0;
+    border-radius: 8px;
+  }
+  /* Tab单独一行 */
+  .nav-center {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    width: 100vw;
+    background: #fff8ef;
+    margin: 0 -8px 0 -8px;
+    padding: 0 2px;
+    border-bottom: 1.5px solid #f3e2d2;
+    position: relative;
+    z-index: 99;
+  }
+  .nav-center a.btn.ghost {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 0 6px 0;
+    font-size: 1.04rem;
+    border-radius: 0;
+    background: none;
+    border-bottom: 2.5px solid transparent;
+    color: #a86a3c;
+    margin: 0 2px;
+    height: 44px;
+    line-height: 44px;
+    text-align: center;
+    transition: border-color 0.18s, color 0.18s;
+  }
+  .nav-center a.btn.ghost.is-tab-active {
+    border-bottom: 2.5px solid var(--accent);
+    color: var(--accent-deep);
+    background: none;
+  }
+  /* 统计区单独一行 */
+  .dashboard-toolbar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    width: 100vw;
+    background: #fffefb;
+    margin: 0 -8px 0 -8px;
+    padding: 8px 0 0 0;
+    border-bottom: 1.5px solid #f3e2d2;
+    z-index: 98;
+    position: relative;
+  }
+  .dashboard-inline-stats {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin: 0 0 4px 0;
+    justify-content: flex-start;
+  }
+  .inline-stat-pill {
+    flex: 1 1 0;
+    min-width: 0;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(180,120,80,0.06);
+    font-size: 1.08rem;
+    padding: 10px 0;
+    margin: 0;
+    justify-content: center;
+  }
+  .inline-stat-pill strong {
+    font-size: 1.22rem;
+  }
+  .today-summary-pill {
+    display: block;
+    width: 100%;
+    font-size: 1.08rem;
+    font-weight: 600;
+    color: #a86a3c;
+    background: #fff;
+    border-radius: 12px;
+    margin: 4px 0 0 0;
+    padding: 10px 0 8px 0;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(180,120,80,0.04);
+  }
+  /* 卡片区块下方留白 */
+  .project-cards {
+    margin-top: 8px;
+  }
+}
   .nav-auth {
     position: absolute;
     top: 6px;
