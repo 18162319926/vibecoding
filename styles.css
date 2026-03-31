@@ -222,16 +222,218 @@ body.homepage {
   gap: 6px;
 }
 
+
 @media (max-width: 700px) {
-  .nav-auth {
-    position: absolute;
-    top: 6px;
-    right: 4vw;
-    flex-direction: column;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    gap: 4px;
+  /* 顶部导航栏横向排列，右上角为头像/菜单 */
+  .top-nav {
+    flex-direction: row;
+    align-items: center;
+    padding: 0 8px;
+    height: 54px;
+    min-height: 54px;
+    position: relative;
     z-index: 100;
+    background: #fff8efcc;
+    box-shadow: 0 2px 12px rgba(180,120,80,0.06);
+  }
+  .brand-wrap {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .brand {
+    font-size: 1.18rem;
+    letter-spacing: 0.04em;
+  }
+  .brand-subtitle {
+    display: none;
+  }
+  .nav-center {
+    display: flex;
+    flex: 2 1 auto;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    position: static;
+  }
+  .nav-center a.btn.ghost {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0 0 6px 0;
+    font-size: 1.04rem;
+    border-radius: 0;
+    background: none;
+    border-bottom: 2.5px solid transparent;
+    color: #a86a3c;
+    margin: 0 2px;
+    height: 44px;
+    line-height: 44px;
+    text-align: center;
+    transition: border-color 0.18s, color 0.18s;
+  }
+  .nav-center a.btn.ghost.is-tab-active {
+    border-bottom: 2.5px solid var(--accent);
+    color: var(--accent-deep);
+    background: none;
+  }
+  .nav-auth {
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    background: none;
+    box-shadow: none;
+    z-index: 120;
+  }
+  .nav-auth > * {
+    margin-left: 6px;
+  }
+  .nav-auth .btn, .nav-auth .account-chip {
+    font-size: 0.98rem;
+    padding: 4px 8px;
+    min-width: 0;
+    border-radius: 8px;
+  }
+  /* 仪表盘Tab横滑 */
+  .status-filters {
+    display: flex;
+    overflow-x: auto;
+    gap: 0;
+    background: #fff8ef;
+    border-radius: 12px;
+    margin: 0 -8px 8px -8px;
+    padding: 0 2px;
+    box-shadow: 0 1px 6px rgba(180,120,80,0.04);
+  }
+  .status-filters .btn {
+    flex: 1 1 0;
+    min-width: 72px;
+    font-size: 1.01rem;
+    border-radius: 0;
+    background: none;
+    color: #a86a3c;
+    border-bottom: 2px solid transparent;
+    margin: 0;
+    height: 38px;
+    line-height: 38px;
+    padding: 0;
+    transition: border-color 0.18s, color 0.18s;
+  }
+  .status-filters .btn.is-active {
+    color: var(--accent-deep);
+    border-bottom: 2px solid var(--accent);
+    background: none;
+  }
+  /* 统计区块卡片化 */
+  .dashboard-inline-stats {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin: 0 0 4px 0;
+    justify-content: flex-start;
+  }
+  .inline-stat-pill {
+    flex: 1 1 0;
+    min-width: 0;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(180,120,80,0.06);
+    font-size: 1.08rem;
+    padding: 10px 0;
+    margin: 0;
+    justify-content: center;
+  }
+  .inline-stat-pill strong {
+    font-size: 1.22rem;
+  }
+  .today-summary-pill {
+    display: block;
+    width: 100%;
+    font-size: 1.08rem;
+    font-weight: 600;
+    color: #a86a3c;
+    background: #fff;
+    border-radius: 12px;
+    margin: 4px 0 0 0;
+    padding: 10px 0 8px 0;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(180,120,80,0.04);
+  }
+  /* 卡片自适应宽度，留白 */
+  .project-cards {
+    gap: 14px;
+    padding: 8px 2px 12px 2px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0 -8px;
+  }
+  .project-card {
+    min-width: 90vw;
+    max-width: 96vw;
+    margin: 0 4vw 12px 0;
+    border-radius: 18px;
+    box-shadow: 0 4px 18px rgba(180,120,80,0.10);
+    padding: 14px 10px 18px 10px;
+    font-size: 1.08rem;
+    background: #fff;
+  }
+  .project-cover {
+    aspect-ratio: 16/9;
+    max-height: 140px;
+    border-radius: 14px;
+    margin-bottom: 10px;
+  }
+  .project-card h3 {
+    font-size: 1.18rem;
+    margin: 8px 0 4px 0;
+  }
+  .project-meta-row {
+    gap: 8px;
+    font-size: 1.01rem;
+    margin-bottom: 6px;
+  }
+  .progress-track {
+    height: 7px;
+    margin: 8px 0 8px 0;
+  }
+  .project-card-actions {
+    flex-direction: row;
+    gap: 8px;
+    margin-top: 12px;
+    justify-content: flex-end;
+    align-items: center;
+  }
+  .project-card-actions .btn {
+    min-width: 0;
+    font-size: 0.98rem;
+    padding: 8px 12px;
+    border-radius: 10px;
+    flex: 1 1 0;
+    margin: 0;
+  }
+  .project-card-actions .btn.primary {
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), #d7774a);
+    color: #fff;
+  }
+  .project-card-actions .btn.ghost {
+    background: #f5ece1;
+    color: #a86a3c;
+  }
+  .card-more-menu {
+    min-width: 120px;
+    right: 0;
+    left: auto;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(180,120,80,0.10);
+  }
+  /* 页面整体留白 */
+  body, .panel {
+    padding-left: 8px;
+    padding-right: 8px;
   }
 }
 
