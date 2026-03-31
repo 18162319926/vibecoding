@@ -1,5 +1,7 @@
 @media (max-width: 700px) {
-  /* 顶部导航容器 */
+  /* ==============================================
+     1. 顶部导航：选中只加粗，无任何其他效果
+  ============================================== */
   .top-nav {
     display: flex !important;
     flex-direction: row !important;
@@ -7,7 +9,7 @@
     justify-content: space-between !important;
     height: 54px !important;
     padding: 0 10px !important;
-    margin: 0 0 12px 0 !important;
+    margin: 0 0 8px 0 !important;
     background: #fff8efcc !important;
     backdrop-filter: blur(10px) !important;
     -webkit-backdrop-filter: blur(10px) !important;
@@ -20,14 +22,12 @@
     gap: 6px !important;
   }
 
-  /* 隐藏 LOGO 区域 */
   .brand-wrap,
   .brand,
   .brand-subtitle {
     display: none !important;
   }
 
-  /* 中间 4 个导航：强制一行、等分 */
   .nav-center {
     display: flex !important;
     flex: 1 1 auto !important;
@@ -42,7 +42,6 @@
     min-width: 0 !important;
   }
 
-  /* 导航按钮样式 */
   .nav-center a.btn.ghost {
     flex: 1 1 0 !important;
     height: 100% !important;
@@ -58,14 +57,15 @@
     color: #a86a3c !important;
   }
 
-  /* 激活态 */
+  /* 只加粗，无任何边框、下划线、背景 */
   .nav-center a.btn.ghost.is-tab-active {
-    color: #be4f27 !important;
     font-weight: bold !important;
-    border-bottom: 2px solid #be4f27 !important;
+    color: #be4f27 !important;
+    background: transparent !important;
+    border: none !important;
+    border-bottom: none !important;
   }
 
-  /* 右侧菜单区域 */
   .nav-auth {
     position: relative !important;
     display: flex !important;
@@ -77,7 +77,6 @@
     z-index: 1001 !important;
   }
 
-  /* ✅ 强制显示折叠按钮（你原来 inline-style: none 被覆盖） */
   #navAuthTrigger,
   .nav-auth-trigger {
     display: flex !important;
@@ -94,7 +93,6 @@
     z-index: 1002 !important;
   }
 
-  /* 折叠菜单 */
   .nav-auth-menu {
     position: absolute !important;
     top: 50px !important;
@@ -112,23 +110,69 @@
     display: block !important;
   }
 
-  /* 布局通用 */
-  .container {
-    padding: 0 12px !important;
-  }
-
-  .card {
-    margin-bottom: 14px !important;
-    border-radius: 16px !important;
-  }
-
-  .grid {
-    display: block !important;
-  }
-
-  .grid > * {
+  /* ==============================================
+     2. 筛选栏：填满整行 + 内边距变小
+  ============================================== */
+  .status-filters {
+    display: flex !important;
     width: 100% !important;
-    margin-bottom: 14px !important;
+    margin: 0 0 8px 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+  .status-filters .btn {
+    flex: 1 !important;
+    padding: 6px 0 !important;
+    font-size: 13px !important;
+    margin: 0 !important;
+    text-align: center !important;
+  }
+
+  /* ==============================================
+     3. 统计框：一行显示 + 内边距缩小
+  ============================================== */
+  .dashboard-inline-stats {
+    display: flex !important;
+    width: 100% !important;
+    margin: 0 0 10px 0 !important;
+    padding: 0 !important;
+    gap: 6px !important;
+  }
+  .inline-stat-pill {
+    flex: 1 !important;
+    padding: 6px 0 !important;
+    font-size: 13px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .inline-stat-pill strong {
+    font-size: 15px !important;
+  }
+
+  /* ==============================================
+     4. 仪表盘拉长 + 底部靠近页脚
+  ============================================== */
+  .dashboard-panel {
+    min-height: calc(100vh - 180px) !important;
+    margin-bottom: 4px !important;
+    padding-bottom: 4px !important;
+  }
+  .project-cards {
+    flex: 1 !important;
+    margin-bottom: 4px !important;
+    padding-bottom: 4px !important;
+  }
+  .footer {
+    margin-top: 4px !important;
+  }
+
+  /* 通用布局 */
+  .container {
+    padding: 0 8px !important;
+  }
+  .card {
+    margin-bottom: 8px !important;
   }
 }
   .project-cover {
