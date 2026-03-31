@@ -415,7 +415,46 @@ function applyCloudStoragePayload(payload) {
   if (!Array.isArray(incoming)) return;
   syncState.remoteCount = incoming.length;
 
-  const remoteList = incoming.map(normalizeItem);
+  // 修正 lastDate 及 dailyStats，避免所有数据被归入 today
+  function fixItemStats(item) {
+    if (!item || typeof item !== "object") return item;
+    const stats = item.dailyStats && typeof item.dailyStats === "object" ? item.dailyStats : {};
+    // 找到最后有 rows/seconds>0 的日期
+    let lastActiveDate = null;
+    let lastRows = 0, lastSeconds = 0;
+    for (const [date, entry] of Object.entries(stats)) {
+      const rows = Number(entry?.rows) || 0;
+      const seconds = Number(entry?.seconds) || 0;
+      if ((rows > 0 || seconds > 0) && (!lastActiveDate || date > lastActiveDate)) {
+        lastActiveDate = date;
+        lastRows = rows;
+        lastSeconds = seconds;
+      }
+    }
+    // 如果 today 没有数据，且 lastDate 被错误推进为 today，则回退
+    const today = (new Date()).toISOString().slice(0, 10);
+    if (item.lastDate === today && (!stats[today] || ((Number(stats[today]?.rows)||0)===0 && (Number(stats[today]?.seconds)||0)===0))) {
+      item.lastDate = lastActiveDate || item.lastDate;
+    }
+    // 不自动补 today 的 dailyStats，只有 todayRows/todaySeconds>0 时才补
+    if (stats[today] && (Number(stats[today]?.rows) > 0 || Number(stats[today]?.seconds) > 0)) {
+      // 保持原样
+    } else {
+      delete stats[today];
+    }
+    // todayRows/todaySeconds 只允许来源于 dailyStats[today]，否则强制为 0
+    if (stats[today] && (Number(stats[today]?.rows) > 0 || Number(stats[today]?.seconds) > 0)) {
+      item.todayRows = Number(stats[today]?.rows) || 0;
+      item.todaySeconds = Number(stats[today]?.seconds) || 0;
+    } else {
+      item.todayRows = 0;
+      item.todaySeconds = 0;
+    }
+    item.dailyStats = stats;
+    return item;
+  }
+
+  const remoteList = incoming.map((item) => fixItemStats(normalizeItem(item)));
   const localList = state.items.map(normalizeItem);
 
   // Keep local data only when cloud payload has no valid timestamp yet (uninitialized state).

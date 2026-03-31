@@ -114,13 +114,13 @@ function normalizeProject(project) {
   const srcHourBuckets = project && project.dailyStats && project.dailyStats[today] && typeof project.dailyStats[today].hourBuckets === 'object'
     ? project.dailyStats[today].hourBuckets : undefined;
   const fallbackHourBuckets = project && typeof project.timeBuckets === 'object' ? project.timeBuckets : undefined;
-  if (!normalized.dailyStats[today]) {
+  if (!normalized.dailyStats[today] && (normalized.todayRows > 0 || normalized.todaySeconds > 0)) {
     normalized.dailyStats[today] = {
       seconds: Math.max(0, normalized.todaySeconds || 0),
       rows: Math.max(0, normalized.todayRows || 0),
       hourBuckets: mergeHourBuckets(srcHourBuckets, fallbackHourBuckets),
     };
-  } else {
+  } else if (normalized.dailyStats[today]) {
     // 已有 dailyStats[today]，补 hourBuckets
     if (!normalized.dailyStats[today].hourBuckets || typeof normalized.dailyStats[today].hourBuckets !== 'object') {
       normalized.dailyStats[today].hourBuckets = mergeHourBuckets(srcHourBuckets, fallbackHourBuckets);

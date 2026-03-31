@@ -259,14 +259,21 @@ function isLegacyStarterProject(project) {
 
 function normalizeProject(project) {
   const parsedUpdatedAt = Number(project.updatedAt);
+  const today = getToday();
+  // todayRows/todaySeconds 只允许来源于 dailyStats[today]，否则强制为 0
+  let todayRows = 0, todaySeconds = 0;
+  if (project.dailyStats && typeof project.dailyStats === "object" && project.dailyStats[today]) {
+    todayRows = Math.max(0, Number(project.dailyStats[today]?.rows) || 0);
+    todaySeconds = Math.max(0, Number(project.dailyStats[today]?.seconds) || 0);
+  }
   const normalized = {
     ...createProject(project.projectName || "未命名作品"),
     ...project,
     id: project.id || makeId(),
     totalRows: Math.max(0, Number(project.totalRows) || 0),
     rows: Math.max(0, Number(project.rows) || 0),
-    todayRows: Math.max(0, Number(project.todayRows) || 0),
-    todaySeconds: Math.max(0, Number(project.todaySeconds) || 0),
+    todayRows,
+    todaySeconds,
     spentSeconds: Math.max(0, Number(project.spentSeconds) || 0),
     materials: Array.isArray(project.materials) ? project.materials : [],
     lastDate: project.lastDate || getToday(),
@@ -282,9 +289,9 @@ function normalizeProject(project) {
       ? [fallbackDiagramImage]
       : [];
   ensureProjectAnalytics(normalized);
-  // 保证 dailyStats 每天有数据，兼容历史数据
+  // 仅当 todayRows 或 todaySeconds > 0 时才补 today 的 dailyStats，避免历史数据被归入今日
   const today = getToday();
-  if (!normalized.dailyStats[today]) {
+  if (!normalized.dailyStats[today] && (normalized.todayRows > 0 || normalized.todaySeconds > 0)) {
     normalized.dailyStats[today] = {
       seconds: Math.max(0, Number(normalized.todaySeconds) || 0),
       rows: Math.max(0, Number(normalized.todayRows) || 0),
