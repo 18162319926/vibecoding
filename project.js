@@ -290,7 +290,6 @@ function normalizeProject(project) {
       : [];
   ensureProjectAnalytics(normalized);
   // 仅当 todayRows 或 todaySeconds > 0 时才补 today 的 dailyStats，避免历史数据被归入今日
-  const today = getToday();
   if (!normalized.dailyStats[today] && (normalized.todayRows > 0 || normalized.todaySeconds > 0)) {
     normalized.dailyStats[today] = {
       seconds: Math.max(0, Number(normalized.todaySeconds) || 0),
@@ -1776,108 +1775,130 @@ function bindMobileFloatingTimerToggle() {
 function setupCloudSync(projects, onRemoteApplied) {
   if (!window.cloudSync) return;
 
-  if (typeof window.cloudSync.ensureSyncStarted === "function") {
-    void window.cloudSync.ensureSyncStarted();
-  }
-
-  setAuthNav(window.cloudSync.getCurrentUser());
-
-  const handleUserChanged = async (user) => {
-    setAuthNav(user);
-    if (typeof syncRuntime.remoteUnsubscribe === "function") {
-      syncRuntime.remoteUnsubscribe();
-      syncRuntime.remoteUnsubscribe = null;
-    }
-
-    if (!user) {
-      setSyncHint("离线模式");
-      return;
-    }
-
+  // 等待 cloudSync 初始化完成再继续
+  function proceed() {
     if (typeof window.cloudSync.ensureSyncStarted === "function") {
       void window.cloudSync.ensureSyncStarted();
     }
 
-    closeAuthDialog();
+    setAuthNav(window.cloudSync.getCurrentUser());
 
-    setSyncHint("正在同步云端数据...");
+    const handleUserChanged = async (user) => {
+      setAuthNav(user);
+      if (typeof syncRuntime.remoteUnsubscribe === "function") {
+        syncRuntime.remoteUnsubscribe();
+        syncRuntime.remoteUnsubscribe = null;
+      }
 
-    try {
-      const remote = await window.cloudSync.pullState();
-      if (remote) {
+      if (!user) {
+        setSyncHint("离线模式");
+        return;
+      }
+
+      if (typeof window.cloudSync.ensureSyncStarted === "function") {
+        void window.cloudSync.ensureSyncStarted();
+      }
+
+      closeAuthDialog();
+
+      setSyncHint("正在同步云端数据...");
+
+      try {
+        const remote = await window.cloudSync.pullState();
+        if (remote) {
+          const changed = applyCloudPayload(remote, projects);
+          if (changed) onRemoteApplied();
+        } else {
+          scheduleCloudPush(projects);
+          setSyncHint("云端已初始化");
+        }
+      } catch (error) {
+        console.error("cloud pull failed", error);
+        setSyncHint(`拉取云端失败：${formatSyncErrorMessage(error)}`);
+      }
+
+      syncRuntime.remoteUnsubscribe = window.cloudSync.watchRemoteState(
+        (payload) => {
+          const changed = applyCloudPayload(payload, projects);
+          if (changed) onRemoteApplied();
+        },
+        (error) => {
+          console.error("cloud watch failed", error);
+          setSyncHint(`监听同步失败：${formatSyncErrorMessage(error)}`);
+        }
+      );
+    };
+
+    if (refs.openLoginBtn) {
+      refs.openLoginBtn.addEventListener("click", () => openAuthDialog("login"));
+    }
+    if (refs.openRegisterBtn) {
+      refs.openRegisterBtn.addEventListener("click", () => openAuthDialog("register"));
+    }
+    if (refs.closeAuthDialogBtn) {
+      refs.closeAuthDialogBtn.addEventListener("click", closeAuthDialog);
+    }
+    if (refs.authDialog) {
+      refs.authDialog.addEventListener("click", (event) => {
+        if (event.target === refs.authDialog) closeAuthDialog();
+      });
+    }
+
+    const hasFullAuthUI = Boolean(
+      refs.authEmail && refs.authPassword && refs.authStatus && refs.loginBtn && refs.registerBtn && refs.logoutBtn
+    );
+
+    if (hasFullAuthUI) {
+      window.cloudSync.bindAuthUI({
+        emailInput: refs.authEmail,
+        passwordInput: refs.authPassword,
+        statusEl: refs.authStatus,
+        loginBtn: refs.loginBtn,
+        registerBtn: refs.registerBtn,
+        logoutBtn: refs.logoutBtn,
+        onUserChanged: handleUserChanged,
+      });
+      return;
+    }
+
+    window.cloudSync.onAuthStateChanged(handleUserChanged);
+
+    const syncEventKey = typeof window.cloudSync.getSyncEventKey === "function"
+      ? window.cloudSync.getSyncEventKey()
+      : "knit-cloud-sync-event";
+
+    window.addEventListener("storage", async (event) => {
+      if (!event || event.key !== syncEventKey) return;
+      if (!window.cloudSync || !window.cloudSync.getCurrentUser()) return;
+      try {
+        const remote = await window.cloudSync.pullState();
+        if (!remote) return;
         const changed = applyCloudPayload(remote, projects);
         if (changed) onRemoteApplied();
-      } else {
-        scheduleCloudPush(projects);
-        setSyncHint("云端已初始化");
+      } catch (error) {
+        console.error("cloud broadcast pull failed", error);
       }
-    } catch (error) {
-      console.error("cloud pull failed", error);
-      setSyncHint(`拉取云端失败：${formatSyncErrorMessage(error)}`);
-    }
-
-    syncRuntime.remoteUnsubscribe = window.cloudSync.watchRemoteState(
-      (payload) => {
-        const changed = applyCloudPayload(payload, projects);
-        if (changed) onRemoteApplied();
-      },
-      (error) => {
-        console.error("cloud watch failed", error);
-        setSyncHint(`监听同步失败：${formatSyncErrorMessage(error)}`);
-      }
-    );
-  };
-
-  if (refs.openLoginBtn) {
-    refs.openLoginBtn.addEventListener("click", () => openAuthDialog("login"));
-  }
-  if (refs.openRegisterBtn) {
-    refs.openRegisterBtn.addEventListener("click", () => openAuthDialog("register"));
-  }
-  if (refs.closeAuthDialogBtn) {
-    refs.closeAuthDialogBtn.addEventListener("click", closeAuthDialog);
-  }
-  if (refs.authDialog) {
-    refs.authDialog.addEventListener("click", (event) => {
-      if (event.target === refs.authDialog) closeAuthDialog();
     });
   }
 
-  const hasFullAuthUI = Boolean(
-    refs.authEmail && refs.authPassword && refs.authStatus && refs.loginBtn && refs.registerBtn && refs.logoutBtn
-  );
-
-  if (hasFullAuthUI) {
-    window.cloudSync.bindAuthUI({
-      emailInput: refs.authEmail,
-      passwordInput: refs.authPassword,
-      statusEl: refs.authStatus,
-      loginBtn: refs.loginBtn,
-      registerBtn: refs.registerBtn,
-      logoutBtn: refs.logoutBtn,
-      onUserChanged: handleUserChanged,
-    });
-    return;
-  }
-
-  window.cloudSync.onAuthStateChanged(handleUserChanged);
-
-  const syncEventKey = typeof window.cloudSync.getSyncEventKey === "function"
-    ? window.cloudSync.getSyncEventKey()
-    : "knit-cloud-sync-event";
-
-  window.addEventListener("storage", async (event) => {
-    if (!event || event.key !== syncEventKey) return;
-    if (!window.cloudSync || !window.cloudSync.getCurrentUser()) return;
-    try {
-      const remote = await window.cloudSync.pullState();
-      if (!remote) return;
-      const changed = applyCloudPayload(remote, projects);
-      if (changed) onRemoteApplied();
-    } catch (error) {
-      console.error("cloud broadcast pull failed", error);
+  // 检查 cloudSync 是否 ready 和 authResolved，未就绪则等待
+  if (typeof window.cloudSync.isReady === "function" && typeof window.cloudSync.isAuthResolved === "function") {
+    if (window.cloudSync.isReady() && window.cloudSync.isAuthResolved()) {
+      proceed();
+    } else {
+      // 监听 auth 状态变化，首次 ready 时再 proceed
+      let proceeded = false;
+      window.cloudSync.onAuthStateChanged(() => {
+        if (!proceeded && window.cloudSync.isReady() && window.cloudSync.isAuthResolved()) {
+          proceeded = true;
+          proceed();
+        }
+      });
     }
-  });
+  } else {
+    // fallback: 直接 proceed
+    proceed();
+  }
 }
 
 function init() {
