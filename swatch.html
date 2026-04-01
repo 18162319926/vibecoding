@@ -29,16 +29,29 @@
         <a class="btn ghost is-tab-active" href="swatch.html">小样仓库</a>
         <a class="btn ghost" href="stats.html">数据统计</a>
       </div>
-      <div class="nav-auth">
-        <button class="sync-state sync-state-idle" id="storageSyncHint" type="button" title="点击立即同步">☁️ 离线模式</button>
-        <span class="account-chip" id="accountChip">当前账号：未登录</span>
-        <button class="btn ghost" id="openLoginBtn" type="button">登录</button>
-        <button class="btn ghost" id="openRegisterBtn" type="button">注册</button>
-        <button class="btn primary" id="logoutBtn" type="button" hidden>退出</button>
+      <div class="nav-auth" id="navAuth">
+        <button class="nav-auth-trigger" id="navAuthTrigger" type="button" aria-label="账号菜单" aria-expanded="false" tabindex="0">
+          <span>☰</span>
+        </button>
+        <div class="nav-auth-menu" id="navAuthMenu">
+          <button class="sync-state sync-state-idle" id="storageSyncHint" type="button" title="点击立即同步">☁️ 离线模式</button>
+          <span class="account-chip" id="accountChip">当前账号：未登录</span>
+          <button class="btn ghost" id="openLoginBtn" type="button">登录</button>
+          <button class="btn ghost" id="openRegisterBtn" type="button">注册</button>
+          <button class="btn primary" id="logoutBtn" type="button" hidden>退出</button>
+        </div>
       </div>
     </nav>
 
     <main class="layout storage-layout">
+      <section class="panel storage-panel storage-list-panel">
+        <div class="storage-list-head">
+          <h2>小样列表</h2>
+          <p class="helper-text">共 <strong id="storageCount">0</strong> 条，可编辑或删除。</p>
+        </div>
+        <div class="storage-list" id="storageList"></div>
+      </section>
+
       <section class="panel storage-panel storage-form-panel">
         <h2>小样条目</h2>
         <form class="grid-form" id="storageForm">
@@ -88,14 +101,6 @@
             </div>
           </div>
         </form>
-      </section>
-
-      <section class="panel storage-panel storage-list-panel">
-        <div class="storage-list-head">
-          <h2>小样列表</h2>
-          <p class="helper-text">共 <strong id="storageCount">0</strong> 条，可编辑或删除。</p>
-        </div>
-        <div class="storage-list" id="storageList"></div>
       </section>
     </main>
 

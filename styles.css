@@ -1,4 +1,47 @@
 @media (max-width: 700px) {
+  body[data-stats-page] .status-filters {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  body[data-stats-page] .status-filters .btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 0 !important;
+    min-height: 38px !important;
+    font-size: 0.98rem !important;
+    border-radius: 8px !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+    transition: background 0.18s, color 0.18s !important;
+  }
+}
+/* 统计页周期按钮三等分填满整行（唯一生效规则） */
+body[data-stats-page] .status-filters {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  background: #f8f3ea !important;
+  border-radius: 12px !important;
+  box-shadow: 0 1px 6px rgba(180, 120, 80, 0.251) !important;
+  padding: 4px 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+}
+body[data-stats-page] .status-filters .btn {
+  width: 100%;
+  min-width: 0;
+  padding: 0 0;
+  min-height: 38px;
+  font-size: 0.98rem;
+  border-radius: 8px;
+  text-align: center;
+  box-sizing: border-box;
+  transition: background 0.18s, color 0.18s;
+}
+@media (max-width: 700px) {
   /* ==============================================
      1. 顶部导航：选中只加粗，无任何其他效果
   ============================================== */
@@ -7,13 +50,13 @@
     flex-direction: row !important;
     align-items: center !important;
     justify-content: space-between !important;
-    height: 54px !important;
-    padding: 0 10px !important;
-    margin: 0 0 8px 0 !important;
+    height: 44px !important;
+    padding: 0 6px !important;
+    margin: 0 0 12px 0 !important;
     background: #fff8efcc !important;
-    backdrop-filter: blur(10px) !important;
-    -webkit-backdrop-filter: blur(10px) !important;
-    border-radius: 0 0 16px 16px !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-radius: 10px 10px 10px 10px !important;
     position: sticky !important;
     top: 0 !important;
     z-index: 999 !important;
@@ -48,8 +91,8 @@
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    font-size: 14px !important;
-    padding: 0 2px !important;
+    font-size: 16px !important;
+    padding: 0 1px !important;
     margin: 0 !important;
     white-space: nowrap !important;
     border: none !important;
@@ -60,14 +103,16 @@
   /* 只加粗，无任何边框、下划线、背景 */
   .nav-center a.btn.ghost.is-tab-active {
     font-weight: bold !important;
-    color: #be4f27 !important;
+    color: #cf6c48 !important;
     background: transparent !important;
     border: none !important;
     border-bottom: none !important;
   }
 
   .nav-auth {
-    position: relative !important;
+    position: fixed !important;
+    top: 16px !important;
+    right: 16px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -107,27 +152,14 @@
   }
 
   .nav-auth-menu.is-open {
+    position: fixed !important;
+    top: 64px !important;
+    right: 16px !important;
+    min-width: 180px !important;
+    max-width: 90vw !important;
+    height: auto !important;
+    z-index: 3000 !important;
     display: block !important;
-  }
-
-  /* ==============================================
-     2. 筛选栏：填满整行 + 内边距变小
-  ============================================== */
-  .status-filters {
-    display: flex !important;
-    width: 100% !important;
-    margin: 0 0 8px 0 !important;
-    padding: 0 !important;
-    gap: 0 !important;
-  }
-  .status-filters .btn {
-    flex: 1 !important;
-    padding: 6px 0 !important;
-    font-size: 13px !important;
-    margin: 0 !important;
-    text-align: center !important;
-  }
-
   /* ==============================================
      3. 统计框：一行显示 + 内边距缩小
   ============================================== */
@@ -202,14 +234,27 @@
   }
   .progress-bar {
     height: 10px !important;
-    background: #e9dbc8 !important;
+    background: url('data:image/svg+xml;utf8,<svg width="40" height="10" viewBox="0 0 40 10" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="10" fill="%23fbf3e8"/><path d="M0 8 Q2 6 4 8 T8 8 T12 8 T16 8 T20 8 T24 8 T28 8 T32 8 T36 8 T40 8" stroke="%23e2c9a6" stroke-width="2" fill="none"/></svg>') repeat-x !important;
     border-radius: 5px !important;
     margin: 8px 0 12px 0 !important;
     overflow: hidden !important;
   }
   .progress-fill {
     height: 100% !important;
-    background: #2f7d6b !important;
+    background: repeating-linear-gradient(135deg, #c8856b 0 7px, #ddb49f 7px 14px, #c8856b 14px 21px) !important;
+    position: relative;
+  }
+  .progress-fill::after {
+    content: "🧶";
+    position: absolute;
+    right: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 16px;
+    pointer-events: none;
+  }
+  .progress-fill::before {
+    content: none;
     border-radius: 5px !important;
   }
   .progress-text {
@@ -274,9 +319,9 @@
   --bg: #fff8ef;
   --panel: #fffcf7;
   --ink: #25303b;
-  --accent: #be4f27;
-  --accent-deep: #8f3718;
-  --mint: #2f7d6b;
+  --accent: #cb6f4d;
+  --accent-deep: #865645;
+  --mint: #2a846f;
   --danger: #b7353a;
   --line: #e9dbc8;
   --shadow: 0 12px 28px rgba(107, 63, 27, 0.12);
@@ -293,7 +338,7 @@ body {
   font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   background:
     radial-gradient(circle at 10% 20%, rgba(255, 195, 141, 0.32), transparent 30%),
-    radial-gradient(circle at 90% 10%, rgba(170, 217, 202, 0.26), transparent 34%),
+    radial-gradient(circle at 90% 10%, rgba(170, 217, 202, 0.386), transparent 34%),
     var(--bg);
   padding: 16px 18px;
   overflow-x: hidden;
@@ -454,36 +499,7 @@ body.homepage {
     min-width: 0;
     border-radius: 8px;
   }
-  /* 仪表盘Tab横滑 */
-  .status-filters {
-    display: flex;
-    overflow-x: auto;
-    gap: 0;
-    background: #fff8ef;
-    border-radius: 12px;
-    margin: 0 -8px 8px -8px;
-    padding: 0 2px;
-    box-shadow: 0 1px 6px rgba(180,120,80,0.04);
-  }
-  .status-filters .btn {
-    flex: 1 1 0;
-    min-width: 72px;
-    font-size: 1.01rem;
-    border-radius: 0;
-    background: none;
-    color: #a86a3c;
-    border-bottom: 2px solid transparent;
-    margin: 0;
-    height: 38px;
-    line-height: 38px;
-    padding: 0;
-    transition: border-color 0.18s, color 0.18s;
-  }
-  .status-filters .btn.is-active {
-    color: var(--accent-deep);
-    border-bottom: 2px solid var(--accent);
-    background: none;
-  }
+
   /* 统计区块卡片化 */
   .dashboard-inline-stats {
     display: flex;
@@ -522,10 +538,10 @@ body.homepage {
   /* 卡片自适应宽度，留白 */
   .project-cards {
     gap: 14px;
-    padding: 8px 2px 12px 2px;
+    padding: 3px 1px 3px 1px;
     flex-wrap: nowrap;
     overflow-x: auto;
-    margin: 0 -8px;
+    margin: 0;
   }
   .project-card {
     min-width: 90vw;
@@ -574,7 +590,7 @@ body.homepage {
   .project-card-actions .btn.primary {
     font-weight: 700;
     background: linear-gradient(135deg, var(--accent), #d7774a);
-    color: #fff;
+    color: #f9f1e7;
   }
   .project-card-actions .btn.ghost {
     background: #f5ece1;
@@ -600,6 +616,7 @@ body.homepage {
 
 .project-nav-row {
   display: flex;
+  margin-bottom: 2px;
   align-items: center;
   gap: 8px;
 }
@@ -1020,7 +1037,7 @@ body.homepage .layout {
 
 body.homepage .dashboard-panel {
   display: grid;
-  row-gap: 16px;
+  row-gap: 6px;
 }
 
 body.homepage .dashboard-panel > h2 {
@@ -1147,7 +1164,7 @@ body[data-storage-page] .storage-list-panel {
   border: 1px solid #eddcc7;
   border-radius: 14px;
   padding: 12px 18px;
-  background: #fffefb;
+  background: rgb(255, 253, 248);
   break-inside: avoid;
   margin: 0 0 10px;
   display: inline-block;
@@ -1252,7 +1269,7 @@ body[data-storage-page] .storage-list-panel {
 .storage-progress-track {
   height: 8px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #fbf3e8, #f6e8d8);
+  background: url('data:image/svg+xml;utf8,<svg width="40" height="8" viewBox="0 0 40 8" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="8" fill="%23fbf3e8"/><path d="M0 6 Q2 4 4 6 T8 6 T12 6 T16 6 T20 6 T24 6 T28 6 T32 6 T36 6 T40 6" stroke="%23e2c9a6" stroke-width="1.5" fill="none"/></svg>') repeat-x;
   border: 1px solid #ecdcc8;
   box-shadow: inset 0 1px 2px rgba(112, 78, 49, 0.15);
   overflow: visible;
@@ -1263,13 +1280,20 @@ body[data-storage-page] .storage-list-panel {
   height: 100%;
   border-radius: 999px;
   position: relative;
-  background:
-    repeating-linear-gradient(
-      135deg,
-      #c8856b 0 7px,
-      #ddb49f 7px 14px,
-      #c8856b 14px 21px
-    );
+  background: repeating-linear-gradient(135deg, #c8856b 0 7px, #ddb49f 7px 14px, #c8856b 14px 21px) !important;
+  position: relative;
+}
+.storage-progress-fill::after {
+  content: "🧶";
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  pointer-events: none;
+}
+.storage-progress-fill::before {
+  content: none;
 }
 
 .storage-progress-fill::before {
@@ -1436,6 +1460,10 @@ body[data-storage-page] .storage-list-panel {
   margin-left: auto;
 }
 
+.nav-auth-trigger {
+  display: none;
+}
+
 .inline-stat-pill {
   display: inline-flex;
   align-items: center;
@@ -1455,11 +1483,7 @@ body[data-storage-page] .storage-list-panel {
   font-size: 1.20rem;
 }
 
-.status-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
+
 
 .status-filters .btn.is-active {
   background: #ffe2cf;
@@ -1481,18 +1505,20 @@ body.homepage .project-cards {
 }
 
 .project-card {
-  border: 1px solid #eddcc7;
+  border: 1px solid #f9f1e7;
   border-radius: 14px;
-  padding: 12px;
+  padding: 10px 12px 8px 12px;
   background: #fffefb;
   min-width: 270px;
   max-width: 300px;
   flex: 0 0 auto;
+  line-height: 0.7;
 }
 
 .project-meta-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   margin: 6px 0;
 }
@@ -1500,9 +1526,9 @@ body.homepage .project-cards {
 .status-pill {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
+  padding: 6px 8px;
   border-radius: 999px;
-  font-size: 0.76rem;
+  font-size: 0.9rem;
   border: 1px solid transparent;
 }
 
@@ -1545,11 +1571,11 @@ body.homepage .project-cards {
 .progress-track {
   height: 8px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #fbf3e8, #f6e8d8);
+  background: url('data:image/svg+xml;utf8,<svg width="40" height="8" viewBox="0 0 40 8" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="8" fill="%23fbf3e8"/><path d="M0 6 Q2 4 4 6 T8 6 T12 6 T16 6 T20 6 T24 6 T28 6 T32 6 T36 6 T40 6" stroke="%23e2c9a6" stroke-width="1.5" fill="none"/></svg>') repeat-x;
   border: 1px solid #ecdcc8;
   box-shadow: inset 0 1px 2px rgba(112, 78, 49, 0.15);
   overflow: visible;
-  margin: 10px 0 6px;
+  margin: 4px 0 4px;
 }
 
 .progress-fill {
@@ -1595,6 +1621,7 @@ body.homepage .project-cards {
   justify-content: space-between;
   gap: 5px;
   margin-top: 8px;
+  margin-bottom: 4px;
 }
 
 @media (max-width: 700px) {
@@ -1616,7 +1643,7 @@ body.homepage .project-cards {
   .dashboard-toolbar {
     position: relative;
     z-index: 90;
-    background: #fff;
+    background: #f9f1e7;
     box-shadow: 0 2px 10px rgba(180,120,80,0.06);
     border-radius: 14px;
     margin-bottom: 10px;
@@ -1625,7 +1652,7 @@ body.homepage .project-cards {
   .dashboard-inline-stats {
     position: relative;
     z-index: 80;
-    background: #fff;
+    background: #f9f1e7;
     box-shadow: 0 2px 8px rgba(180,120,80,0.05);
     border-radius: 14px;
     margin-bottom: 10px;
@@ -1634,7 +1661,7 @@ body.homepage .project-cards {
   .status-filters {
     position: relative;
     z-index: 70;
-    background: #fff8ef;
+    background: #f9f1e7;
     box-shadow: 0 1px 6px rgba(180,120,80,0.04);
     border-radius: 12px;
     margin-bottom: 10px;
@@ -1656,7 +1683,7 @@ body.homepage .project-cards {
   }
   /* 保证所有区块都独立一行 */
   .top-nav, .dashboard-toolbar, .dashboard-inline-stats, .status-filters, .project-cards {
-    display: block !important;
+    /* display: block !important; */
     width: 100% !important;
     margin-left: 0 !important;
     margin-right: 0 !important;
@@ -1678,21 +1705,7 @@ body.homepage .project-cards {
       border-radius: 8px !important;
       margin-bottom: 6px !important;
     }
-    .status-filters {
-      gap: 2px !important;
-      margin: 4px 0 !important;
-      padding: 1px 0 !important;
-      border-radius: 8px !important;
-      min-height: 32px !important;
-    }
-    .status-filters .btn {
-      padding: 2px 6px !important;
-      font-size: 0.90rem !important;
-      border-radius: 6px !important;
-      min-width: 44px !important;
-      height: 28px !important;
-      line-height: 28px !important;
-    }
+
     .dashboard-inline-stats {
       gap: 4px !important;
       margin: 0 0 4px 0 !important;
@@ -1924,6 +1937,29 @@ body.homepage .fab-create-wrap .create-menu {
 
   .stats-ranking-layout {
     grid-template-columns: 1fr;
+  }
+
+  .nav-auth-menu.is-open {
+    display: flex !important;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .nav-auth-menu .sync-state,
+  .nav-auth-menu .account-chip {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .nav-auth-menu #openLoginBtn,
+  .nav-auth-menu #openRegisterBtn,
+  .nav-auth-menu #logoutBtn {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 38px;
+    justify-content: center;
+    padding: 0 8px;
   }
 }
 
@@ -2265,7 +2301,7 @@ textarea {
 
 .footer {
   max-width: 1100px;
-  margin: 22px auto 4px;
+  margin: 2px auto 2px;
   text-align: center;
   color: #6f7980;
   font-size: 0.9rem;
@@ -2972,7 +3008,7 @@ body.homepage .footer {
   }
 
   body.homepage .project-meta {
-    font-size: 0.98rem;
+    font-size: 1rem;
   }
 
   .import-export-actions .btn,
@@ -3103,7 +3139,7 @@ body.homepage .nav-auth {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 4px;
   flex-wrap: nowrap;
 }
 
@@ -3140,7 +3176,7 @@ body.homepage .nav-stat-card strong {
 }
 
 body.homepage .hero.homepage-hero {
-  margin: -2px auto 8px;
+  margin: -2px auto 2px;
   align-items: flex-start;
 }
 
@@ -3185,10 +3221,10 @@ body.homepage .dashboard-panel {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   padding: 16px;
-  max-height: calc(100vh - 170px);
+  max-height: calc(100vh - 130px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  margin-bottom: 56px;
+  margin-bottom: 0px;
 }
 
 body.homepage .dashboard-panel > h2 {
@@ -3216,7 +3252,7 @@ body.homepage .dashboard-stats-group {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 1px;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
@@ -3237,6 +3273,14 @@ body.homepage .status-filters .btn.is-active {
 
 body.homepage .dashboard-inline-stats {
   margin-left: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+
+body.homepage .dashboard-inline-stats .inline-stat-pill {
+  width: 100%;
 }
 
 body.homepage .today-summary-pill {
@@ -3298,7 +3342,7 @@ body.homepage .project-card {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   border: 1px solid var(--line);
-  padding: 16px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -3327,14 +3371,14 @@ body.homepage .project-card h3 {
 body.homepage .project-meta {
   font-weight: 500;
   text-decoration: none;
-  line-height: 1.5;
+  line-height: 1.2;
   color: #665a4f;
 }
 
 body.homepage .status-active {
   background: rgba(39, 174, 96, 0.14);
-  color: #27ae60;
-  border-color: rgba(39, 174, 96, 0.35);
+  color: #6aa884;
+  border-color: rgba(86, 157, 116, 0.35);
 }
 
 body.homepage .status-paused {
@@ -3352,7 +3396,7 @@ body.homepage .status-done {
 body.homepage .progress-track {
   height: 6px;
   border-radius: 3px;
-  background: #f0e6d6;
+  background: url('data:image/svg+xml;utf8,<svg width="40" height="8" viewBox="0 0 40 8" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="8" fill="%23fbf3e8"/><path d="M0 6 Q2 4 4 6 T8 6 T12 6 T16 6 T20 6 T24 6 T28 6 T32 6 T36 6 T40 6" stroke="%23e2c9a6" stroke-width="1.5" fill="none"/></svg>') repeat-x;
   border: none;
   box-shadow: none;
   overflow: hidden;
@@ -3360,7 +3404,20 @@ body.homepage .progress-track {
 
 body.homepage .progress-fill {
   border-radius: 3px;
-  background: #27ae60;
+  background: repeating-linear-gradient(135deg, #c8856b 0 7px, #ddb49f 7px 14px, #c8856b 14px 21px) !important;
+  position: relative;
+}
+body.homepage .progress-fill::after {
+  content: "🧶";
+  position: absolute;
+  right: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  pointer-events: none;
+}
+body.homepage .progress-fill::before {
+  content: none;
 }
 
 body.homepage .progress-fill.status-paused {
@@ -3377,8 +3434,11 @@ body.homepage .progress-fill::after {
 }
 
 body.homepage .project-card-actions {
-  margin-top: auto;
+  margin-top:2px;
   gap: 8px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 body.homepage .project-card-actions .btn,
@@ -3387,32 +3447,41 @@ body.homepage .project-card-actions a.btn {
   min-height: 34px;
   white-space: nowrap;
   overflow-wrap: normal;
-  font-size: 12px;
+  font-size: 14px;
+}
+
+body.homepage .project-card-actions .card-more-wrap {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+body.homepage .project-card-actions .card-more-wrap .more-trigger {
+  width: 100%;
 }
 
 body.homepage .btn {
   min-height: 40px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 800;
   line-height: 1.2;
   font-weight: 500;
 }
 
 body.homepage .btn.primary {
-  background: #e67e22;
+  background: #d47f34d0;
   color: #fff;
 }
 
 body.homepage .btn.primary:hover {
-  background: #d35400;
+  background: #d47f34d0;
   box-shadow: 0 4px 12px rgba(230, 126, 34, 0.2);
 }
 
 body.homepage .btn.ghost {
   background: #fff9f0;
-  border: 1px solid #e67e22;
-  color: #e67e22;
+  border: 1px solid #d47f34d0;
+  color: #d47f34d0;
 }
 
 body.homepage .btn.ghost:hover {
@@ -3448,8 +3517,8 @@ body.homepage .fab-create-btn:hover {
 }
 
 body.homepage .footer {
-  height: 40px;
-  margin-top: 14px;
+  height: 30px;
+  margin-top: 5px;
   font-size: 13px;
   color: #998b7d;
   display: flex;
@@ -3485,7 +3554,6 @@ body.homepage .footer {
 
   body.homepage .project-card {
     aspect-ratio: auto;
-    min-height: 380px;
   }
 }
 
@@ -3894,5 +3962,175 @@ body[data-storage-page] .storage-item-actions .btn {
 
   body[data-storage-page] .storage-list {
     column-width: 100%;
+  }
+
+  body[data-stats-page] .layout {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 2px;
+  }
+
+  body[data-stats-page] .dashboard-panel {
+    min-height: 0;
+  }
+
+  body[data-stats-page] .panel {
+    border-radius: 16px;
+    padding: 14px 12px;
+  }
+
+  body[data-stats-page] .panel h2 {
+    font-size: 1.04rem;
+    margin-bottom: 10px;
+  }
+
+  body[data-stats-page] .dashboard-toolbar {
+      display: block;
+      background: #f8f3ea !important;
+      border-radius: 14px !important;
+      box-shadow: 0 2px 8px rgba(180,120,80,0.04) !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+
+
+  body[data-stats-page] .stats-storage-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  body[data-stats-page] .stat-card {
+    padding: 12px 10px;
+    border-radius: 12px;
+    background: #f8f3ea !important;
+    box-shadow: 0 2px 8px rgba(180,120,80,0.06) !important;
+  }
+
+  body[data-stats-page] .helper-text {
+    margin-top: 2px;
+    line-height: 1.5;
+  }
+
+  body[data-stats-page] #trendCanvas,
+  body[data-stats-page] #preferredSlotCanvas {
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  body[data-stats-page] .status-filters .btn {
+    font-size: 0.86rem;
+    min-height: 36px;
+    padding: 0 6px;
+  }
+}
+
+@media (max-width: 700px) {
+  body[data-stats-page] .layout {
+    gap: 6px !important;
+  }
+
+  body[data-stats-page] .layout > .dashboard-panel {
+    min-height: 0 !important;
+    height: auto !important;
+    padding-bottom: 12px !important;
+    margin-top: 6px !important;
+  }
+}
+
+@media (max-width: 700px) {
+  /* 首页：项目总数/进行中始终同一行 */
+  body.homepage .dashboard-inline-stats {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin: 0 0 8px 0 !important;
+  }
+
+  body.homepage .dashboard-inline-stats .inline-stat-pill {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* 首页：进入项目/切换状态/更多始终同一行 */
+  body.homepage .project-card-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  body.homepage .project-card-actions .btn,
+  body.homepage .project-card-actions a.btn,
+  body.homepage .project-card-actions .card-more-wrap {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+  }
+
+  body.homepage .project-card-actions .card-more-wrap .more-trigger {
+    width: 100% !important;
+  }
+
+
+
+  /* 移除display: grid和width: 100%，让按钮自适应宽度 */
+
+
+  body[data-stats-page] .status-filters .btn {
+    min-width: 0 !important;
+  }
+
+  /* 统计页：统计项两列 */
+  body[data-stats-page] .stats-storage-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+}
+
+@media (max-width: 700px) {
+  /* 首页筛选项：自适应页面宽度 */
+  body.homepage .status-filters {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    gap: 6px !important;
+    padding: 0 !important;
+  }
+
+  body.homepage .status-filters .btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 34px !important;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+  }
+
+  /* 统计框与筛选项：缩小上下内边距 */
+  body.homepage .dashboard-inline-stats .inline-stat-pill {
+    min-height: 38px !important;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+  }
+
+  body.homepage .today-summary-pill {
+    min-height: 38px !important;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+  }
+
+  /* 卡片背景：避免纯白 */
+  body.homepage .project-card {
+    background: #f9f1e7 !important;
+  }
+
+  /* 卡片间距：增大 */
+  body.homepage .project-cards {
+    gap: 16px !important;
+    padding-bottom: 14px !important;
   }
 }

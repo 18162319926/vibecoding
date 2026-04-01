@@ -161,10 +161,56 @@ function normalizeProject(project) {
 const STORAGE_KEY = "knit-helper-state";
 const YARN_STORAGE_KEY = "knit-yarn-storage";
 const STATS_BOOTSTRAP_DATE_KEY = "knit-stats-bootstrap-date";
+const SUPPORTED_PERIODS = ["week", "month", "all"];
+
+function normalizePeriod(period) {
+  return SUPPORTED_PERIODS.includes(period) ? period : "week";
+}
+
+function setupMobileAuthMenu() {
+  const trigger = document.getElementById("navAuthTrigger");
+  const menu = document.getElementById("navAuthMenu");
+  if (!trigger || !menu) return;
+
+  function closeMenu() {
+    menu.classList.remove("is-open");
+    trigger.setAttribute("aria-expanded", "false");
+  }
+
+  function syncTriggerVisibility() {
+    if (window.innerWidth <= 900) {
+      trigger.style.display = "";
+    } else {
+      trigger.style.display = "none";
+      closeMenu();
+    }
+  }
+
+  syncTriggerVisibility();
+  window.addEventListener("resize", syncTriggerVisibility);
+
+  trigger.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const nextOpen = !menu.classList.contains("is-open");
+    menu.classList.toggle("is-open", nextOpen);
+    trigger.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+  });
+
+  document.addEventListener("click", (event) => {
+    if (window.innerWidth > 900) return;
+    if (menu.contains(event.target) || trigger.contains(event.target)) return;
+    closeMenu();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    closeMenu();
+  });
+}
 
 
 const state = {
-  period: "today",
+  period: "week",
   projects: [],
   yarnItems: [],
   trendPlot: null,
@@ -540,33 +586,30 @@ function renderPreferredSlotChart() {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  // 支持周期切换，今日页只显示今日分布
-  let buckets = makeHourlyBuckets();
-  if (state.period === "today") {
-    const today = getLocalDateKey();
-    let hasTodayHour = false;
-    const projects = state.projects.filter(p => {
-      const sec = getProjectSecondsForPeriod(p, "today");
-      const rows = getProjectRowsForPeriod(p, "today");
-      return sec > 0 || rows > 0;
-    });
-    projects.forEach((p) => {
-      const daily = p.dailyStats && p.dailyStats[today];
-      if (daily && daily.hourBuckets && typeof daily.hourBuckets === 'object') {
+  const period = normalizePeriod(state.period);
+  const buckets = makeHourlyBuckets();
+  const dateKeys = period === "week" ? getLastNDates(7) : period === "month" ? getLastNDates(30) : null;
+
+  state.projects.forEach((project) => {
+    const daily = getProjectDailyStats(project);
+    if (dateKeys) {
+      dateKeys.forEach((date) => {
+        const entry = daily[date];
+        if (!entry || !entry.hourBuckets || typeof entry.hourBuckets !== "object") return;
         Object.keys(buckets).forEach((key) => {
-          buckets[key] += toNonNegative(daily.hourBuckets[key]);
-          if (toNonNegative(daily.hourBuckets[key]) > 0) hasTodayHour = true;
+          buckets[key] += toNonNegative(entry.hourBuckets[key]);
         });
-      }
-    });
-    if (!hasTodayHour) {
-      Object.keys(buckets).forEach((key) => { buckets[key] = 0; });
+      });
+      return;
     }
-  } else {
-    // 历史分布
-    const metrics = computeTimeMetrics();
-    buckets = metrics.timeBuckets || makeHourlyBuckets();
-  }
+
+    Object.values(daily).forEach((entry) => {
+      if (!entry || !entry.hourBuckets || typeof entry.hourBuckets !== "object") return;
+      Object.keys(buckets).forEach((key) => {
+        buckets[key] += toNonNegative(entry.hourBuckets[key]);
+      });
+    });
+  });
   const entries = Object.keys(buckets).map((key, index) => ({
     label: toHourLabel(key),
     value: toNonNegative(buckets[key]),
@@ -855,94 +898,60 @@ function renderOverview() {
   else console.warn('[stats] statTotalYarnUsed 元素不存在');
 
   // 当前周期统计
-  const period = state.period || "week";
+  const period = normalizePeriod(state.period || "week");
+  state.period = period;
   let periodSeconds = 0;
   let periodRows = 0;
   let projects = state.projects;
-  if (period === "today") {
-    // 今日统计优先 dailyStats[today].rows，没有则 fallback 到 todayRows，再没有 fallback 到 rows 字段，保证与仪表盘一致
-    const today = getLocalDateKey();
-    periodSeconds = projects.reduce((sum, p) => {
-      const daily = getProjectDailyStats(p)[today];
-      if (daily && typeof daily.seconds === 'number') return sum + toNonNegative(daily.seconds);
-      if (typeof p.todaySeconds === 'number') return sum + toNonNegative(p.todaySeconds);
-      return sum + toNonNegative(p.spentSeconds);
-    }, 0);
-    periodRows = projects.reduce((sum, p) => {
-      const daily = getProjectDailyStats(p)[today];
-      if (daily && typeof daily.rows === 'number') return sum + toNonNegative(daily.rows);
-      if (typeof p.todayRows === 'number') return sum + toNonNegative(p.todayRows);
-      return sum + toNonNegative(p.rows);
-    }, 0);
-  } else {
-    // 周期内累加 dailyStats[date]，只统计周期内
-    const dateKeys = period === "week" ? getLastNDates(7) : period === "month" ? getLastNDates(30) : null;
-    projects.forEach((p) => {
-      const daily = getProjectDailyStats(p);
-      if (dateKeys) {
-        dateKeys.forEach(date => {
-          periodSeconds += toNonNegative(daily[date]?.seconds);
-          periodRows += toNonNegative(daily[date]?.rows);
-        });
-      } else {
-        // 全部历史，累加所有 dailyStats
-        Object.values(daily).forEach(item => {
-          periodSeconds += toNonNegative(item.seconds);
-          periodRows += toNonNegative(item.rows);
-        });
-      }
-    });
-  }
+  // 周期内累加 dailyStats[date]，只统计周期内
+  const dateKeys = period === "week" ? getLastNDates(7) : period === "month" ? getLastNDates(30) : null;
+  projects.forEach((p) => {
+    const daily = getProjectDailyStats(p);
+    if (dateKeys) {
+      dateKeys.forEach((date) => {
+        periodSeconds += toNonNegative(daily[date]?.seconds);
+        periodRows += toNonNegative(daily[date]?.rows);
+      });
+    } else {
+      // 全部历史，累加所有 dailyStats
+      Object.values(daily).forEach((item) => {
+        periodSeconds += toNonNegative(item.seconds);
+        periodRows += toNonNegative(item.rows);
+      });
+    }
+  });
   // 时间投入统计
   if (refs.statPeriodTotalDuration) refs.statPeriodTotalDuration.textContent = formatDuration(periodSeconds);
   else console.warn('[stats] statPeriodTotalDuration 元素不存在');
   // 偏好时段
   if (refs.statPreferredSlot) {
     let timeBuckets = makeHourlyBuckets();
-    if (period === "today") {
-      // 今日 hourBuckets 只统计 dailyStats[today].hourBuckets，保证与仪表盘同步
-      const today = getLocalDateKey();
-      let hasTodayHour = false;
+    // 周期分布：遍历周期内所有日期，累加 dailyStats[date].hourBuckets
+    const dateKeys = period === "week" ? getLastNDates(7) : period === "month" ? getLastNDates(30) : null;
+    if (dateKeys) {
       state.projects.forEach((p) => {
-        const daily = getProjectDailyStats(p)[today];
-        if (daily && daily.hourBuckets && typeof daily.hourBuckets === 'object') {
-          Object.keys(timeBuckets).forEach((key) => {
-            timeBuckets[key] += toNonNegative(daily.hourBuckets[key]);
-            if (toNonNegative(daily.hourBuckets[key]) > 0) hasTodayHour = true;
-          });
-        }
+        const daily = getProjectDailyStats(p);
+        dateKeys.forEach((date) => {
+          const entry = daily[date];
+          if (entry && entry.hourBuckets && typeof entry.hourBuckets === "object") {
+            Object.keys(timeBuckets).forEach((key) => {
+              timeBuckets[key] += toNonNegative(entry.hourBuckets[key]);
+            });
+          }
+        });
       });
-      if (!hasTodayHour) {
-        Object.keys(timeBuckets).forEach((key) => { timeBuckets[key] = 0; });
-      }
     } else {
-      // 周期分布：遍历周期内所有日期，累加 dailyStats[date].hourBuckets
-      const dateKeys = period === "week" ? getLastNDates(7) : period === "month" ? getLastNDates(30) : null;
-      if (dateKeys) {
-        state.projects.forEach((p) => {
-          const daily = getProjectDailyStats(p);
-          dateKeys.forEach(date => {
-            const entry = daily[date];
-            if (entry && entry.hourBuckets && typeof entry.hourBuckets === 'object') {
-              Object.keys(timeBuckets).forEach((key) => {
-                timeBuckets[key] += toNonNegative(entry.hourBuckets[key]);
-              });
-            }
-          });
+      // 全部历史，累加所有 dailyStats 的 hourBuckets
+      state.projects.forEach((p) => {
+        const daily = getProjectDailyStats(p);
+        Object.values(daily).forEach((entry) => {
+          if (entry && entry.hourBuckets && typeof entry.hourBuckets === "object") {
+            Object.keys(timeBuckets).forEach((key) => {
+              timeBuckets[key] += toNonNegative(entry.hourBuckets[key]);
+            });
+          }
         });
-      } else {
-        // 全部历史，累加所有 dailyStats 的 hourBuckets
-        state.projects.forEach((p) => {
-          const daily = getProjectDailyStats(p);
-          Object.values(daily).forEach(entry => {
-            if (entry && entry.hourBuckets && typeof entry.hourBuckets === 'object') {
-              Object.keys(timeBuckets).forEach((key) => {
-                timeBuckets[key] += toNonNegative(entry.hourBuckets[key]);
-              });
-            }
-          });
-        });
-      }
+      });
     }
     const bucketEntries = Object.entries(timeBuckets);
     const preferredEntry = bucketEntries.sort((a, b) => b[1] - a[1])[0];
@@ -951,42 +960,34 @@ function renderOverview() {
   // 平均每日编织时长、单日最长编织时长
   let avgDailySeconds = 0, maxDailySeconds = 0;
   let avgDailyRows = 0, maxDailyRows = 0;
-  if (period === "today") {
-    // 今日：直接用 todaySeconds/todayRows 字段
-    avgDailySeconds = projects.length ? Math.round(projects.reduce((a, p) => a + toNonNegative(p.todaySeconds), 0) / projects.length) : 0;
-    maxDailySeconds = projects.length ? Math.max(...projects.map(p => toNonNegative(p.todaySeconds))) : 0;
-    avgDailyRows = projects.length ? Math.round(projects.reduce((a, p) => a + toNonNegative(p.todayRows), 0) / projects.length) : 0;
-    maxDailyRows = projects.length ? Math.max(...projects.map(p => toNonNegative(p.todayRows))) : 0;
-  } else {
-    // 其它周期：聚合 dailyStats
-    let dailySecondsArr = [];
-    projects.forEach((p) => {
-      const daily = getProjectDailyStats(p);
-      Object.entries(daily).forEach(([date, item]) => {
-        if (item.seconds > 0) {
-          if (!dailySecondsArr[date]) dailySecondsArr[date] = 0;
-          dailySecondsArr[date] += item.seconds;
-        }
-      });
+  // 聚合 dailyStats 计算日均和峰值
+  let dailySecondsArr = [];
+  projects.forEach((p) => {
+    const daily = getProjectDailyStats(p);
+    Object.entries(daily).forEach(([date, item]) => {
+      if (item.seconds > 0) {
+        if (!dailySecondsArr[date]) dailySecondsArr[date] = 0;
+        dailySecondsArr[date] += item.seconds;
+      }
     });
-    const dailySecondsList = Object.values(dailySecondsArr);
-    avgDailySeconds = dailySecondsList.length ? Math.round(dailySecondsList.reduce((a, b) => a + b, 0) / dailySecondsList.length) : 0;
-    maxDailySeconds = dailySecondsList.length ? Math.max(...dailySecondsList) : 0;
+  });
+  const dailySecondsList = Object.values(dailySecondsArr);
+  avgDailySeconds = dailySecondsList.length ? Math.round(dailySecondsList.reduce((a, b) => a + b, 0) / dailySecondsList.length) : 0;
+  maxDailySeconds = dailySecondsList.length ? Math.max(...dailySecondsList) : 0;
 
-    let dailyRowsArr = [];
-    projects.forEach((p) => {
-      const daily = getProjectDailyStats(p);
-      Object.entries(daily).forEach(([date, item]) => {
-        if (item.rows > 0) {
-          if (!dailyRowsArr[date]) dailyRowsArr[date] = 0;
-          dailyRowsArr[date] += item.rows;
-        }
-      });
+  let dailyRowsArr = [];
+  projects.forEach((p) => {
+    const daily = getProjectDailyStats(p);
+    Object.entries(daily).forEach(([date, item]) => {
+      if (item.rows > 0) {
+        if (!dailyRowsArr[date]) dailyRowsArr[date] = 0;
+        dailyRowsArr[date] += item.rows;
+      }
     });
-    const dailyRowsList = Object.values(dailyRowsArr);
-    avgDailyRows = dailyRowsList.length ? Math.round(dailyRowsList.reduce((a, b) => a + b, 0) / dailyRowsList.length) : 0;
-    maxDailyRows = dailyRowsList.length ? Math.max(...dailyRowsList) : 0;
-  }
+  });
+  const dailyRowsList = Object.values(dailyRowsArr);
+  avgDailyRows = dailyRowsList.length ? Math.round(dailyRowsList.reduce((a, b) => a + b, 0) / dailyRowsList.length) : 0;
+  maxDailyRows = dailyRowsList.length ? Math.max(...dailyRowsList) : 0;
   if (refs.statAvgDailyDuration) refs.statAvgDailyDuration.textContent = formatDuration(avgDailySeconds);
   else console.warn('[stats] statAvgDailyDuration 元素不存在');
   if (refs.statMaxDailyDuration) refs.statMaxDailyDuration.textContent = formatDuration(maxDailySeconds);
@@ -1192,7 +1193,6 @@ function renderTrendChart() {
 
   if (refs.trendTitle) {
     const titleMap = {
-      today: "最近 7 天趋势（今日口径）",
       week: "最近 7 天趋势（本周口径）",
       month: "最近 30 天趋势（本月口径）",
       all: "最近 90 天趋势（全部口径）",
@@ -1370,6 +1370,12 @@ function renderYarnUsageCharts() {
 
 function renderAll() {
     updateRefs();
+  state.period = normalizePeriod(state.period);
+  if (refs.periodFilters) {
+    refs.periodFilters.querySelectorAll("button[data-period]").forEach((btn) => {
+      btn.classList.toggle("is-active", btn.dataset.period === state.period);
+    });
+  }
   renderOverview();
   renderPreferredSlotChart();
   renderProjectRanking();
@@ -1393,7 +1399,7 @@ if (refs.periodFilters) {
   refs.periodFilters.addEventListener("click", (event) => {
     const target = event.target.closest("button[data-period]");
     if (!target) return;
-    state.period = target.dataset.period;
+    state.period = normalizePeriod(target.dataset.period);
     refs.periodFilters.querySelectorAll("button[data-period]").forEach((btn) => {
       btn.classList.toggle("is-active", btn === target);
     });
@@ -1450,6 +1456,7 @@ function resetTodayStatsIfNeeded() {
 }
 
 updateRefs();
+setupMobileAuthMenu();
 loadProjectState();
 loadYarnState();
 ensureStatsBootstrapDate();
