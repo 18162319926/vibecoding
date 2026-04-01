@@ -1,3 +1,113 @@
+// 自动清理今天未来小时 hourBuckets 的脚本（可在 stats 页面调用）
+function clearFutureHourBucketsToday() {
+  const today = (new Date()).toISOString().slice(0, 10);
+  let cleaned = 0;
+  state.projects.forEach((project) => {
+    const entry = project.dailyStats && project.dailyStats[today];
+    if (!entry || !entry.hourBuckets) return;
+    const nowHour = (new Date()).getHours();
+    for (let h = nowHour + 1; h < 24; h++) {
+      const key = `h${String(h).padStart(2, "0")}`;
+      if (entry.hourBuckets[key] && entry.hourBuckets[key] !== 0) {
+        entry.hourBuckets[key] = 0;
+        cleaned++;
+      }
+    }
+  });
+  if (cleaned > 0) {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      parsed.projects = state.projects;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      alert(`已清理今天未来小时 hourBuckets：${cleaned} 项。`);
+    } catch (e) {
+      alert(`清理未来小时 hourBuckets 时保存失败：${e.message}`);
+    }
+  } else {
+    alert('没有需要清理的未来小时 hourBuckets。');
+  }
+}
+window.clearFutureHourBucketsToday = clearFutureHourBucketsToday;
+// 脚本：自动修复异常 hourBuckets（总和远大于 seconds 的天直接均分填充）
+function fixAbnormalHourBuckets() {
+  let fixed = 0;
+  state.projects.forEach((project) => {
+    if (!project.dailyStats) return;
+    Object.entries(project.dailyStats).forEach(([date, stat]) => {
+      if (!stat.hourBuckets || typeof stat.hourBuckets !== 'object') return;
+      const totalSeconds = toNonNegative(stat.seconds);
+      const hourSum = Object.values(stat.hourBuckets).reduce((a, b) => a + toNonNegative(b), 0);
+      if (hourSum > totalSeconds * 1.2 && totalSeconds > 0) {
+        // 直接均分填充
+        const avg = Math.floor(totalSeconds / 24);
+        const remain = totalSeconds - avg * 24;
+        for (let h = 0; h < 24; h++) {
+          const key = `h${String(h).padStart(2, "0")}`;
+          stat.hourBuckets[key] = avg + (h < remain ? 1 : 0);
+        }
+        fixed++;
+      }
+    });
+  });
+  if (fixed > 0) {
+    // 保存到本地存储
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      parsed.projects = state.projects;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      alert(`已修复 ${fixed} 条异常 hourBuckets 数据。`);
+    } catch (e) {
+      alert(`修复异常 hourBuckets 时保存失败：${e.message}`);
+    }
+  } else {
+    alert('没有检测到异常 hourBuckets 数据。');
+  }
+}
+// 方便控制台调用
+window.fixAbnormalHourBuckets = fixAbnormalHourBuckets;
+// 脚本：归一化所有 dailyStats 的 hourBuckets，使其总和不超过 seconds
+function normalizeAllHourBuckets() {
+  let patched = 0;
+  state.projects.forEach((project) => {
+    if (!project.dailyStats) return;
+    Object.entries(project.dailyStats).forEach(([date, stat]) => {
+      if (!stat.hourBuckets || typeof stat.hourBuckets !== 'object') return;
+      const totalSeconds = toNonNegative(stat.seconds);
+      const hourSum = Object.values(stat.hourBuckets).reduce((a, b) => a + toNonNegative(b), 0);
+      if (hourSum > 0 && hourSum !== totalSeconds) {
+        // 按比例缩放
+        const scale = totalSeconds / hourSum;
+        let remain = totalSeconds;
+        for (let h = 0; h < 24; h++) {
+          const key = `h${String(h).padStart(2, "0")}`;
+          const raw = toNonNegative(stat.hourBuckets[key]);
+          const val = h === 23 ? remain : Math.round(raw * scale);
+          stat.hourBuckets[key] = val;
+          remain -= val;
+        }
+        patched++;
+      }
+    });
+  });
+  if (patched > 0) {
+    // 保存到本地存储
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      parsed.projects = state.projects;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      alert(`已归一化 ${patched} 条 hourBuckets 数据。`);
+    } catch (e) {
+      alert(`归一化 hourBuckets 时保存失败：${e.message}`);
+    }
+  } else {
+    alert('没有需要归一化的 hourBuckets 数据。');
+  }
+}
+// 方便控制台调用
+window.normalizeHourBuckets = normalizeAllHourBuckets;
 // 依赖补全：makeId 和 createProject
 function makeId() {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -557,7 +667,7 @@ function getProjectSecondsForPeriod(project, period) {
 
   const daily = getProjectDailyStats(project);
   let dateKeys = [];
-  if (period === "week") dateKeys = getLastNDates(7);
+  if (period === "week") dateKeys = getCurrentWeekDates();
   else if (period === "month") dateKeys = getCurrentMonthDates();
   return dateKeys.reduce((sum, key) => sum + toNonNegative(daily[key]?.seconds), 0);
 }
@@ -579,7 +689,7 @@ function getProjectRowsForPeriod(project, period) {
 
   const daily = getProjectDailyStats(project);
   let dateKeys = [];
-  if (period === "week") dateKeys = getLastNDates(7);
+  if (period === "week") dateKeys = getCurrentWeekDates();
   else if (period === "month") dateKeys = getCurrentMonthDates();
   return dateKeys.reduce((sum, key) => sum + toNonNegative(daily[key]?.rows), 0);
 }
@@ -666,21 +776,38 @@ function renderPreferredSlotChart() {
   Object.keys(buckets).forEach((key) => { buckets[key] = 0; });
   // 统计每小时实际发生的秒数，今天只统计到当前小时
   Object.keys(buckets).forEach((key) => { buckets[key] = 0; });
-  state.projects.forEach((project) => {
-    const daily = getProjectDailyStats(project);
-    if (dateKeys) {
-      dateKeys.forEach((date) => {
+  // 统计缺失 hourBuckets 的天数
+  let missingHourBucketsDays = 0;
+  if (dateKeys) {
+    dateKeys.forEach((date) => {
+      // 合并所有项目这一天的 hourBuckets
+      let dayHourBuckets = makeHourlyBuckets();
+      let hasAnyHourBuckets = false;
+      state.projects.forEach((project) => {
+        const daily = getProjectDailyStats(project);
         const entry = daily[date];
-        if (!entry || !entry.hourBuckets || typeof entry.hourBuckets !== "object") return;
+        if (!entry || !entry.hourBuckets || typeof entry.hourBuckets !== "object") {
+          return;
+        }
+        hasAnyHourBuckets = true;
         const isToday = date === getLocalDateKey(now);
         for (let h = 0; h < 24; h++) {
           if (isToday && h > currentHour) continue;
           const key = `h${String(h).padStart(2, "0")}`;
-          buckets[key] += toNonNegative(entry.hourBuckets[key]);
+          dayHourBuckets[key] += toNonNegative(entry.hourBuckets[key]);
         }
       });
-    }
-  });
+      if (!hasAnyHourBuckets) {
+        missingHourBucketsDays++;
+        return;
+      }
+      // 合并到总分布
+      for (let h = 0; h < 24; h++) {
+        const key = `h${String(h).padStart(2, "0")}`;
+        buckets[key] += dayHourBuckets[key];
+      }
+    });
+  }
   // 今天之后的小时全部强制为0
   if (period === "month" || period === "week") {
     for (let h = currentHour + 1; h < 24; h++) {
@@ -756,7 +883,11 @@ function renderPreferredSlotChart() {
       // 计算当前分布下的 preferredSlot
       const preferredEntry = entries.sort((a, b) => b.value - a.value)[0];
       const preferredSlot = preferredEntry && preferredEntry.value > 0 ? preferredEntry.label : "暂无数据";
-      refs.preferredSlotHint.textContent = `偏好小时：${preferredSlot}，累计 ${formatDuration(total)}。`;
+      let hint = `偏好小时：${preferredSlot}，累计 ${formatDuration(total)}。`;
+      if (missingHourBucketsDays > 0) {
+        hint += `（部分天无分时数据，分布可能不完整）`;
+      }
+      refs.preferredSlotHint.textContent = hint;
     }
   }
 }
@@ -852,10 +983,43 @@ function setupCloudSync() {
 }
 
 function computeYarnUsage() {
+  // 全部消耗
   let totalUsed = 0;
   state.yarnItems.forEach((item) => {
     const metrics = deriveYarnMetrics(item);
     totalUsed += Math.max(0, metrics.originalWeight - metrics.stockWeight);
+  });
+  return roundToSingle(totalUsed);
+}
+
+// 按周期统计消耗毛线量
+function computeYarnUsageForPeriod(period) {
+  // 统计所有项目在该周期内的消耗（按行数/时长比例分摊）
+  let totalUsed = 0;
+  // 先统计全局总行数/时长
+  let globalTotalRows = 0, globalTotalSeconds = 0;
+  state.projects.forEach((p) => {
+    globalTotalRows += getProjectRowsForPeriod(p, "all");
+    globalTotalSeconds += getProjectSecondsForPeriod(p, "all");
+  });
+  // 统计本周期总行数/时长
+  let periodTotalRows = 0, periodTotalSeconds = 0;
+  state.projects.forEach((p) => {
+    periodTotalRows += getProjectRowsForPeriod(p, period);
+    periodTotalSeconds += getProjectSecondsForPeriod(p, period);
+  });
+  // 按比例分摊 yarnItems 的消耗
+  state.yarnItems.forEach((item) => {
+    const metrics = deriveYarnMetrics(item);
+    const used = Math.max(0, metrics.originalWeight - metrics.stockWeight);
+    // 优先按行数分摊，否则按时长
+    let ratio = 1;
+    if (globalTotalRows > 0 && periodTotalRows > 0) {
+      ratio = periodTotalRows / globalTotalRows;
+    } else if (globalTotalSeconds > 0 && periodTotalSeconds > 0) {
+      ratio = periodTotalSeconds / globalTotalSeconds;
+    }
+    totalUsed += used * ratio;
   });
   return roundToSingle(totalUsed);
 }
@@ -987,7 +1151,7 @@ function renderOverview() {
   const periodStatOvr = normalizePeriod(state.period || "week");
   state.period = periodStatOvr;
   let dateKeysStatOvr = null;
-  if (periodStatOvr === "week") dateKeysStatOvr = getLastNDates(7);
+  if (periodStatOvr === "week") dateKeysStatOvr = getCurrentWeekDates();
   else if (periodStatOvr === "month") dateKeysStatOvr = getCurrentMonthDates();
   else if (periodStatOvr === "all") dateKeysStatOvr = getAllStatsDates();
   projects.forEach((p) => {
@@ -1085,7 +1249,7 @@ function renderOverview() {
   else console.warn('[stats] statMaxDailyDuration 元素不存在');
   if (refs.statPeriodTotalRows) refs.statPeriodTotalRows.textContent = String(periodRows);
   else console.warn('[stats] statPeriodTotalRows 元素不存在');
-  if (refs.statPeriodYarnUsed) refs.statPeriodYarnUsed.textContent = formatWeight(computeYarnUsage(state.period));
+  if (refs.statPeriodYarnUsed) refs.statPeriodYarnUsed.textContent = formatWeight(computeYarnUsageForPeriod(state.period));
   else console.warn('[stats] statPeriodYarnUsed 元素不存在');
   if (refs.statAvgDailyRows) refs.statAvgDailyRows.textContent = String(avgDailyRows);
   else console.warn('[stats] statAvgDailyRows 元素不存在');

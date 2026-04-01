@@ -217,11 +217,16 @@ function recordProjectSeconds(project, seconds) {
   entry.seconds += amount;
   // 每次写入都同步 todaySeconds 字段，保证主页面和 dailyStats 一致
   project.todaySeconds = entry.seconds;
-  const bucket = getHourBucket(new Date().getHours());
-  project.timeBuckets[bucket] = Math.max(0, Number(project.timeBuckets[bucket]) || 0) + amount;
-  // 写入今日小时分布到 dailyStats[today].hourBuckets
-  if (!entry.hourBuckets) entry.hourBuckets = {};
-  entry.hourBuckets[bucket] = Math.max(0, Number(entry.hourBuckets[bucket]) || 0) + amount;
+  const now = new Date();
+  const hour = now.getHours();
+  const bucket = getHourBucket(hour);
+  // 只允许写入当前及之前小时
+  if (hour >= 0 && hour <= now.getHours()) {
+    project.timeBuckets[bucket] = Math.max(0, Number(project.timeBuckets[bucket]) || 0) + amount;
+    // 写入今日小时分布到 dailyStats[today].hourBuckets
+    if (!entry.hourBuckets) entry.hourBuckets = {};
+    entry.hourBuckets[bucket] = Math.max(0, Number(entry.hourBuckets[bucket]) || 0) + amount;
+  }
 }
 
 function recordProjectRows(project, rows) {
@@ -238,10 +243,46 @@ function recordProjectRows(project, rows) {
   // 每次写入都同步 todayRows 字段，保证主页面和 dailyStats 一致
   project.todayRows = entry.rows;
   // 行数也写入 hourBuckets，累加 amount，保证今日小时分布正确
-  const bucket = getHourBucket(new Date().getHours());
-  if (!entry.hourBuckets) entry.hourBuckets = {};
-  entry.hourBuckets[bucket] = Math.max(0, Number(entry.hourBuckets[bucket]) || 0) + amount;
+  const now = new Date();
+  const hour = now.getHours();
+  const bucket = getHourBucket(hour);
+  // 只允许写入当前及之前小时
+  if (hour >= 0 && hour <= now.getHours()) {
+    if (!entry.hourBuckets) entry.hourBuckets = {};
+    entry.hourBuckets[bucket] = Math.max(0, Number(entry.hourBuckets[bucket]) || 0) + amount;
+  }
 }
+// 自动清理今天未来小时 hourBuckets 的脚本
+function clearFutureHourBucketsToday() {
+  const today = (new Date()).toISOString().slice(0, 10);
+  let cleaned = 0;
+  state.projects.forEach((project) => {
+    const entry = project.dailyStats && project.dailyStats[today];
+    if (!entry || !entry.hourBuckets) return;
+    const nowHour = (new Date()).getHours();
+    for (let h = nowHour + 1; h < 24; h++) {
+      const key = `h${String(h).padStart(2, "0")}`;
+      if (entry.hourBuckets[key] && entry.hourBuckets[key] !== 0) {
+        entry.hourBuckets[key] = 0;
+        cleaned++;
+      }
+    }
+  });
+  if (cleaned > 0) {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      parsed.projects = state.projects;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      alert(`已清理今天未来小时 hourBuckets：${cleaned} 项。`);
+    } catch (e) {
+      alert(`清理未来小时 hourBuckets 时保存失败：${e.message}`);
+    }
+  } else {
+    alert('没有需要清理的未来小时 hourBuckets。');
+  }
+}
+window.clearFutureHourBucketsToday = clearFutureHourBucketsToday;
 
 function formatTime(seconds) {
   const min = Math.floor(seconds / 60).toString().padStart(2, "0");
