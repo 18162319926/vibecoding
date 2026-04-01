@@ -99,35 +99,18 @@ function normalizeProject(project) {
     : [];
   // 保证 dailyStats 每天有数据，兼容历史数据
   // 保证 dailyStats[today].hourBuckets 是完整 24 小时结构
-  function mergeHourBuckets(primary, fallback) {
-    const buckets = {};
-    for (let h = 0; h < 24; h++) {
-      const key = `h${String(h).padStart(2, "0")}`;
-      buckets[key] =
-        (primary && typeof primary[key] === 'number') ? primary[key]
-        : (fallback && typeof fallback[key] === 'number') ? fallback[key]
-        : 0;
-    }
-    return buckets;
-  }
+  // 不再从 timeBuckets fallback，hourBuckets 只记录当天增量
   const today = getLocalDateKey();
   const srcHourBuckets = project && project.dailyStats && project.dailyStats[today] && typeof project.dailyStats[today].hourBuckets === 'object'
     ? project.dailyStats[today].hourBuckets : undefined;
-  const fallbackHourBuckets = project && typeof project.timeBuckets === 'object' ? project.timeBuckets : undefined;
   if (!normalized.dailyStats[today] && (normalized.todayRows > 0 || normalized.todaySeconds > 0)) {
     normalized.dailyStats[today] = {
       seconds: Math.max(0, normalized.todaySeconds || 0),
       rows: Math.max(0, normalized.todayRows || 0),
-      hourBuckets: mergeHourBuckets(srcHourBuckets, fallbackHourBuckets),
+      // 不补 hourBuckets
     };
   } else if (normalized.dailyStats[today]) {
-    // 已有 dailyStats[today]，补 hourBuckets
-    if (!normalized.dailyStats[today].hourBuckets || typeof normalized.dailyStats[today].hourBuckets !== 'object') {
-      normalized.dailyStats[today].hourBuckets = mergeHourBuckets(srcHourBuckets, fallbackHourBuckets);
-    } else {
-      // 已有 hourBuckets，补齐 24 小时
-      normalized.dailyStats[today].hourBuckets = mergeHourBuckets(normalized.dailyStats[today].hourBuckets, fallbackHourBuckets);
-    }
+    // 已有 dailyStats[today]，不补 hourBuckets
   }
 
   // 修复：如 dailyStats 仅有今天，且 spentSeconds/rows > 0，则自动补齐最近 7 天和 30 天
@@ -346,6 +329,7 @@ function getLocalDateKey(date = new Date()) {
   return `${y}-${m}-${d}`;
 }
 
+
 function getLastNDates(count) {
   const result = [];
   const now = new Date();
@@ -355,6 +339,30 @@ function getLastNDates(count) {
     result.push(getLocalDateKey(day));
   }
   return result;
+}
+
+// 获取本月（自然月）所有日期
+function getCurrentMonthDates() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const result = [];
+  for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+    result.push(getLocalDateKey(d));
+  }
+  return result;
+}
+
+// 获取所有有数据的日期（全历史）
+function getAllStatsDates() {
+  const dateSet = new Set();
+  state.projects.forEach((project) => {
+    const daily = getProjectDailyStats(project);
+    Object.keys(daily).forEach((date) => dateSet.add(date));
+  });
+  return Array.from(dateSet).sort();
 }
 
 // 获取本周（周一到周日）所有日期
@@ -413,9 +421,9 @@ function getProjectDailyStats(project) {
   Object.entries(source).forEach(([date, value]) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
     if (!value || typeof value !== "object") return;
-    // hourBuckets 补全 24 小时
-    let hourBuckets = {};
+    let hourBuckets = undefined;
     if (value.hourBuckets && typeof value.hourBuckets === 'object') {
+      hourBuckets = {};
       for (let h = 0; h < 24; h++) {
         const key = `h${String(h).padStart(2, "0")}`;
         hourBuckets[key] = toNonNegative(value.hourBuckets[key]);
@@ -424,9 +432,44 @@ function getProjectDailyStats(project) {
     map[date] = {
       seconds: toNonNegative(value.seconds),
       rows: toNonNegative(value.rows),
-      hourBuckets,
+      ...(hourBuckets ? { hourBuckets } : {}),
     };
   });
+// 脚本：补全所有 dailyStats 缺失 hourBuckets 的日期，并将 seconds 均分到 24 小时
+function fillMissingHourBuckets() {
+  let patched = 0;
+  state.projects.forEach((project) => {
+    if (!project.dailyStats) return;
+    Object.entries(project.dailyStats).forEach(([date, stat]) => {
+      if (!stat.hourBuckets && typeof stat.seconds === 'number' && stat.seconds > 0) {
+        const avg = Math.floor(stat.seconds / 24);
+        const remain = stat.seconds - avg * 24;
+        stat.hourBuckets = {};
+        for (let h = 0; h < 24; h++) {
+          const key = `h${String(h).padStart(2, "0")}`;
+          stat.hourBuckets[key] = avg + (h < remain ? 1 : 0);
+        }
+        patched++;
+      }
+    });
+  });
+  if (patched > 0) {
+    // 保存到本地存储
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : {};
+      parsed.projects = state.projects;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      alert(`已补全 ${patched} 条缺失 hourBuckets 的数据。`);
+    } catch (e) {
+      alert(`补全 hourBuckets 时保存失败：${e.message}`);
+    }
+  } else {
+    alert('没有需要补全 hourBuckets 的数据。');
+  }
+}
+// 方便控制台调用
+window.fillMissingHourBuckets = fillMissingHourBuckets;
 
   const today = getLocalDateKey();
   // 只补 todayRows，不再在 bootstrap 日用 rows 字段补齐
@@ -497,37 +540,47 @@ function parseYarnInfo(item) {
   return parseYarnRef(item?.yarnRef);
 }
 
+
 function getProjectSecondsForPeriod(project, period) {
-  if (period === "all") return toNonNegative(project?.spentSeconds);
+  if (period === "all") {
+    // 全历史：累加所有 dailyStats
+    const daily = getProjectDailyStats(project);
+    return Object.values(daily).reduce((sum, item) => sum + toNonNegative(item.seconds), 0);
+  }
   if (isTodayBootstrapDay() && (period === "week" || period === "month")) {
-    // On the bootstrap day, week/month should also include all historical time.
     return toNonNegative(project?.spentSeconds);
   }
   if (period === "today") {
-    // First statistics day is special: fold all historical time into today.
     if (isTodayBootstrapDay()) return toNonNegative(project?.spentSeconds);
     return toNonNegative(project?.todaySeconds);
   }
 
   const daily = getProjectDailyStats(project);
-  const dateKeys = period === "week" ? getLastNDates(7) : getLastNDates(30);
+  let dateKeys = [];
+  if (period === "week") dateKeys = getLastNDates(7);
+  else if (period === "month") dateKeys = getCurrentMonthDates();
   return dateKeys.reduce((sum, key) => sum + toNonNegative(daily[key]?.seconds), 0);
 }
 
+
 function getProjectRowsForPeriod(project, period) {
-  if (period === "all") return toNonNegative(project?.rows);
+  if (period === "all") {
+    // 全历史：累加所有 dailyStats
+    const daily = getProjectDailyStats(project);
+    return Object.values(daily).reduce((sum, item) => sum + toNonNegative(item.rows), 0);
+  }
   if (isTodayBootstrapDay() && (period === "week" || period === "month")) {
-    // On the bootstrap day, week/month should also include all historical rows.
     return toNonNegative(project?.rows);
   }
   if (period === "today") {
-    // Keep row stats aligned with the same first-day aggregation rule.
     if (isTodayBootstrapDay()) return toNonNegative(project?.rows);
     return toNonNegative(project?.todayRows);
   }
 
   const daily = getProjectDailyStats(project);
-  const dateKeys = period === "week" ? getLastNDates(7) : getLastNDates(30);
+  let dateKeys = [];
+  if (period === "week") dateKeys = getLastNDates(7);
+  else if (period === "month") dateKeys = getCurrentMonthDates();
   return dateKeys.reduce((sum, key) => sum + toNonNegative(daily[key]?.rows), 0);
 }
 
@@ -588,28 +641,53 @@ function renderPreferredSlotChart() {
 
   const period = normalizePeriod(state.period);
   const buckets = makeHourlyBuckets();
-  const dateKeys = period === "week" ? getLastNDates(7) : period === "month" ? getLastNDates(30) : null;
+  let dateKeys = null;
+  if (period === "week") {
+    dateKeys = getCurrentWeekDates();
+  } else if (period === "month") {
+    // 只统计本月1号到今天
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const result = [];
+    for (let d = new Date(firstDay); d <= today; d.setDate(d.getDate() + 1)) {
+      result.push(getLocalDateKey(d));
+    }
+    dateKeys = result;
+  } else if (period === "all") {
+    dateKeys = getAllStatsDates();
+  }
 
+  const now = new Date();
+  const currentHour = now.getHours();
+  // 先清空所有小时
+  Object.keys(buckets).forEach((key) => { buckets[key] = 0; });
+  // 统计每小时实际发生的秒数，今天只统计到当前小时
+  Object.keys(buckets).forEach((key) => { buckets[key] = 0; });
   state.projects.forEach((project) => {
     const daily = getProjectDailyStats(project);
     if (dateKeys) {
       dateKeys.forEach((date) => {
         const entry = daily[date];
         if (!entry || !entry.hourBuckets || typeof entry.hourBuckets !== "object") return;
-        Object.keys(buckets).forEach((key) => {
+        const isToday = date === getLocalDateKey(now);
+        for (let h = 0; h < 24; h++) {
+          if (isToday && h > currentHour) continue;
+          const key = `h${String(h).padStart(2, "0")}`;
           buckets[key] += toNonNegative(entry.hourBuckets[key]);
-        });
+        }
       });
-      return;
     }
-
-    Object.values(daily).forEach((entry) => {
-      if (!entry || !entry.hourBuckets || typeof entry.hourBuckets !== "object") return;
-      Object.keys(buckets).forEach((key) => {
-        buckets[key] += toNonNegative(entry.hourBuckets[key]);
-      });
-    });
   });
+  // 今天之后的小时全部强制为0
+  if (period === "month" || period === "week") {
+    for (let h = currentHour + 1; h < 24; h++) {
+      const key = `h${String(h).padStart(2, "0")}`;
+      buckets[key] = 0;
+    }
+  }
   const entries = Object.keys(buckets).map((key, index) => ({
     label: toHourLabel(key),
     value: toNonNegative(buckets[key]),
@@ -835,6 +913,10 @@ function getTrendSeries(period = state.period) {
   let days;
   if (period === "week") {
     days = getCurrentWeekDates();
+  } else if (period === "month") {
+    days = getCurrentMonthDates();
+  } else if (period === "all") {
+    days = getAllStatsDates();
   } else {
     days = getLastNDates(getTrendDayCount(period));
   }
@@ -898,60 +980,72 @@ function renderOverview() {
   else console.warn('[stats] statTotalYarnUsed 元素不存在');
 
   // 当前周期统计
-  const period = normalizePeriod(state.period || "week");
-  state.period = period;
   let periodSeconds = 0;
   let periodRows = 0;
   let projects = state.projects;
-  // 周期内累加 dailyStats[date]，只统计周期内
-  const dateKeys = period === "week" ? getLastNDates(7) : period === "month" ? getLastNDates(30) : null;
+  // 只声明一次周期变量
+  const periodStatOvr = normalizePeriod(state.period || "week");
+  state.period = periodStatOvr;
+  let dateKeysStatOvr = null;
+  if (periodStatOvr === "week") dateKeysStatOvr = getLastNDates(7);
+  else if (periodStatOvr === "month") dateKeysStatOvr = getCurrentMonthDates();
+  else if (periodStatOvr === "all") dateKeysStatOvr = getAllStatsDates();
   projects.forEach((p) => {
     const daily = getProjectDailyStats(p);
-    if (dateKeys) {
-      dateKeys.forEach((date) => {
+    if (dateKeysStatOvr) {
+      dateKeysStatOvr.forEach((date) => {
         periodSeconds += toNonNegative(daily[date]?.seconds);
         periodRows += toNonNegative(daily[date]?.rows);
-      });
-    } else {
-      // 全部历史，累加所有 dailyStats
-      Object.values(daily).forEach((item) => {
-        periodSeconds += toNonNegative(item.seconds);
-        periodRows += toNonNegative(item.rows);
       });
     }
   });
   // 时间投入统计
   if (refs.statPeriodTotalDuration) refs.statPeriodTotalDuration.textContent = formatDuration(periodSeconds);
   else console.warn('[stats] statPeriodTotalDuration 元素不存在');
-  // 偏好时段
+  // 偏好时段（与分布图严格一致）
   if (refs.statPreferredSlot) {
     let timeBuckets = makeHourlyBuckets();
-    // 周期分布：遍历周期内所有日期，累加 dailyStats[date].hourBuckets
-    const dateKeys = period === "week" ? getLastNDates(7) : period === "month" ? getLastNDates(30) : null;
+    let dateKeys = null;
+    if (periodStatOvr === "week") {
+      dateKeys = getCurrentWeekDates();
+    } else if (periodStatOvr === "month") {
+      // 只统计本月1号到今天
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const result = [];
+      for (let d = new Date(firstDay); d <= today; d.setDate(d.getDate() + 1)) {
+        result.push(getLocalDateKey(d));
+      }
+      dateKeys = result;
+    } else if (periodStatOvr === "all") {
+      dateKeys = getAllStatsDates();
+    }
+    const now = new Date();
+    const currentHour = now.getHours();
     if (dateKeys) {
-      state.projects.forEach((p) => {
-        const daily = getProjectDailyStats(p);
+      state.projects.forEach((project) => {
+        const daily = getProjectDailyStats(project);
         dateKeys.forEach((date) => {
           const entry = daily[date];
-          if (entry && entry.hourBuckets && typeof entry.hourBuckets === "object") {
-            Object.keys(timeBuckets).forEach((key) => {
-              timeBuckets[key] += toNonNegative(entry.hourBuckets[key]);
-            });
+          if (!entry || !entry.hourBuckets || typeof entry.hourBuckets !== "object") return;
+          const isToday = date === getLocalDateKey(now);
+          for (let h = 0; h < 24; h++) {
+            if ((periodStatOvr === "week" || periodStatOvr === "month") && isToday && h > currentHour) continue;
+            const key = `h${String(h).padStart(2, "0")}`;
+            timeBuckets[key] += toNonNegative(entry.hourBuckets[key]);
           }
         });
       });
-    } else {
-      // 全部历史，累加所有 dailyStats 的 hourBuckets
-      state.projects.forEach((p) => {
-        const daily = getProjectDailyStats(p);
-        Object.values(daily).forEach((entry) => {
-          if (entry && entry.hourBuckets && typeof entry.hourBuckets === "object") {
-            Object.keys(timeBuckets).forEach((key) => {
-              timeBuckets[key] += toNonNegative(entry.hourBuckets[key]);
-            });
-          }
-        });
-      });
+    }
+    // 今天之后的小时全部强制为0
+    if (periodStatOvr === "month" || periodStatOvr === "week") {
+      for (let h = currentHour + 1; h < 24; h++) {
+        const key = `h${String(h).padStart(2, "0")}`;
+        timeBuckets[key] = 0;
+      }
     }
     const bucketEntries = Object.entries(timeBuckets);
     const preferredEntry = bucketEntries.sort((a, b) => b[1] - a[1])[0];
@@ -960,31 +1054,28 @@ function renderOverview() {
   // 平均每日编织时长、单日最长编织时长
   let avgDailySeconds = 0, maxDailySeconds = 0;
   let avgDailyRows = 0, maxDailyRows = 0;
-  // 聚合 dailyStats 计算日均和峰值
+  // 只统计当前周期内的每日数据
   let dailySecondsArr = [];
-  projects.forEach((p) => {
-    const daily = getProjectDailyStats(p);
-    Object.entries(daily).forEach(([date, item]) => {
-      if (item.seconds > 0) {
-        if (!dailySecondsArr[date]) dailySecondsArr[date] = 0;
-        dailySecondsArr[date] += item.seconds;
-      }
+  let dailyRowsArr = [];
+  if (dateKeysStatOvr) {
+    dateKeysStatOvr.forEach((date) => {
+      let totalSeconds = 0;
+      let totalRows = 0;
+      projects.forEach((p) => {
+        const daily = getProjectDailyStats(p);
+        if (daily[date]) {
+          totalSeconds += toNonNegative(daily[date].seconds);
+          totalRows += toNonNegative(daily[date].rows);
+        }
+      });
+      if (totalSeconds > 0) dailySecondsArr[date] = totalSeconds;
+      if (totalRows > 0) dailyRowsArr[date] = totalRows;
     });
-  });
+  }
   const dailySecondsList = Object.values(dailySecondsArr);
   avgDailySeconds = dailySecondsList.length ? Math.round(dailySecondsList.reduce((a, b) => a + b, 0) / dailySecondsList.length) : 0;
   maxDailySeconds = dailySecondsList.length ? Math.max(...dailySecondsList) : 0;
 
-  let dailyRowsArr = [];
-  projects.forEach((p) => {
-    const daily = getProjectDailyStats(p);
-    Object.entries(daily).forEach(([date, item]) => {
-      if (item.rows > 0) {
-        if (!dailyRowsArr[date]) dailyRowsArr[date] = 0;
-        dailyRowsArr[date] += item.rows;
-      }
-    });
-  });
   const dailyRowsList = Object.values(dailyRowsArr);
   avgDailyRows = dailyRowsList.length ? Math.round(dailyRowsList.reduce((a, b) => a + b, 0) / dailyRowsList.length) : 0;
   maxDailyRows = dailyRowsList.length ? Math.max(...dailyRowsList) : 0;
@@ -994,7 +1085,7 @@ function renderOverview() {
   else console.warn('[stats] statMaxDailyDuration 元素不存在');
   if (refs.statPeriodTotalRows) refs.statPeriodTotalRows.textContent = String(periodRows);
   else console.warn('[stats] statPeriodTotalRows 元素不存在');
-  if (refs.statPeriodYarnUsed) refs.statPeriodYarnUsed.textContent = formatWeight(computeYarnUsage(period));
+  if (refs.statPeriodYarnUsed) refs.statPeriodYarnUsed.textContent = formatWeight(computeYarnUsage(state.period));
   else console.warn('[stats] statPeriodYarnUsed 元素不存在');
   if (refs.statAvgDailyRows) refs.statAvgDailyRows.textContent = String(avgDailyRows);
   else console.warn('[stats] statAvgDailyRows 元素不存在');
@@ -1140,8 +1231,8 @@ function renderTrendChart() {
 
   const hourPoints = toPoints(hoursSeries, maxHours);
   const rowPoints = toPoints(rowsSeries, maxRows);
-  drawSeries(hourPoints, "#d35c2f", padding.top, padding.top + plotH);
-  drawSeries(rowPoints, "#2f7d6b", padding.top, padding.top + plotH);
+  drawSeries(hourPoints, "#cd6c49", padding.top, padding.top + plotH);
+  drawSeries(rowPoints, "#538277", padding.top, padding.top + plotH);
 
   state.trendPlot = {
     canvas,
@@ -1171,13 +1262,13 @@ function renderTrendChart() {
     ctx.fillText(day.slice(5), x - 14, canvas.height - 16);
   });
 
-  ctx.fillStyle = "#d35c2f";
+  ctx.fillStyle = "#cd6c49";
   ctx.fillRect(padding.left, 16, 14, 3);
   ctx.fillStyle = "#6b5a48";
   ctx.font = "12px sans-serif";
   ctx.fillText("时长趋势（小时）", padding.left + 20, 20);
 
-  ctx.fillStyle = "#2f7d6b";
+  ctx.fillStyle = "#538277";
   ctx.fillRect(padding.left + 136, 16, 14, 3);
   ctx.fillStyle = "#6b5a48";
   ctx.fillText("行数趋势（行）", padding.left + 156, 20);
@@ -1187,15 +1278,18 @@ function renderTrendChart() {
     const totalRows = trend.rows.reduce((sum, v) => sum + v, 0);
     const peakHour = Math.max(...hoursSeries);
     const peakRow = Math.max(...rowsSeries);
-    const comparison = getTrendComparison(state.period);
-    refs.trendHint.textContent = `最近${trend.days.length}天累计 ${totalHours} 小时，累计 ${totalRows} 行；单日峰值 ${peakHour} 小时 / ${peakRow} 行；${comparison.label}。`;
+    let comparison = { label: "" };
+    if (state.period !== "all") {
+      comparison = getTrendComparison(state.period);
+    }
+    refs.trendHint.textContent = `最近${trend.days.length}天累计 ${totalHours} 小时，累计 ${totalRows} 行；单日峰值 ${peakHour} 小时 / ${peakRow} 行；${comparison.label}`;
   }
 
   if (refs.trendTitle) {
     const titleMap = {
-      week: "最近 7 天趋势（本周口径）",
-      month: "最近 30 天趋势（本月口径）",
-      all: "最近 90 天趋势（全部口径）",
+      week: "本周趋势",
+      month: "本月趋势",
+      all: "历史趋势",
     };
     refs.trendTitle.textContent = titleMap[state.period] || "趋势";
   }
