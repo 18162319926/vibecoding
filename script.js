@@ -26,10 +26,6 @@ function setupMobileAuthMenu() {
       menu.classList.remove('is-open');
     }
   });
-  // ESC关闭
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') menu.classList.remove('is-open');
-  });
 }
 
 // 页面加载后初始化移动端账号菜单
@@ -43,12 +39,6 @@ const STATUS_MAP = {
   paused: { label: "搁置", icon: "⏸️" },
   done: { label: "已完成", icon: "✅" },
 };
-
-const EXPORT_STYLE_OPTIONS = [
-  { value: "classic", label: "经典卡片" },
-  { value: "journal", label: "手帐拼贴" },
-  { value: "minimal", label: "极简留白" },
-];
 
 const state = {
   projects: [],
@@ -103,13 +93,6 @@ const refs = {
   createFromImageOption: document.getElementById("createFromImageOption"),
   createFromTextOption: document.getElementById("createFromTextOption"),
   diagramImageInput: document.getElementById("diagramImageInput"),
-  dashboardExportCanvas: document.getElementById("dashboardExportCanvas"),
-  exportChoiceDialog: document.getElementById("exportChoiceDialog"),
-  exportPreviewBtn: document.getElementById("exportPreviewBtn"),
-  exportDirectDownloadBtn: document.getElementById("exportDirectDownloadBtn"),
-  exportCloseBtn: document.getElementById("exportCloseBtn"),
-  exportPreviewImage: document.getElementById("exportPreviewImage"),
-  exportPreviewDownloadLink: document.getElementById("exportPreviewDownloadLink"),
   globalTimerDisplay: document.getElementById("globalTimerDisplay"),
   globalTimerMinutes: document.getElementById("globalTimerMinutes"),
   globalStartBtn: document.getElementById("globalStartBtn"),
@@ -1160,21 +1143,6 @@ function renderDashboard() {
     const actions = document.createElement("div");
     actions.className = "project-card-actions";
 
-    const exportStyleSelect = document.createElement("select");
-    exportStyleSelect.className = "export-style-select";
-    EXPORT_STYLE_OPTIONS.forEach((option) => {
-      const opt = document.createElement("option");
-      opt.value = option.value;
-      opt.textContent = `导出风格：${option.label}`;
-      exportStyleSelect.appendChild(opt);
-    });
-    exportStyleSelect.value = project.exportStyle || "classic";
-    exportStyleSelect.addEventListener("change", () => {
-      project.exportStyle = exportStyleSelect.value;
-      touchProject(project);
-      saveProjects();
-    });
-
     const openBtn = document.createElement("a");
     openBtn.className = "btn primary";
     openBtn.href = `project.html?id=${encodeURIComponent(project.id)}`;
@@ -1195,18 +1163,6 @@ function renderDashboard() {
       }
     });
 
-    const exportBtn = document.createElement("button");
-    exportBtn.className = "btn ghost";
-    exportBtn.textContent = "导出图片";
-    exportBtn.addEventListener("click", () => {
-      pendingExportProjectId = project.id;
-      refs.exportPreviewImage.classList.remove("show");
-      refs.exportPreviewImage.removeAttribute("src");
-      refs.exportPreviewDownloadLink.classList.remove("show");
-      refs.exportPreviewDownloadLink.href = "#";
-      refs.exportChoiceDialog.hidden = false;
-    });
-
     const deleteBtn = document.createElement("button");
     deleteBtn.className = "btn danger";
     deleteBtn.textContent = "删除";
@@ -1217,33 +1173,7 @@ function renderDashboard() {
       renderDashboard();
     });
 
-    const moreWrap = document.createElement("div");
-    moreWrap.className = "card-more-wrap";
-    const moreBtn = document.createElement("button");
-    moreBtn.className = "btn ghost more-trigger";
-    moreBtn.type = "button";
-    moreBtn.textContent = "更多";
-    const moreMenu = document.createElement("div");
-    moreMenu.className = "card-more-menu";
-    moreMenu.hidden = true;
-
-    const closeAllMoreMenus = () => {
-      document.querySelectorAll(".card-more-menu").forEach((menu) => {
-        menu.hidden = true;
-      });
-    };
-
-    moreBtn.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const nextHidden = !moreMenu.hidden;
-      closeAllMoreMenus();
-      moreMenu.hidden = nextHidden;
-    });
-
-    moreMenu.append(exportStyleSelect, exportBtn, deleteBtn);
-    moreWrap.append(moreBtn, moreMenu);
-
-    actions.append(openBtn, statusBtn, moreWrap);
+    actions.append(openBtn, statusBtn, deleteBtn);
     card.append(cover, title, meta, track, progressText, actions);
     refs.projectCards.appendChild(card);
   });
@@ -1533,7 +1463,7 @@ function setupCloudSync() {
 
       closeAuthDialog();
 
-      setSyncHint("正在同步云端数据...");
+      setSyncHint("正在同步云端...");
       try {
         const remote = await window.cloudSync.pullState();
         if (remote) {
@@ -1593,7 +1523,7 @@ function bindActions() {
         setSyncHint("离线模式");
         return;
       }
-      setSyncHint("正在同步云端数据...");
+      setSyncHint("正在同步云端...");
       try {
         const remote = await window.cloudSync.pullState();
         if (remote) {
@@ -1607,20 +1537,24 @@ function bindActions() {
     });
   }
 
-  refs.statusFilters.addEventListener("click", (event) => {
-    const target = event.target.closest("button[data-filter]");
-    if (!target) return;
-    state.dashboardFilter = target.dataset.filter;
-    refs.statusFilters.querySelectorAll("button[data-filter]").forEach((btn) => btn.classList.toggle("is-active", btn === target));
-    renderDashboard();
-  });
+  if (refs.statusFilters) {
+    refs.statusFilters.addEventListener("click", (event) => {
+      const target = event.target.closest("button[data-filter]");
+      if (!target) return;
+      state.dashboardFilter = target.dataset.filter;
+      refs.statusFilters.querySelectorAll("button[data-filter]").forEach((btn) => btn.classList.toggle("is-active", btn === target));
+      renderDashboard();
+    });
+  }
 
   const closeCreateMenu = () => {
+    if (!refs.createProjectMenu || !refs.createProjectBtn) return;
     refs.createProjectMenu.hidden = true;
     refs.createProjectBtn.setAttribute("aria-expanded", "false");
   };
 
   const openCreateMenu = () => {
+    if (!refs.createProjectMenu || !refs.createProjectBtn) return;
     refs.createProjectMenu.hidden = false;
     refs.createProjectBtn.setAttribute("aria-expanded", "true");
   };
@@ -1648,37 +1582,45 @@ function bindActions() {
     createAndOpenProject(created);
   };
 
-  refs.createProjectBtn.addEventListener("click", () => {
-    if (refs.createProjectMenu.hidden) {
-      openCreateMenu();
-    } else {
+  if (refs.createProjectBtn && refs.createProjectMenu) {
+    refs.createProjectBtn.addEventListener("click", () => {
+      if (refs.createProjectMenu.hidden) {
+        openCreateMenu();
+      } else {
+        closeCreateMenu();
+      }
+    });
+
+    // Ensure the options menu is hidden when the homepage first loads.
+    closeCreateMenu();
+  }
+
+  if (refs.createBlankOption) {
+    refs.createBlankOption.addEventListener("click", () => {
       closeCreateMenu();
-    }
-  });
+      const created = createProject(`新作品 ${state.projects.length + 1}`);
+      createAndOpenProject(created);
+    });
+  }
 
-  // Ensure the options menu is hidden when the homepage first loads.
-  closeCreateMenu();
+  if (refs.createFromTextOption) {
+    refs.createFromTextOption.addEventListener("click", () => {
+      closeCreateMenu();
+      const raw = window.prompt("请粘贴文字图解（可包含 项目名称/工具/材料/文字图解 字段）：", "");
+      if (raw === null) return;
+      createFromParsedText(raw);
+    });
+  }
 
-  refs.createBlankOption.addEventListener("click", () => {
-    closeCreateMenu();
-    const created = createProject(`新作品 ${state.projects.length + 1}`);
-    createAndOpenProject(created);
-  });
-
-  refs.createFromTextOption.addEventListener("click", () => {
-    closeCreateMenu();
-    const raw = window.prompt("请粘贴文字图解（可包含 项目名称/工具/材料/文字图解 字段）：", "");
-    if (raw === null) return;
-    createFromParsedText(raw);
-  });
-
-  refs.createFromImageOption.addEventListener("click", () => {
-    closeCreateMenu();
-    refs.diagramImageInput.click();
-  });
+  if (refs.createFromImageOption && refs.diagramImageInput) {
+    refs.createFromImageOption.addEventListener("click", () => {
+      closeCreateMenu();
+      refs.diagramImageInput.click();
+    });
+  }
 
   document.addEventListener("click", (event) => {
-    if (!refs.createMenuWrap.contains(event.target)) {
+    if (refs.createMenuWrap && !refs.createMenuWrap.contains(event.target)) {
       closeCreateMenu();
     }
 
@@ -1690,78 +1632,35 @@ function bindActions() {
     });
   });
 
-  refs.diagramImageInput.addEventListener("change", async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (!String(file.type || "").startsWith("image/")) {
-      alert("请选择图片文件。");
-      refs.diagramImageInput.value = "";
-      return;
-    }
-
-    try {
-      const imageDataUrl = await readImageFileAsDataUrl(file);
-      const baseName = String(file.name || "")
-        .replace(/\.[^.]+$/, "")
-        .trim();
-      const created = createProject(baseName || `图片图解 ${state.projects.length + 1}`);
-      created.diagramImage = imageDataUrl;
-      created.diagramImages = [imageDataUrl];
-      created.textDiagram = "";
-      createAndOpenProject(created);
-    } catch (error) {
-      alert(`导入图片失败：${error.message || "请稍后重试"}`);
-    } finally {
-      refs.diagramImageInput.value = "";
-    }
-  });
-
-  if (refs.exportChoiceDialog) {
-    const dialogCard = refs.exportChoiceDialog.querySelector(".dialog-card");
-    const handleDialogAction = async (event) => {
-      const actionButton = event.target.closest("#exportPreviewBtn, #exportDirectDownloadBtn, #exportCloseBtn");
-      if (!actionButton) return;
-
-      if (actionButton.id === "exportCloseBtn") {
-        closeExportChoiceDialog();
-        return;
-      }
-
-      const project = state.projects.find((item) => item.id === pendingExportProjectId);
-      if (!project) {
-        alert("未找到项目，请重试。");
-        closeExportChoiceDialog();
+  if (refs.diagramImageInput) {
+    refs.diagramImageInput.addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      if (!String(file.type || "").startsWith("image/")) {
+        alert("请选择图片文件。");
+        refs.diagramImageInput.value = "";
         return;
       }
 
       try {
-        if (actionButton.id === "exportPreviewBtn") {
-          const dataUrl = await buildExportImageData(project, { preview: true });
-          refs.exportPreviewImage.src = dataUrl;
-          refs.exportPreviewImage.classList.add("show");
-          refs.exportPreviewDownloadLink.href = dataUrl;
-          refs.exportPreviewDownloadLink.download = `${project.projectName || "knit-project"}-${getToday()}.png`;
-          refs.exportPreviewDownloadLink.classList.add("show");
-          return;
-        }
-
-        await exportProjectImage(project);
-        closeExportChoiceDialog();
+        const imageDataUrl = await readImageFileAsDataUrl(file);
+        const baseName = String(file.name || "")
+          .replace(/\.[^.]+$/, "")
+          .trim();
+        const created = createProject(baseName || `图片图解 ${state.projects.length + 1}`);
+        created.diagramImage = imageDataUrl;
+        created.diagramImages = [imageDataUrl];
+        created.textDiagram = "";
+        createAndOpenProject(created);
       } catch (error) {
-        alert(`导出失败：${error.message || "请稍后重试"}`);
-      }
-    };
-
-    if (dialogCard) {
-      dialogCard.addEventListener("click", handleDialogAction);
-    }
-
-    refs.exportChoiceDialog.addEventListener("click", (event) => {
-      if (event.target === refs.exportChoiceDialog) {
-        closeExportChoiceDialog();
+        alert(`导入图片失败：${error.message || "请稍后重试"}`);
+      } finally {
+        refs.diagramImageInput.value = "";
       }
     });
   }
+
+  // 导出相关refs和事件已移除，这里无需处理
 }
 
 function init() {

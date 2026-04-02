@@ -44,31 +44,11 @@
     </nav>
 
     <header class="hero">
-      <div class="project-hero-title">
-        <p class="eyebrow">PROJECT DETAIL</p>
-        <h1 id="projectTitle">项目详情</h1>
-      </div>
       <div class="project-nav-row project-title-actions">
         <a class="btn ghost" href="index.html">返回仪表盘</a>
         <span class="project-time-chip" id="projectTimeSpent">累计用时 00:00:00</span>
       </div>
     </header>
-
-    <aside class="floating-timer" id="floatingTimer">
-      <h3>全局计时器</h3>
-      
-      <div class="floating-timer-handle" id="floatingTimerHandle" aria-label="拖动计时器">拖动浮窗</div>
-      <div class="timer" id="globalTimerDisplay">25:00</div>
-      <div class="timer-controls">
-        <button class="btn primary" id="globalStartBtn" type="button">开始</button>
-        <button class="btn ghost" id="globalPauseBtn" type="button">暂停</button>
-        <button class="btn danger" id="globalResetBtn" type="button">重置</button>
-      </div>
-      <label>
-        分钟
-        <input id="globalTimerMinutes" type="number" min="1" value="25" />
-      </label>
-    </aside>
 
     <main class="layout project-detail-layout">
       <div class="project-right-column">
@@ -90,13 +70,18 @@
           </div>
         </section>
 
-        <section class="panel export-image-panel reveal">
-          <div class="export-image-head">
-            <h2>导出当前项目卡片</h2>
-            <a class="btn primary" id="downloadCurrentImageLink" href="#" download="knit-project.png">下载图片</a>
+        <section class="panel floating-timer-panel">
+          <h3>全局计时器</h3>
+          <div class="timer" id="globalTimerDisplay">25:00</div>
+          <div class="timer-controls">
+            <button class="btn primary" id="globalStartBtn" type="button">开始</button>
+            <button class="btn ghost" id="globalPauseBtn" type="button">暂停</button>
+            <button class="btn danger" id="globalResetBtn" type="button">重置</button>
           </div>
-          <canvas id="exportCanvas" width="1100" height="1400" hidden></canvas>
-          <img id="exportImagePreview" alt="项目导出预览" />
+          <label>
+            分钟
+            <input id="globalTimerMinutes" type="number" min="1" value="25" />
+          </label>
         </section>
       </div>
 
@@ -170,7 +155,7 @@
               </div>
             </div>
           </div>
-          <label class="full-span">
+          <!-- <label class="full-span">
             导出卡片风格
             <select id="exportStyle">
               <option value="classic">经典卡片</option>
@@ -180,7 +165,7 @@
               <option value="sunset">落日胶片</option>
               <option value="retro">复古印刷</option>
             </select>
-          </label>
+          </label> -->
           <button class="btn primary" type="submit">保存项目</button>
         </form>
       </section>
@@ -192,20 +177,22 @@
     <div class="dialog-backdrop" id="authDialog" hidden>
       <div class="dialog-card auth-dialog-card" role="dialog" aria-modal="true" aria-labelledby="authDialogTitle">
         <h3 id="authDialogTitle">账号登录</h3>
-        <p id="authStatus" class="auth-status">未登录（当前仅本地保存）</p>
-        <label>
-          邮箱
-          <input id="authEmail" type="email" placeholder="请输入邮箱" autocomplete="email" />
-        </label>
-        <label>
-          密码
-          <input id="authPassword" type="password" placeholder="请输入密码" autocomplete="current-password" />
-        </label>
-        <div class="dialog-actions">
-          <button class="btn primary" id="loginBtn" type="button">登录</button>
-          <button class="btn ghost" id="registerBtn" type="button">注册</button>
-          <button class="btn danger" id="closeAuthDialogBtn" type="button">关闭</button>
-        </div>
+        <form id="authForm" onsubmit="return false;">
+          <p id="authStatus" class="auth-status">未登录（当前仅本地保存）</p>
+          <label>
+            邮箱
+            <input id="authEmail" type="email" placeholder="请输入邮箱" autocomplete="email" />
+          </label>
+          <label>
+            密码
+            <input id="authPassword" type="password" placeholder="请输入密码" autocomplete="current-password" />
+          </label>
+          <div class="dialog-actions">
+            <button class="btn primary" id="loginBtn" type="button">登录</button>
+            <button class="btn ghost" id="registerBtn" type="button">注册</button>
+            <button class="btn danger" id="closeAuthDialogBtn" type="button">关闭</button>
+          </div>
+        </form>
       </div>
     </div>
 

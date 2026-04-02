@@ -1,6 +1,5 @@
 const STORAGE_KEY = "knit-helper-state";
 const GLOBAL_TIMER_KEY = "knit-global-timer";
-const FLOATING_TIMER_POS_KEY = "knit-floating-timer-pos";
 
 const STATUS_MAP = {
   active: { label: "进行中", icon: "🧶" },
@@ -36,8 +35,6 @@ const refs = {
   downloadCurrentImageLink: document.getElementById("downloadCurrentImageLink"),
   exportCanvas: document.getElementById("exportCanvas"),
   exportImagePreview: document.getElementById("exportImagePreview"),
-  floatingTimer: document.getElementById("floatingTimer"),
-  floatingTimerHandle: document.getElementById("floatingTimerHandle"),
   globalTimerDisplay: document.getElementById("globalTimerDisplay"),
   globalTimerMinutes: document.getElementById("globalTimerMinutes"),
   globalStartBtn: document.getElementById("globalStartBtn"),
@@ -693,7 +690,9 @@ function renderMaterials(project, onChanged) {
 }
 
 function renderProject(project) {
-  refs.projectTitle.textContent = project.projectName || "项目详情";
+  if (refs.projectTitle) {
+    refs.projectTitle.textContent = project.projectName || "项目详情";
+  }
   refs.projectName.value = project.projectName || "";
   refs.projectType.value = project.projectType || "围巾";
   refs.projectStatus.value = project.status || "active";
@@ -701,7 +700,9 @@ function renderProject(project) {
   refs.yarnInfo.value = combinePair(project.yarnType, project.yarnRef);
   refs.toolsInfo.value = combinePair(project.tools, project.needleSize);
   refs.textDiagram.value = project.textDiagram || "";
-  refs.exportStyle.value = project.exportStyle || "classic";
+  if (refs.exportStyle) {
+    refs.exportStyle.value = project.exportStyle || "classic";
+  }
   refs.rowCounter.textContent = String(project.rows || 0);
   refs.progressText.textContent = `进度 ${getProjectProgress(project)}%（${project.rows || 0}/${project.totalRows || 0} 行）`;
   refs.projectTimeSpent.textContent = `累计用时 ${formatDuration(project.spentSeconds)}`;
@@ -763,7 +764,9 @@ function syncDraftFields(project) {
   project.tools = tools;
   project.needleSize = needleSize;
   project.textDiagram = refs.textDiagram.value.trim();
-  project.exportStyle = refs.exportStyle.value || "classic";
+  if (refs.exportStyle) {
+    project.exportStyle = refs.exportStyle.value || "classic";
+  }
   applyProgressStatus(project);
 }
 
@@ -1336,6 +1339,7 @@ async function buildExportImageData(project, options = {}) {
 }
 
 async function refreshExportPreview(project) {
+  if (!refs.exportImagePreview || !refs.downloadCurrentImageLink) return;
   try {
     const dataUrl = await buildExportImageData(project, { preview: true });
     refs.exportImagePreview.src = dataUrl;
@@ -1691,172 +1695,6 @@ function bindGlobalTimer(getProject, persist) {
   window.addEventListener("beforeunload", flushPendingProjectTime);
 }
 
-function bindDraggableFloatingTimer() {
-  const timer = refs.floatingTimer;
-  const handle = refs.floatingTimerHandle;
-  if (!timer) return;
-
-  const desktopQuery = window.matchMedia("(min-width: 901px)");
-
-  const applySavedPosition = () => {
-    if (!desktopQuery.matches) {
-      timer.style.left = "";
-      timer.style.top = "";
-      timer.style.right = "";
-      timer.style.transform = "";
-      return;
-    }
-
-    const saved = localStorage.getItem(FLOATING_TIMER_POS_KEY);
-    if (!saved) return;
-
-    try {
-      const parsed = JSON.parse(saved);
-      const left = Number(parsed.left);
-      const top = Number(parsed.top);
-      if (!Number.isFinite(left) || !Number.isFinite(top)) return;
-      timer.style.left = `${left}px`;
-      timer.style.top = `${top}px`;
-      timer.style.right = "auto";
-      timer.style.transform = "none";
-    } catch {
-      // Ignore invalid stored position.
-    }
-  };
-
-  applySavedPosition();
-  desktopQuery.addEventListener("change", () => {
-    applySavedPosition();
-  });
-
-  let dragging = false;
-  let offsetX = 0;
-  let offsetY = 0;
-
-  const clampPosition = (left, top) => {
-    const maxLeft = Math.max(0, window.innerWidth - timer.offsetWidth - 8);
-    const maxTop = Math.max(0, window.innerHeight - timer.offsetHeight - 8);
-    return {
-      left: Math.min(maxLeft, Math.max(8, left)),
-      top: Math.min(maxTop, Math.max(8, top)),
-    };
-  };
-
-  const onMove = (clientX, clientY) => {
-    const nextLeft = clientX - offsetX;
-    const nextTop = clientY - offsetY;
-    const clamped = clampPosition(nextLeft, nextTop);
-    timer.style.left = `${clamped.left}px`;
-    timer.style.top = `${clamped.top}px`;
-    timer.style.right = "auto";
-    timer.style.transform = "none";
-  };
-
-  const stopDrag = () => {
-    if (!dragging) return;
-    dragging = false;
-    timer.classList.remove("dragging");
-    const left = parseFloat(timer.style.left);
-    const top = parseFloat(timer.style.top);
-    if (Number.isFinite(left) && Number.isFinite(top) && desktopQuery.matches) {
-      localStorage.setItem(FLOATING_TIMER_POS_KEY, JSON.stringify({ left, top }));
-    }
-  };
-
-  const startDrag = (clientX, clientY) => {
-    if (!desktopQuery.matches) return;
-    const rect = timer.getBoundingClientRect();
-    dragging = true;
-    offsetX = clientX - rect.left;
-    offsetY = clientY - rect.top;
-    timer.classList.add("dragging");
-    onMove(clientX, clientY);
-  };
-
-  const isInteractiveTarget = (target) => target?.closest("button, input, select, textarea, label, a");
-
-  const dragTarget = handle || timer;
-
-  dragTarget.addEventListener("mousedown", (event) => {
-    if (event.button !== 0) return;
-    if (isInteractiveTarget(event.target)) return;
-    startDrag(event.clientX, event.clientY);
-  });
-
-  dragTarget.addEventListener("touchstart", (event) => {
-    const touch = event.touches?.[0];
-    if (!touch) return;
-    if (isInteractiveTarget(event.target)) return;
-    startDrag(touch.clientX, touch.clientY);
-  }, { passive: true });
-
-  document.addEventListener("mousemove", (event) => {
-    if (!dragging) return;
-    onMove(event.clientX, event.clientY);
-  });
-
-  document.addEventListener("touchmove", (event) => {
-    if (!dragging) return;
-    event.preventDefault();
-    const touch = event.touches?.[0];
-    if (!touch) return;
-    onMove(touch.clientX, touch.clientY);
-  }, { passive: false });
-
-  document.addEventListener("mouseup", stopDrag);
-  document.addEventListener("touchend", stopDrag);
-}
-
-function bindMobileFloatingTimerToggle() {
-  const timer = refs.floatingTimer;
-  const handle = refs.floatingTimerHandle;
-  if (!timer || !handle) return;
-
-  const mobileQuery = window.matchMedia("(max-width: 900px)");
-
-  const renderHandleState = () => {
-    if (mobileQuery.matches) {
-      const collapsed = timer.classList.contains("is-collapsed");
-      handle.textContent = collapsed ? "点击展开计时器" : "点击收起计时器";
-      handle.setAttribute("aria-expanded", String(!collapsed));
-      handle.setAttribute("role", "button");
-      handle.tabIndex = 0;
-      return;
-    }
-
-    timer.classList.remove("is-collapsed");
-    handle.textContent = "拖动浮窗";
-    handle.removeAttribute("aria-expanded");
-    handle.removeAttribute("role");
-    handle.removeAttribute("tabindex");
-  };
-
-  const toggleCollapsed = () => {
-    if (!mobileQuery.matches) return;
-    timer.classList.toggle("is-collapsed");
-    renderHandleState();
-  };
-
-  handle.addEventListener("click", toggleCollapsed);
-  handle.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    event.preventDefault();
-    toggleCollapsed();
-  });
-
-  mobileQuery.addEventListener("change", () => {
-    if (mobileQuery.matches) {
-      timer.classList.add("is-collapsed");
-    }
-    renderHandleState();
-  });
-
-  if (mobileQuery.matches) {
-    timer.classList.add("is-collapsed");
-  }
-  renderHandleState();
-}
-
 function setupCloudSync(projects, onRemoteApplied) {
   if (!window.cloudSync) return;
 
@@ -1886,7 +1724,7 @@ function setupCloudSync(projects, onRemoteApplied) {
 
       closeAuthDialog();
 
-      setSyncHint("正在同步云端数据...");
+      setSyncHint("正在同步云端...");
 
       try {
         const remote = await window.cloudSync.pullState();
@@ -2043,11 +1881,13 @@ function init() {
     }
   });
 
-  refs.exportStyle.addEventListener("change", () => {
-    project.exportStyle = refs.exportStyle.value || "classic";
-    persist();
-    refreshExportPreview(project);
-  });
+  if (refs.exportStyle) {
+    refs.exportStyle.addEventListener("change", () => {
+      project.exportStyle = refs.exportStyle.value || "classic";
+      persist();
+      refreshExportPreview(project);
+    });
+  }
 
   refs.projectCoverInput.addEventListener("change", async (event) => {
     const file = event.target.files?.[0];
@@ -2182,8 +2022,6 @@ function init() {
   loadTimerState();
   renderTimerState();
   bindGlobalTimer(() => project, persist);
-  bindDraggableFloatingTimer();
-  bindMobileFloatingTimerToggle();
   refreshExportPreview(project);
 
   setupCloudSync(projects, () => {

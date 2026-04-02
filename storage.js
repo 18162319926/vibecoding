@@ -529,7 +529,7 @@ function setupStorageCloudSync() {
       return;
     }
 
-    setStorageSyncHint("正在同步云端数据...");
+    setStorageSyncHint("正在同步云端...");
 
     await pullStorageNow();
 

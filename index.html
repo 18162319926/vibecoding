@@ -54,14 +54,13 @@
 
     <main class="layout">
       <section class="panel dashboard-panel reveal" id="dashboardPanel">
-        <div class="dashboard-toolbar">
+        <div class="dashboard-toolbar dashboard-toolbar-desktop">
           <div class="status-filters" id="statusFilters">
             <button class="btn ghost is-active" type="button" data-filter="all">全部</button>
             <button class="btn ghost" type="button" data-filter="active">进行中</button>
             <button class="btn ghost" type="button" data-filter="paused">搁置</button>
             <button class="btn ghost" type="button" data-filter="done">已完成</button>
           </div>
-          <div class="dashboard-stats-group">
           <div class="dashboard-inline-stats" aria-label="项目统计">
             <div class="inline-stat-pill">
               <span>项目总数</span>
@@ -71,8 +70,7 @@
               <span>进行中</span>
               <strong id="activeCount">0</strong>
             </div>
-          </div>
-          <div class="today-summary-pill" aria-label="今日统计">今日统计：<strong id="todayDuration">00:00:00</strong> / <strong><span id="todayRows">0</span>行</strong></div>
+            <div class="today-summary-pill" aria-label="今日统计">今日统计：<strong id="todayDuration">00:00:00</strong> / <strong><span id="todayRows">0</span>行</strong></div>
           </div>
         </div>
         <div id="projectCards" class="project-cards"></div>
@@ -80,22 +78,7 @@
 
     </main>
 
-    <canvas id="dashboardExportCanvas" width="1200" height="1600" hidden></canvas>
-    <input id="diagramImageInput" type="file" accept="image/*" hidden />
 
-    <div class="dialog-backdrop" id="exportChoiceDialog" hidden>
-      <div class="dialog-card" role="dialog" aria-modal="true" aria-labelledby="exportChoiceTitle">
-        <h3 id="exportChoiceTitle">导出项目图片</h3>
-        <p class="helper-text">选择导出方式：先预览确认，或直接下载。</p>
-        <div class="dialog-actions">
-          <button class="btn ghost" id="exportPreviewBtn" type="button">预览图片</button>
-          <button class="btn primary" id="exportDirectDownloadBtn" type="button">直接下载</button>
-          <button class="btn danger" id="exportCloseBtn" type="button">取消</button>
-        </div>
-        <img id="exportPreviewImage" alt="导出预览" />
-        <a class="btn primary" id="exportPreviewDownloadLink" href="#" download="knit-project.png">下载当前预览</a>
-      </div>
-    </div>
 
     <div class="dialog-backdrop" id="authDialog" hidden>
       <div class="dialog-card auth-dialog-card" role="dialog" aria-modal="true" aria-labelledby="authDialogTitle">
