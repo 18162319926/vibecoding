@@ -123,7 +123,11 @@ function makeId() {
 }
 
 function getToday() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 function makeHourlyBuckets() {
@@ -254,7 +258,7 @@ function recordProjectRows(project, rows) {
 }
 // 自动清理今天未来小时 hourBuckets 的脚本
 function clearFutureHourBucketsToday() {
-  const today = (new Date()).toISOString().slice(0, 10);
+  const today = getToday();
   let cleaned = 0;
   state.projects.forEach((project) => {
     const entry = project.dailyStats && project.dailyStats[today];
@@ -1640,7 +1644,6 @@ function bindGlobalTimer(getProject, persist) {
 
   timerState.left -= 1;
   currentProject.spentSeconds += 1;
-  currentProject.todaySeconds = Math.max(0, Number(currentProject.todaySeconds) || 0) + 1;
   recordProjectSeconds(currentProject, 1);
   projectTimeTick += 1;
   refs.projectTimeSpent.textContent = "累计用时 " + formatDuration(currentProject.spentSeconds);
@@ -2140,7 +2143,6 @@ function init() {
   document.querySelector("[data-action='incRow']").addEventListener("click", () => {
     const before = project.status;
     project.rows += 1;
-    project.todayRows += 1;
     project.lastDate = getToday();
     recordProjectRows(project, 1);
     persistWithCelebration(before);
@@ -2155,7 +2157,6 @@ function init() {
     const before = project.status;
     const step = Math.max(1, Number(refs.stepInput.value) || 1);
     project.rows += step;
-    project.todayRows += step;
     project.lastDate = getToday();
     recordProjectRows(project, step);
     persistWithCelebration(before);

@@ -49,6 +49,13 @@ const syncState = {
   remoteCount: 0,
 };
 
+function getLocalDateKey(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 function formatDiagTime(value) {
   const stamp = Number(value) || 0;
   if (!stamp) return "-";
@@ -432,7 +439,7 @@ function applyCloudStoragePayload(payload) {
       }
     }
     // 如果 today 没有数据，且 lastDate 被错误推进为 today，则回退
-    const today = (new Date()).toISOString().slice(0, 10);
+    const today = getLocalDateKey();
     if (item.lastDate === today && (!stats[today] || ((Number(stats[today]?.rows)||0)===0 && (Number(stats[today]?.seconds)||0)===0))) {
       item.lastDate = lastActiveDate || item.lastDate;
     }
@@ -681,6 +688,23 @@ function readImageAsDataUrl(file) {
 
 function upsertItem(next) {
   const index = state.items.findIndex((item) => item.id === next.id);
+  let prev = index >= 0 ? state.items[index] : null;
+  // 仅在 stockWeight 变化且减少时记录消耗
+  if (prev && typeof prev.stockWeight === 'number' && typeof next.stockWeight === 'number') {
+    const prevStock = prev.stockWeight;
+    const nextStock = next.stockWeight;
+    if (nextStock < prevStock) {
+      const used = roundToSingle(prevStock - nextStock);
+      const today = (new Date()).toISOString().slice(0,10);
+      if (!Array.isArray(next.usedLog)) next.usedLog = [];
+      next.usedLog = [...(prev.usedLog||[]), { date: today, used }];
+    } else {
+      next.usedLog = prev.usedLog || [];
+    }
+  } else if (!prev && typeof next.stockWeight === 'number' && typeof next.originalWeight === 'number') {
+    // 新增条目，初始化 usedLog
+    next.usedLog = [];
+  }
   if (index >= 0) {
     state.items[index] = next;
   } else {

@@ -109,19 +109,21 @@
       <div class="dialog-card auth-dialog-card" role="dialog" aria-modal="true" aria-labelledby="authDialogTitle">
         <h3 id="authDialogTitle">账号登录</h3>
         <p id="authStatus" class="auth-status">未登录（当前仅本地保存）</p>
-        <label>
-          邮箱
-          <input id="authEmail" type="email" placeholder="请输入邮箱" autocomplete="email" />
-        </label>
-        <label>
-          密码
-          <input id="authPassword" type="password" placeholder="请输入密码" autocomplete="current-password" />
-        </label>
-        <div class="dialog-actions">
-          <button class="btn primary" id="loginBtn" type="button">登录</button>
-          <button class="btn ghost" id="registerBtn" type="button">注册</button>
-          <button class="btn danger" id="closeAuthDialogBtn" type="button">关闭</button>
-        </div>
+        <form id="authForm" autocomplete="on" onsubmit="return false;">
+          <label>
+            邮箱
+            <input id="authEmail" type="email" placeholder="请输入邮箱" autocomplete="email" />
+          </label>
+          <label>
+            密码
+            <input id="authPassword" type="password" placeholder="请输入密码" autocomplete="current-password" />
+          </label>
+          <div class="dialog-actions">
+            <button class="btn primary" id="loginBtn" type="button">登录</button>
+            <button class="btn ghost" id="registerBtn" type="button">注册</button>
+            <button class="btn danger" id="closeAuthDialogBtn" type="button">关闭</button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -134,5 +136,22 @@
     </script>
     <script src="cloud-sync.js"></script>
     <script src="stats.js"></script>
+      <script>
+        // 保证 yarnItems 先加载再渲染统计
+        function refreshStatsPage() {
+          if (typeof loadYarnState === 'function') loadYarnState();
+          if (typeof loadProjectState === 'function') loadProjectState();
+          if (typeof renderAll === 'function') renderAll();
+        }
+        refreshStatsPage();
+        // 页面获取焦点时自动刷新
+        window.addEventListener('focus', refreshStatsPage);
+        // 监听本地存储变更自动刷新（修正：项目数据key应为 knit-helper-state）
+        window.addEventListener('storage', function(e) {
+          if (e.key === 'knit-yarn-storage' || e.key === 'knit-helper-state') {
+            refreshStatsPage();
+          }
+        });
+      </script>
   </body>
 </html>
