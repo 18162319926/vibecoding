@@ -1,3 +1,163 @@
+body[data-report-page] .report-filter-group {
+  display: flex;
+  gap: 8px;
+  margin-left: 18px;
+}
+body[data-report-page] .report-filter-btn {
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #e9dbc8;
+  padding: 10px 18px;
+  background: #fff;
+  color: #7a5a43;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border 0.15s;
+}
+body[data-report-page] .report-filter-btn:hover {
+  background: #fff2e4;
+  color: #cf6c48;
+}
+body[data-report-page] .report-filter-btn.is-active {
+  background: #ffe7c2;
+  color: #cf6c48;
+  border-color: #cf6c48;
+  font-weight: bold;
+}
+/* 报告筛选下拉框样式 */
+body[data-report-page] #reportFilter {
+  margin-left: 18px;
+  font-family: 'ZCOOL XiaoWei', serif;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #e9dbc8;
+  padding: 4px 12px;
+  background: #fff;
+  color: #7a5a43;
+}
+body[data-report-page] #reportFilter:focus {
+  outline: 2px solid #cf6c48;
+}
+/* 隐藏仅用于无障碍的 label */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  border: 0;
+}
+/* 数据统计页：周期筛选居中，报告管理靠右 */
+body[data-stats-page] .stats-toolbar-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px;
+  position: relative;
+}
+body[data-stats-page] .stats-toolbar-center {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+body[data-stats-page] #reportManageBtn {
+  margin-left: auto;
+  white-space: nowrap;
+}
+/* ========== 周报月报管理页面 ========== */
+body[data-report-page] .report-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+body[data-report-page] .report-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+body[data-report-page] .report-item {
+  background: #fff8ef;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(180,120,80,0.08);
+  padding: 18px 16px 12px 16px;
+  position: relative;
+}
+body[data-report-page] .report-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1.05em;
+  margin-bottom: 8px;
+}
+body[data-report-page] .report-type {
+  color: #cf6c48;
+  font-weight: bold;
+  font-size: 1.08em;
+}
+body[data-report-page] .report-title {
+  color: #a86a3c;
+  font-weight: 500;
+  margin-right: 8px;
+}
+body[data-report-page] .report-date {
+  color: #b7a48a;
+  font-size: 0.98em;
+}
+body[data-report-page] .report-actions {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+}
+body[data-report-page] .report-content {
+  margin-top: 8px;
+  color: #6d4b2c;
+  font-size: 1em;
+  white-space: pre-line;
+}
+body[data-report-page] .empty-tip {
+  color: #b7a48a;
+  text-align: center;
+  margin: 32px 0;
+}
+body[data-report-page] #reportFormPanel {
+  background: #fff8ef;
+  border-radius: 10px;
+  box-shadow: 0 1px 6px rgba(180,120,80,0.08);
+  padding: 24px 18px 18px 18px;
+  margin-top: 18px;
+}
+body[data-report-page] #reportForm label {
+  display: block;
+  margin-bottom: 14px;
+  color: #a86a3c;
+  font-size: 1em;
+}
+body[data-report-page] #reportForm input,
+body[data-report-page] #reportForm select,
+body[data-report-page] #reportForm textarea {
+  width: 100%;
+  margin-top: 4px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid #e9dbc8;
+  font-size: 1em;
+  box-sizing: border-box;
+  background: #fff;
+}
+body[data-report-page] #reportForm textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+body[data-report-page] .form-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+}
+/* ========== /周报月报管理页面 ========== */
 @media (max-width: 900px) {
   body[data-storage-page] {
     overflow-y: auto !important;
@@ -52,6 +212,11 @@
     margin: 0 !important;
     box-sizing: border-box !important;
     align-self: auto !important;
+    position: static !important;
+    float: none !important;
+    clear: none !important;
+    grid-column: auto !important;
+    grid-row: auto !important;
   }
   body.yarn-page .main-list,
   body.swatch-page .main-list {
@@ -173,8 +338,8 @@ body[data-stats-page] .status-filters .btn {
     padding: 0 6px !important;
     margin: 0 0 12px 0 !important;
     background: #fff8efcc !important;
-    backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
+    backdrop-filter: blur(20px) !important;
     border-radius: 10px 10px 10px 10px !important;
     position: sticky !important;
     top: 0 !important;
@@ -498,11 +663,14 @@ body.homepage {
   min-height: 44px;
   padding: 7px 13px;
   font-size: 1.08rem;
-  border-radius: 12px;
+  border-radius: 0;
   box-sizing: border-box;
   touch-action: manipulation;
+  -webkit-user-select: none;
   user-select: none;
   transition: background 0.18s, color 0.18s;
+  font-family: 'ZCOOL XiaoWei', 'Noto Sans SC', serif;
+  border: none !important;
 }
 
 @media (max-width: 700px) {
@@ -587,13 +755,14 @@ body.homepage {
     font-size: 1.04rem;
     border-radius: 0;
     background: none;
-    border-bottom: 2.5px solid transparent;
+    border: none;
     color: #a86a3c;
     margin: 0 2px;
     height: 44px;
     line-height: 44px;
     text-align: center;
-    transition: border-color 0.18s, color 0.18s;
+    transition: color 0.18s;
+    font-family: 'ZCOOL XiaoWei', 'Noto Sans SC', serif;
   }
   .nav-center a.btn.ghost.is-tab-active {
     border-bottom: 2.5px solid var(--accent);
@@ -621,9 +790,10 @@ body.homepage {
 
   /* 统计区块卡片化 */
   .dashboard-inline-stats {
+    -webkit-user-select: none;
+    user-select: none;
     display: flex;
     gap: 6px;
-    width: 100%;
     margin: 0 0 4px 0;
     justify-content: flex-start;
   }
@@ -673,14 +843,16 @@ body.homepage {
     background: #fff;
   }
   .project-cover {
-    aspect-ratio: 16/9;
-    max-height: 140px;
-    border-radius: 14px;
-    margin-bottom: 10px;
+    width: 100% !important;
+    aspect-ratio: 16/9 !important;
+    object-fit: cover !important;
+    border-radius: 14px !important;
+    margin-bottom: 12px !important;
   }
   .project-card h3 {
-    font-size: 1.18rem;
+    font-size: 1.18rem !important;
     margin: 8px 0 4px 0;
+    color: #25303b !important;
   }
   .project-meta-row {
     gap: 8px;
@@ -2116,18 +2288,15 @@ body.homepage .fab-create-wrap .create-menu {
 }
 
 .project-right-column .counter-panel,
-  .project-right-column .counter-panel,
-  .project-right-column .notes-panel,
-  /* .project-right-column .export-image-panel { ... } 导出相关样式移除 */
-    box-sizing: border-box;
-    align-self: stretch;
-    position: static;
-    z-index: auto;
-    min-width: 0;
-    max-width: 100%;
-    flex: none;
-    display: block;
-  }
+.project-right-column .notes-panel {
+  box-sizing: border-box;
+  align-self: stretch;
+  position: static;
+  z-index: auto;
+  min-width: 0;
+  max-width: 100%;
+  flex: none;
+  display: block;
 }
 
 .grid-form {
@@ -2358,13 +2527,17 @@ textarea {
 }
 
 .btn.ghost {
-  background: #f5ece1;
-  color: #5a4837;
+  
+  color: #c96a2c;
+  background: #fff6ed;
+  /* border: 1px solid #f3b37a; */
 }
 
 .btn.danger {
   background: #fce8e7;
   color: var(--danger);
+  background: #ffe7d1;
+  color: #b85a1a;
 }
 
 .counter-wrap {
@@ -2487,121 +2660,6 @@ body.homepage .footer {
   margin: 12px 0;
 }
 
-/* 导出相关样式移除 */
-  margin-top: 6px;
-  border-radius: 12px;
-  border: 1px solid #e6d4bd;
-  background: #fff;
-}
-
-/* 导出相关样式移除 */
-
-/* 导出相关样式移除 */
-}
-
-/* 导出相关样式移除 */
-
-.feedback-toast {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  background: rgba(37, 48, 59, 0.92);
-  color: #fff;
-  border-radius: 12px;
-  padding: 10px 14px;
-  box-shadow: var(--shadow);
-  opacity: 0;
-  transform: translate(-50%, -50%) scale(0.96);
-  pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  z-index: 40;
-}
-
-.feedback-toast.show {
-  opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
-}
-
-.celebration-layer {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-  z-index: 90;
-}
-
-.celebration-badge {
-  position: absolute;
-  left: 50%;
-  top: 14%;
-  transform: translateX(-50%);
-  padding: 10px 16px;
-  border-radius: 999px;
-  background: rgba(37, 48, 59, 0.92);
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.95rem;
-  box-shadow: var(--shadow);
-  animation: celebration-pop 0.4s ease;
-}
-
-.celebration-piece {
-  position: absolute;
-  top: -20px;
-  width: 12px;
-  height: 20px;
-  border-radius: 3px;
-  opacity: 0.95;
-  animation: confetti-fall var(--fall-duration, 1.8s) ease-in var(--fall-delay, 0s) forwards;
-}
-
-@keyframes celebration-pop {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) scale(0.86);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) scale(1);
-  }
-}
-
-@keyframes confetti-fall {
-  from {
-    transform: translate(0, -10vh) rotate(0deg);
-  }
-  to {
-    transform: translate(var(--drift, 0px), 110vh) rotate(620deg);
-    opacity: 0.2;
-  }
-}
-
-/* 导出相关样式移除 */
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-/* 导出相关样式移除 */
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-
-/* 导出相关样式移除 */
-
-/* 导出相关样式移除 */
-  align-items: center;
-  justify-content: center;
-}
-
-/* 导出相关样式移除 */
-  border-radius: 14px;
-  border: 1px solid #e9dbc8;
-  background: #fff;
-}
-
-/* 导出相关样式移除 */
-
 .reveal {
   animation: rise 0.7s ease backwards;
 }
@@ -2717,19 +2775,6 @@ body.homepage .footer {
     transform: none !important;
   }
 
-  /* 导出相关样式移除 */
-    /* min-height: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    display: flex;
-    flex-direction: column;
-    padding: 10px; */
-  }
-
-  /* 导出相关样式移除 */
-}
-
   body.project-page .grid-form {
     column-gap: 10px;
     row-gap: 12px;
@@ -2758,10 +2803,7 @@ body.homepage .footer {
     margin: 10px 0;
   }
 
-  /* 导出相关样式移除 */
-  }
-
-  /* 导出相关样式移除 */
+  body.project-page .project-cover {
     min-height: 200px;
     max-height: none;
     object-fit: cover;
@@ -2831,32 +2873,6 @@ body.homepage .footer {
     padding: 6px 8px;
     font-size: 14px;
   }
-
-  /* 导出相关样式移除 */
-    /* grid-template-areas: "yarn swatch create";
-    gap: 8px;
-    width: 100%; */
-  }
-
-  /* 导出相关样式移除 */
-
-  /* 导出相关样式移除 */
-
-  /* 导出相关样式移除 */
-
-  /* 导出相关样式移除 */
-    /* align-self: stretch;
-  }
-
-  /* 导出相关样式移除 */
-    /* width: 100%;
-    min-width: 0;
-    height: 44px;
-    min-height: 44px;
-    padding: 8px 10px;
-    font-size: 14px;
-    border-radius: 12px;
-  } */ */
 
   .project-page .project-hero-stats {
     width: 100%;
@@ -2965,7 +2981,7 @@ body.homepage .footer {
     flex-wrap: wrap;
   }
 
-  /* 导出相关样式移除 */
+  .create-menu-wrap {
     grid-template-areas: "yarn swatch create";
     gap: 8px;
     width: 100%;
@@ -3080,13 +3096,12 @@ body.homepage .footer {
     font-size: 1rem;
   }
 
-  /* 导出相关样式移除 */
   .create-menu-wrap,
   .create-menu {
     width: 100%;
   }
 
-  /* 导出相关样式移除 */
+  .create-menu .btn {
     height: 44px;
     min-height: 44px;
     border-radius: 12px;
@@ -3585,26 +3600,69 @@ body.homepage .btn.primary:hover {
 }
 
 body.homepage .btn.ghost {
-  background: #fff9f0;
-  border: 1px solid #d47f34d0;
-  color: #d47f34d0;
+  background: #fff6ed;
+  border: 1px solid #f3b37a;
+  color: #c96a2c;
 }
 
 body.homepage .btn.ghost:hover {
-  background: #fdf2e9;
+  background: #ffe7d1;
+  color: #b85a1a;
 }
 
 body.homepage .nav-center .btn.ghost,
-body.homepage .nav-center .btn.ghost:hover {
-  border: none;
-  background: transparent;
-  box-shadow: none;
-  color: #7a5a43;
+body.homepage .nav-center .btn.ghost:hover,
+body.homepage .nav-center .btn.ghost.is-tab-active,
+body.homepage .nav-center .btn.ghost.is-tab-active:hover,
+body[data-storage-page] .nav-center .btn.ghost,
+body[data-storage-page] .nav-center .btn.ghost:hover,
+body[data-storage-page] .nav-center .btn.ghost.is-tab-active,
+body[data-storage-page] .nav-center .btn.ghost.is-tab-active:hover,
+body[data-stats-page] .nav-center .btn.ghost,
+body[data-stats-page] .nav-center .btn.ghost:hover,
+body[data-stats-page] .nav-center .btn.ghost.is-tab-active,
+body[data-stats-page] .nav-center .btn.ghost.is-tab-active:hover,
+body[data-report-page] .nav-center .btn.ghost,
+body[data-report-page] .nav-center .btn.ghost:hover,
+body[data-report-page] .nav-center .btn.ghost.is-tab-active,
+body[data-report-page] .nav-center .btn.ghost.is-tab-active:hover,
+body.project-page .nav-center .btn.ghost,
+body.project-page .nav-center .btn.ghost:hover,
+body.project-page .nav-center .btn.ghost.is-tab-active,
+body.project-page .nav-center .btn.ghost.is-tab-active:hover {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
+/* 彻底去除导航栏选项背景色和边框（最高优先级，覆盖所有页面和媒体查询） */
+.nav-center a.btn.ghost,
+.nav-center a.btn.ghost:hover,
+.nav-center a.btn.ghost.is-tab-active,
+.nav-center a.btn.ghost.is-tab-active:hover,
+body.homepage .nav-center .btn.ghost,
+body.homepage .nav-center .btn.ghost:hover,
 body.homepage .nav-center .btn.ghost.is-tab-active,
-body.homepage .nav-center .btn.ghost.is-tab-active:hover {
-  color: #7a5a43;
+body.homepage .nav-center .btn.ghost.is-tab-active:hover,
+body[data-storage-page] .nav-center .btn.ghost,
+body[data-storage-page] .nav-center .btn.ghost:hover,
+body[data-storage-page] .nav-center .btn.ghost.is-tab-active,
+body[data-storage-page] .nav-center .btn.ghost.is-tab-active:hover,
+body[data-stats-page] .nav-center .btn.ghost,
+body[data-stats-page] .nav-center .btn.ghost:hover,
+body[data-stats-page] .nav-center .btn.ghost.is-tab-active,
+body[data-stats-page] .nav-center .btn.ghost.is-tab-active:hover,
+body[data-report-page] .nav-center .btn.ghost,
+body[data-report-page] .nav-center .btn.ghost:hover,
+body[data-report-page] .nav-center .btn.ghost.is-tab-active,
+body[data-report-page] .nav-center .btn.ghost.is-tab-active:hover,
+body.project-page .nav-center .btn.ghost,
+body.project-page .nav-center .btn.ghost:hover,
+body.project-page .nav-center .btn.ghost.is-tab-active,
+body.project-page .nav-center .btn.ghost.is-tab-active:hover {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 body.homepage .fab-create-btn {
@@ -3723,6 +3781,7 @@ body.project-page {
 
 body[data-storage-page] .nav-center,
 body[data-stats-page] .nav-center,
+body[data-report-page] .nav-center,
 body.project-page .nav-center {
   display: flex;
   align-items: center;
@@ -3732,6 +3791,7 @@ body.project-page .nav-center {
 
 body[data-storage-page] .nav-center .btn,
 body[data-stats-page] .nav-center .btn,
+body[data-report-page] .nav-center .btn,
 body.project-page .nav-center .btn {
   min-height: 40px;
   border: none;
@@ -3749,6 +3809,7 @@ body.project-page .nav-center .btn {
 
 body[data-storage-page] .nav-center .btn.is-tab-active,
 body[data-stats-page] .nav-center .btn.is-tab-active,
+body[data-report-page] .nav-center .btn.is-tab-active,
 body.project-page .nav-center .btn.is-tab-active {
   transform: translateY(1px);
   color: #7a5a43;
@@ -3756,6 +3817,7 @@ body.project-page .nav-center .btn.is-tab-active {
 
 body[data-storage-page] .nav-center .btn:hover,
 body[data-stats-page] .nav-center .btn:hover,
+body[data-report-page] .nav-center .btn:hover,
 body.project-page .nav-center .btn:hover {
   color: #6a4b37;
   transform: translateY(-2px);
@@ -3763,6 +3825,7 @@ body.project-page .nav-center .btn:hover {
 
 body[data-storage-page] .nav-center .btn.is-tab-active:hover,
 body[data-stats-page] .nav-center .btn.is-tab-active:hover,
+body[data-report-page] .nav-center .btn.is-tab-active:hover,
 body.project-page .nav-center .btn.is-tab-active:hover {
   color: #7a5a43;
   transform: translateY(1px);
@@ -3775,8 +3838,13 @@ body[data-storage-page] .layout {
 }
 
 body[data-stats-page] .top-nav,
+body[data-report-page] .top-nav,
 body.project-page .top-nav,
 body[data-stats-page] .layout {
+  max-width: 1200px;
+}
+
+body[data-report-page] .layout {
   max-width: 1200px;
 }
 
@@ -3792,6 +3860,13 @@ body[data-storage-page] .top-nav {
 }
 
 body[data-stats-page] .top-nav {
+  margin: 0 auto 10px;
+  min-height: 80px;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+body[data-report-page] .top-nav {
   margin: 0 auto 10px;
   min-height: 80px;
   align-items: flex-start;
@@ -3817,8 +3892,15 @@ body[data-stats-page] .brand {
   margin: 0;
 }
 
+body[data-report-page] .brand {
+  font-size: 40px;
+  line-height: 1.2;
+  margin: 0;
+}
+
 body[data-storage-page] .brand-wrap,
 body[data-stats-page] .brand-wrap,
+body[data-report-page] .brand-wrap,
 body.project-page .brand-wrap {
   min-width: 170px;
   display: grid;
@@ -3827,6 +3909,7 @@ body.project-page .brand-wrap {
 
 body[data-storage-page] .brand-subtitle,
 body[data-stats-page] .brand-subtitle,
+body[data-report-page] .brand-subtitle,
 body.project-page .brand-subtitle {
   margin: 0;
   color: #998b7d;
@@ -3838,6 +3921,7 @@ body.project-page .brand-subtitle {
 
 body[data-storage-page] .nav-eyebrow,
 body[data-stats-page] .nav-eyebrow,
+body[data-report-page] .nav-eyebrow,
 body.project-page .nav-eyebrow {
   margin: 0;
   color: #2f7d6b;
@@ -3864,6 +3948,12 @@ body[data-stats-page] .nav-auth {
   align-items: center;
 }
 
+body[data-report-page] .nav-auth {
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-items: center;
+}
+
 body.project-page .nav-auth {
   flex-wrap: nowrap;
   flex-direction: row;
@@ -3878,6 +3968,12 @@ body[data-storage-page] .nav-auth .sync-state {
 }
 
 body[data-stats-page] .nav-auth .btn {
+  white-space: nowrap;
+}
+
+body[data-report-page] .nav-auth .btn,
+body[data-report-page] .nav-auth .account-chip,
+body[data-report-page] .nav-auth .sync-state {
   white-space: nowrap;
 }
 

@@ -1074,33 +1074,40 @@ function renderDashboard() {
     return String(a.projectName || "").localeCompare(String(b.projectName || ""), "zh-CN");
   });
 
-  refs.projectCards.innerHTML = "";
-  refs.projectCount.textContent = String(state.projects.length);
-  refs.activeCount.textContent = String(state.projects.filter((project) => project.status === "active").length);
-  const todayRowTotal = state.projects.reduce(
-    (sum, project) => sum + Math.max(0, Number(isTodayBootstrapDay() ? project.rows : project.todayRows) || 0),
-    0
-  );
-  const todaySecondsTotal = state.projects.reduce(
-    (sum, project) => sum + Math.max(0, Number(isTodayBootstrapDay() ? project.spentSeconds : project.todaySeconds) || 0),
-    0
-  );
-  if (refs.todayRows) {
+  if (
+    refs.projectCards &&
+    refs.projectCount &&
+    refs.activeCount &&
+    refs.todayRows &&
+    refs.todayDuration
+  ) {
+    refs.projectCards.innerHTML = "";
+    refs.projectCount.textContent = String(state.projects.length);
+    refs.activeCount.textContent = String(state.projects.filter((project) => project.status === "active").length);
+    const todayRowTotal = state.projects.reduce(
+      (sum, project) => sum + Math.max(0, Number(isTodayBootstrapDay() ? project.rows : project.todayRows) || 0),
+      0
+    );
+    const todaySecondsTotal = state.projects.reduce(
+      (sum, project) => sum + Math.max(0, Number(isTodayBootstrapDay() ? project.spentSeconds : project.todaySeconds) || 0),
+      0
+    );
     refs.todayRows.textContent = String(todayRowTotal);
     const scarfRatio = (todayRowTotal / 36).toFixed(2);
     refs.todayRows.title = `相当于完成了 ${scarfRatio} 片围巾`;
-  }
-  if (refs.todayDuration) {
     refs.todayDuration.textContent = formatDuration(todaySecondsTotal);
     const pomodoros = (todaySecondsTotal / 1500).toFixed(1);
     refs.todayDuration.title = `约 ${pomodoros} 个番茄钟`;
-  }
 
-  if (!filtered.length) {
-    const tip = document.createElement("p");
-    tip.className = "helper-text";
-    tip.textContent = "当前筛选条件下没有项目。";
-    refs.projectCards.appendChild(tip);
+    if (!filtered.length) {
+      const tip = document.createElement("p");
+      tip.className = "helper-text";
+      tip.textContent = "当前筛选条件下没有项目。";
+      refs.projectCards.appendChild(tip);
+      return;
+    }
+  } else {
+    // 不是主页面，直接跳过
     return;
   }
 
@@ -1404,12 +1411,17 @@ function setupCloudSync() {
 
   setAuthNav(window.cloudSync.getCurrentUser());
 
-  if (refs.openLoginBtn) {
-    refs.openLoginBtn.addEventListener("click", () => openAuthDialog("login"));
-  }
-  if (refs.openRegisterBtn) {
-    refs.openRegisterBtn.addEventListener("click", () => openAuthDialog("register"));
-  }
+  // 支持页面上多个 openLoginBtn/openRegisterBtn（如主导航和弹窗）
+  const loginBtns = document.querySelectorAll('#openLoginBtn');
+  loginBtns.forEach(btn => {
+    btn.onclick = null;
+    btn.addEventListener('click', () => openAuthDialog('login'));
+  });
+  const registerBtns = document.querySelectorAll('#openRegisterBtn');
+  registerBtns.forEach(btn => {
+    btn.onclick = null;
+    btn.addEventListener('click', () => openAuthDialog('register'));
+  });
   if (refs.closeAuthDialogBtn) {
     refs.closeAuthDialogBtn.addEventListener("click", closeAuthDialog);
   }
@@ -1506,6 +1518,9 @@ function setupCloudSync() {
     }
   });
 }
+
+// 挂载到 window，供 report.html 等页面调用
+window.setupCloudSync = setupCloudSync;
 
 function readImageFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {

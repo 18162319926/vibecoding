@@ -45,13 +45,15 @@
 
     <main class="layout">
       <section class="panel dashboard-panel">
-        <div class="dashboard-toolbar">
-          <!-- <h2>时间周期</h2> -->
-          <div class="status-filters" id="periodFilters">
-            <button class="btn ghost is-active" type="button" data-period="week">本周</button>
-            <button class="btn ghost" type="button" data-period="month">本月</button>
-            <button class="btn ghost" type="button" data-period="all">历史</button>
+        <div class="dashboard-toolbar stats-toolbar-row">
+          <div class="stats-toolbar-center">
+            <div class="status-filters" id="periodFilters">
+              <button class="btn ghost is-active" type="button" data-period="week">本周</button>
+              <button class="btn ghost" type="button" data-period="month">本月</button>
+              <button class="btn ghost" type="button" data-period="all">历史</button>
+            </div>
           </div>
+          <a class="btn primary" href="report.html" id="reportManageBtn">报告管理</a>
         </div>
       </section>
 

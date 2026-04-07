@@ -462,7 +462,7 @@ window.applyManualStatsPatch_20260402 = function applyManualStatsPatch_20260402(
   alert(`已应用手动修复，更新记录数：${patched}`);
 };
 // 脚本：归一化所有 dailyStats 的 hourBuckets，使其总和不超过 seconds
-window.normalizeHourBuckets = function normalizeAllHourBuckets() {
+window.normalizeAllHourBuckets = function normalizeAllHourBuckets() {
   let patched = 0;
   state.projects.forEach((project) => {
     if (!project.dailyStats) return;
@@ -2160,3 +2160,107 @@ resetTodayStatsIfNeeded();
 renderAll();
 bindTrendTooltip();
 setupCloudSync();
+
+// 自动生成上周周报和上月月报
+window.generateLastWeekAndMonthReports = function generateLastWeekAndMonthReports() {
+  const REPORT_KEY = 'knit-reports';
+  const reports = JSON.parse(localStorage.getItem(REPORT_KEY)) || [];
+
+  // 获取所有项目数据
+  const projects = (function() {
+    try {
+      const raw = localStorage.getItem('knit-project-storage') || localStorage.getItem('knit-stats-storage') || localStorage.getItem('knit-stats');
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed.projects) ? parsed.projects : parsed;
+    } catch { return []; }
+  })();
+
+  function getLastWeekRange() {
+    const now = new Date();
+    const day = now.getDay() || 7;
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+    const start = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 6);
+    return {
+      start: start.toISOString().slice(0, 10),
+      end: end.toISOString().slice(0, 10)
+    };
+  }
+  function getLastMonthRange() {
+    const now = new Date();
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const start = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1);
+    const end = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
+    return {
+      start: start.toISOString().slice(0, 10),
+      end: end.toISOString().slice(0, 10)
+    };
+  }
+  function sumStatsInRange(start, end) {
+    // 统计所有项目在指定日期区间的总秒数、总行数、活跃天数、项目数
+    let totalSeconds = 0, totalRows = 0, activeDays = new Set(), projectStats = [];
+    projects.forEach(project => {
+      if (!project.dailyStats) return;
+      let projSeconds = 0, projRows = 0, days = 0;
+      Object.entries(project.dailyStats).forEach(([date, stat]) => {
+        if (date >= start && date <= end) {
+          const sec = Number(stat.seconds) || 0;
+          const rows = Number(stat.rows) || 0;
+          projSeconds += sec;
+          projRows += rows;
+          if (sec > 0 || rows > 0) activeDays.add(date);
+          days++;
+        }
+      });
+      if (projSeconds > 0 || projRows > 0) {
+        projectStats.push({
+          name: project.projectName || project.name || '未命名',
+          seconds: projSeconds,
+          rows: projRows
+        });
+      }
+      totalSeconds += projSeconds;
+      totalRows += projRows;
+    });
+    return { totalSeconds, totalRows, activeDays: activeDays.size, projectStats };
+  }
+  function formatDuration(seconds) {
+    if (!seconds || seconds <= 0) return '0小时';
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return h > 0 ? `${h}小时${m > 0 ? m + '分' : ''}` : `${m}分`;
+  }
+
+  // 上周周报
+  const lastWeek = getLastWeekRange();
+  const weekKey = `week-${lastWeek.start}`;
+  if (!reports.some(r => r.type === 'week' && r.date === weekKey)) {
+    const stats = sumStatsInRange(lastWeek.start, lastWeek.end);
+    let content = `本周（${lastWeek.start}~${lastWeek.end}）统计：\n`;
+    content += `总计时：${formatDuration(stats.totalSeconds)}\n总行数：${stats.totalRows}\n活跃天数：${stats.activeDays}\n`;
+    if (stats.projectStats.length) {
+      content += '\n各项目：\n';
+      stats.projectStats.forEach(p => {
+        content += `- ${p.name}：${formatDuration(p.seconds)}，${p.rows}行\n`;
+      });
+    }
+    reports.unshift({ type: 'week', title: `${lastWeek.start}~${lastWeek.end} 周报`, content, date: weekKey });
+  }
+  // 上月月报
+  const lastMonth = getLastMonthRange();
+  const monthKey = `month-${lastMonth.start}`;
+  if (!reports.some(r => r.type === 'month' && r.date === monthKey)) {
+    const stats = sumStatsInRange(lastMonth.start, lastMonth.end);
+    let content = `本月（${lastMonth.start}~${lastMonth.end}）统计：\n`;
+    content += `总计时：${formatDuration(stats.totalSeconds)}\n总行数：${stats.totalRows}\n活跃天数：${stats.activeDays}\n`;
+    if (stats.projectStats.length) {
+      content += '\n各项目：\n';
+      stats.projectStats.forEach(p => {
+        content += `- ${p.name}：${formatDuration(p.seconds)}，${p.rows}行\n`;
+      });
+    }
+    reports.unshift({ type: 'month', title: `${lastMonth.start}~${lastMonth.end} 月报`, content, date: monthKey });
+  }
+  localStorage.setItem(REPORT_KEY, JSON.stringify(reports));
+  console.log('已生成有内容的上周周报和上月月报');
+};

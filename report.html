@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>织伴 | 报告管理</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=ZCOOL+KuHei&family=ZCOOL+XiaoWei&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      body[data-report-page] .top-nav,
+      body[data-report-page] .layout {
+        max-width: 1200px;
+      }
+      body[data-report-page] .top-nav {
+        margin: 0 auto 10px;
+        min-height: 80px;
+        align-items: flex-start;
+        gap: 20px;
+      }
+      body[data-report-page] .brand-wrap {
+        min-width: 170px;
+        display: grid;
+        row-gap: 8px;
+      }
+      body[data-report-page] .brand {
+        font-size: 40px;
+        line-height: 1.2;
+        margin: 0;
+      }
+      body[data-report-page] .brand-subtitle {
+        margin: 0;
+        color: #998b7d;
+        font-size: 16px;
+        font-weight: 500;
+        font-family: "ZCOOL XiaoWei", serif;
+        line-height: 1.2;
+      }
+      body[data-report-page] .nav-eyebrow {
+        margin: 0;
+        color: #2f7d6b;
+        letter-spacing: 0.22em;
+        font-size: 0.76rem;
+        line-height: 1.2;
+      }
+      body[data-report-page] .nav-center {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        flex-wrap: nowrap;
+      }
+      body[data-report-page] .nav-center .btn {
+        min-height: 40px;
+        border: none;
+        background: transparent;
+        color: #7a5a43;
+        padding: 0 16px;
+        font-size: 20px;
+        font-weight: 500;
+        font-family: "ZCOOL XiaoWei", serif;
+        white-space: nowrap;
+        box-shadow: none;
+        transform: translateY(0);
+      }
+      body[data-report-page] .nav-center .btn.is-tab-active {
+        transform: translateY(1px);
+        color: #7a5a43;
+      }
+      body[data-report-page] .nav-center .btn:hover {
+        color: #6a4b37;
+        transform: translateY(-2px);
+      }
+      body[data-report-page] .nav-center .btn.is-tab-active:hover {
+        color: #7a5a43;
+        transform: translateY(1px);
+      }
+      body[data-report-page] .nav-center .btn.ghost,
+      body[data-report-page] .nav-center .btn.ghost:hover,
+      body[data-report-page] .nav-center .btn.ghost.is-tab-active,
+      body[data-report-page] .nav-center .btn.ghost.is-tab-active:hover {
+        background: none !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+      body[data-report-page] .nav-auth {
+        flex-wrap: nowrap;
+        gap: 8px;
+        align-items: center;
+      }
+      body[data-report-page] .nav-auth .btn,
+      body[data-report-page] .nav-auth .account-chip,
+      body[data-report-page] .nav-auth .sync-state {
+        white-space: nowrap;
+      }
+      body[data-report-page] .report-toolbar-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+      body[data-report-page] .report-toolbar-left {
+        display: flex;
+        align-items: center;
+        min-width: 0;
+      }
+      body[data-report-page] .report-page-title {
+        font-family: 'ZCOOL XiaoWei', 'Noto Sans SC', sans-serif;
+        font-weight: 400;
+        letter-spacing: 0.08em;
+        font-size: 2rem;
+        color: #4a4742;
+        margin: 0;
+        line-height: 1.2;
+      }
+      body[data-report-page] #reportFormPanel {
+        display: none;
+      }
+      body[data-report-page] .report-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 18px;
+      }
+      body[data-report-page] .report-card {
+        background: linear-gradient(180deg, #fffaf4 0%, #fff5ea 100%);
+        border: 1px solid #eddcc6;
+        border-radius: 18px;
+        box-shadow: 0 8px 24px rgba(180, 120, 80, 0.08);
+        padding: 18px 18px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+        font-family: "ZCOOL XiaoWei", "Noto Sans SC", serif;
+      }
+      body[data-report-page] .report-card-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      body[data-report-page] .report-card-title-wrap {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        min-width: 0;
+      }
+      body[data-report-page] .report-type {
+        display: inline-flex;
+        align-items: center;
+        padding: 10px 16px;
+        border-radius: 999px;
+        background: #fff2e4;
+        color: #cf6c48;
+        font-size: 0.9rem;
+        font-weight: 700;
+        line-height: 1;
+      }
+      body[data-report-page] .report-title {
+        margin: 0;
+        color: #7a5a43;
+        font-size: 1.08rem;
+        font-weight: 700;
+        line-height: 1.35;
+        word-break: break-word;
+      }
+      body[data-report-page] .report-date {
+        flex: 0 0 auto;
+        color: #b7a48a;
+        font-size: 0.92rem;
+        white-space: nowrap;
+      }
+      body[data-report-page] .report-card-body {
+        color: #6d4b2c;
+        font-size: 1rem;
+        line-height: 1.55;
+        white-space: pre-line;
+        word-break: break-word;
+      }
+      body[data-report-page] .report-section-title {
+        margin: 0 0 4px;
+        color: #4a3627;
+        font-size: 1.15rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+      }
+      body[data-report-page] .report-section-title + br {
+        display: none;
+      }
+      body[data-report-page] .report-card-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      body[data-report-page] .report-card-actions-top {
+        flex: 0 0 auto;
+      }
+      body[data-report-page] .icon-btn {
+        width: 36px;
+        height: 36px;
+        min-width: 36px;
+        padding: 0;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        line-height: 1;
+      }
+      body[data-report-page] .danger-icon {
+        color: #c65b35;
+      }
+      body[data-report-page] .report-card-actions .btn {
+        min-width: 50px;
+      }
+      @media (max-width: 700px) {
+        body[data-report-page] .report-toolbar-row {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 10px;
+        }
+        body[data-report-page] .report-toolbar-row .btn.primary {
+          width: 100%;
+        }
+        body[data-report-page] .report-list {
+          grid-template-columns: 1fr;
+          gap: 12px;
+        }
+        body[data-report-page] .report-card {
+          padding: 14px;
+          border-radius: 16px;
+        }
+        body[data-report-page] .report-card-head {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        body[data-report-page] .report-card-actions-top {
+          width: 100%;
+          justify-content: flex-start;
+        }
+        body[data-report-page] .report-card-actions .btn {
+          flex: 1 1 0;
+        }
+      }
+    </style>
+  </head>
+  <body data-report-page="true">
+    <div class="bg-shape bg-shape-a"></div>
+    <div class="bg-shape bg-shape-b"></div>
+    <nav class="top-nav" aria-label="页面导航">
+      <div class="brand-wrap">
+        <div class="brand">织伴</div>
+        <p class="brand-subtitle">把时间织成柔软的样子</p>
+        <p class="eyebrow nav-eyebrow">KNIT COMPANION</p>
+      </div>
+      <div class="nav-center" aria-label="页面标签">
+        <a class="btn ghost" href="index.html#dashboardPanel">项目仪表盘</a>
+        <a class="btn ghost" href="yarn.html">毛线仓库</a>
+        <a class="btn ghost" href="swatch.html">小样仓库</a>
+        <a class="btn ghost is-tab-active" href="stats.html">数据统计</a>
+      </div>
+      <div class="nav-auth" id="navAuth">
+        <button class="nav-auth-trigger" id="navAuthTrigger" type="button" aria-label="账号菜单" aria-expanded="false" tabindex="0">
+          <span>☰</span>
+        </button>
+        <div class="nav-auth-menu" id="navAuthMenu">
+          <button class="sync-state sync-state-idle" id="syncHint" type="button" title="点击立即同步">☁️ 离线模式</button>
+          <span class="account-chip" id="accountChip">当前账号：未登录</span>
+          <button class="btn ghost" id="openLoginBtn" type="button">登录</button>
+          <button class="btn ghost" id="openRegisterBtn" type="button">注册</button>
+          <button class="btn primary" id="logoutBtn" type="button" hidden>退出</button>
+        </div>
+      </div>
+    </nav>
+    <main class="layout">
+      <section class="panel dashboard-panel">
+        <div class="dashboard-toolbar report-toolbar-row">
+          <div class="report-toolbar-left">
+            <h2 class="report-page-title">报告存储管理</h2>
+            <div id="reportFilterGroup" class="report-filter-group" role="group" aria-label="筛选类型">
+              <button type="button" class="report-filter-btn is-active" data-value="all">全部</button>
+              <button type="button" class="report-filter-btn" data-value="week">周报</button>
+              <button type="button" class="report-filter-btn" data-value="month">月报</button>
+            </div>
+          </div>
+          <button class="btn primary" id="addReportBtn" type="button">新建报告</button>
+        </div>
+        <div id="reportList" class="report-list"></div>
+      </section>
+      <section class="panel dashboard-panel" id="reportFormPanel">
+        <h3 id="reportFormTitle">新建报告</h3>
+        <form id="reportForm">
+          <label>类型：
+            <select id="reportType" required>
+              <option value="week">周报</option>
+              <option value="month">月报</option>
+            </select>
+          </label>
+          <label>标题：<input id="reportTitle" required maxlength="32" /></label>
+          <label>内容：<textarea id="reportContent" rows="8" required></textarea></label>
+          <div class="form-actions">
+            <button class="btn primary" type="submit">保存</button>
+            <button class="btn ghost" type="button" id="cancelReportBtn">取消</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <!-- 登录弹窗（与 index.html 保持一致） -->
+    <div class="dialog-backdrop" id="authDialog" hidden>
+      <div class="dialog-card auth-dialog-card" role="dialog" aria-modal="true" aria-labelledby="authDialogTitle">
+        <h3 id="authDialogTitle">账号登录</h3>
+        <p id="authStatus" class="auth-status">未登录（当前仅本地保存）</p>
+        <form id="authForm" autocomplete="on">
+          <label>
+            邮箱
+            <input id="authEmail" name="email" type="email" placeholder="请输入邮箱" autocomplete="email" required />
+          </label>
+          <label>
+            密码
+            <input id="authPassword" name="password" type="password" placeholder="请输入密码" autocomplete="current-password" required />
+          </label>
+          <div class="dialog-actions">
+            <button class="btn primary" id="loginBtn" type="submit">登录</button>
+            <button class="btn ghost" id="registerBtn" type="button">注册</button>
+            <button class="btn danger" id="closeAuthDialogBtn" type="button">关闭</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    </main>
+    <script src="supabase-config.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      if (!window.supabase || typeof window.supabase.createClient !== "function") {
+        var s = document.createElement('script');
+        s.src = "https://unpkg.com/@supabase/supabase-js@2";
+        document.head.appendChild(s);
+      }
+    </script>
+    <script src="cloud-sync.js"></script>
+    <script src="report.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
