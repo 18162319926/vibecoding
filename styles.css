@@ -1,3 +1,115 @@
+@media (max-width: 700px) {
+  body.project-page .counter-panel .counter-tools,
+  .project-page .counter-panel .counter-tools {
+    flex-wrap: nowrap !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+    justify-content: stretch !important;
+    width: 100% !important;
+    display: flex !important;
+  }
+  body.project-page .counter-panel .counter-tools label,
+  .project-page .counter-panel .counter-tools label {
+    min-width: 0 !important;
+    margin: 0 !important;
+    flex: 1 1 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+  }
+  body.project-page .counter-panel #stepInput,
+  .project-page .counter-panel #stepInput {
+    width: 44px !important;
+    min-width: 0 !important;
+    max-width: 54px !important;
+    padding: 6px 2px !important;
+    font-size: 1rem !important;
+    text-align: center !important;
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+  }
+  body.project-page .counter-panel .counter-tools .btn,
+  .project-page .counter-panel .counter-tools .btn {
+    min-width: 0 !important;
+    flex: 1 1 0 !important;
+    padding: 6px 8px !important;
+    font-size: 0.98rem !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+  }
+  body.project-page .floating-timer-panel .timer-controls,
+  .project-page .floating-timer-panel .timer-controls {
+    flex-direction: row !important;
+    gap: 6px !important;
+    justify-content: stretch !important;
+    align-items: center !important;
+    width: 100% !important;
+    display: flex !important;
+  }
+  body.project-page .floating-timer-panel .timer-controls .btn,
+  .project-page .floating-timer-panel .timer-controls .btn {
+    min-width: 0 !important;
+    flex: 1 1 0 !important;
+    padding: 6px 10px !important;
+    font-size: 0.98rem !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+  }
+}
+@media (max-width: 700px) {
+  body.project-page .counter-panel .counter-tools,
+  .project-page .counter-panel .counter-tools {
+    flex-wrap: nowrap !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 12px !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+  }
+  body.project-page .counter-panel .counter-tools label,
+  .project-page .counter-panel .counter-tools label {
+    min-width: 0 !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+  }
+  body.project-page .counter-panel #stepInput,
+  .project-page .counter-panel #stepInput {
+    width: 56px !important;
+    min-width: 0 !important;
+    max-width: 54px !important;
+    padding: 4px 1px !important;
+    font-size: 1.1rem !important;
+    text-align: center !important;
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+  }
+  body.project-page .counter-panel .counter-tools .btn,
+  .project-page .counter-panel .counter-tools .btn {
+    min-width: 0 !important;
+    padding: 6px 8px !important;
+    font-size: 0.98rem !important;
+    border-radius: 8px !important;
+  }
+  body.project-page .floating-timer-panel .timer-controls,
+  .project-page .floating-timer-panel .timer-controls {
+    flex-direction: row !important;
+    gap: 12px !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+  body.project-page .floating-timer-panel .timer-controls .btn,
+  .project-page .floating-timer-panel .timer-controls .btn {
+    min-width: 0 !important;
+    padding: 6px 10px !important;
+    font-size: 0.98rem !important;
+    border-radius: 8px !important;
+  }
+}
 body[data-report-page] .report-filter-group {
   display: flex;
   gap: 8px;
@@ -283,32 +395,63 @@ body[data-report-page] .form-actions {
   transition: background 0.18s, color 0.18s;
 }
 @media (max-width: 700px) {
+  body[data-stats-page] .stats-toolbar-row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+  body[data-stats-page] .stats-toolbar-center {
+    position: static !important;
+    transform: none !important;
+    flex: 3 1 0 !important;
+    width: auto !important;
+    margin-bottom: 0 !important;
+    display: flex !important;
+    align-items: stretch !important;
+  }
   body[data-stats-page] .status-filters {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(30px, 1fr)) !important;
-    gap: 6px !important;
+    display: flex !important;
+    flex: 1 1 0 !important;
+    gap: 8px !important;
     width: 100% !important;
     margin: 0 !important;
+    background: #f8f3ea !important;
+    border-radius: 4px !important;
+    box-shadow: 0 1px 6px rgba(180, 120, 80, 0.251) !important;
+    padding: 0 !important;
   }
   body[data-stats-page] .status-filters .btn {
-    width: 100% !important;
+    flex: 1 1 0 !important;
     min-width: 0 !important;
     padding: 0 0 !important;
-    min-height: 38px !important;
-    font-size: 0.92rem !important;
+    min-height: 42px !important;
+    font-size: 1rem !important;
     border-radius: 8px !important;
     text-align: center !important;
     box-sizing: border-box !important;
     transition: background 0.18s, color 0.18s !important;
+  }
+  body[data-stats-page] #reportManageBtn {
+    flex: 1 1 0 !important;
+    width: auto !important;
+    margin-left: 6px !important;
+    margin-top: 0 !important;
+    min-height: 38px !important;
+    font-size: 1rem !important;
+    border-radius: 12px !important;
+    white-space: nowrap !important;
+    align-self: stretch !important;
   }
 }
 /* 统计页周期按钮三等分填满整行（唯一生效规则） */
 body[data-stats-page] .status-filters {
   display: grid;
   grid-template-columns: repeat(3, minmax(120px, 1fr));
-  gap: 18px;
+  gap: 16px;
   background: #f8f3ea !important;
-  border-radius: 4px !important;
+  border-radius: 10px !important;
   box-shadow: 0 1px 6px rgba(180, 120, 80, 0.251) !important;
   padding: 0 0 !important;
   margin: 0 !important;
@@ -1309,7 +1452,7 @@ body.homepage .layout {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 20px;
-  padding: 16px 18px;
+  padding: 14px 14px;
   box-shadow: var(--shadow);
 }
 
@@ -1729,6 +1872,51 @@ body[data-storage-page] .storage-list-panel {
 
 .counter-panel,
 /* ...existing code... */
+@media (max-width: 700px) {
+  body.project-page .counter-tools {
+    flex-wrap: nowrap !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+    justify-content: flex-start !important;
+  }
+  body.project-page .counter-tools label {
+    min-width: 0 !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+  }
+  body.project-page #stepInput {
+    width: 48px !important;
+    min-width: 0 !important;
+    max-width: 60px !important;
+    padding: 6px 4px !important;
+    font-size: 1rem !important;
+    text-align: center !important;
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+  }
+  body.project-page .counter-tools .btn {
+    min-width: 0 !important;
+    padding: 6px 8px !important;
+    font-size: 0.98rem !important;
+    border-radius: 8px !important;
+  }
+  body.project-page .timer-controls {
+    flex-direction: row !important;
+    gap: 6px !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+  }
+  body.project-page .timer-controls .btn {
+    min-width: 0 !important;
+    padding: 6px 10px !important;
+    font-size: 0.98rem !important;
+    border-radius: 8px !important;
+  }
+}
 
 .projects-toolbar label {
   min-width: 220px;
