@@ -1134,7 +1134,14 @@ function renderDashboard() {
     typeText.textContent = project.projectType || "其他";
     meta.append(statusPill, typeText);
 
-    const progress = getProjectProgress(project);
+
+    // 统一 dailyStats rows 总和为分子
+    let dailyRowsSum = 0;
+    if (project.dailyStats && typeof project.dailyStats === 'object') {
+      dailyRowsSum = Object.values(project.dailyStats).reduce((sum, stat) => sum + (Number(stat.rows) || 0), 0);
+    }
+    const total = Math.max(0, Number(project.totalRows) || 0);
+    const progress = total > 0 ? Math.min(100, Math.round((dailyRowsSum / total) * 100)) : 0;
     const track = document.createElement("div");
     track.className = "progress-track";
     const fill = document.createElement("div");
@@ -1145,7 +1152,7 @@ function renderDashboard() {
 
     const progressText = document.createElement("p");
     progressText.className = "project-meta";
-    progressText.textContent = `进度 ${progress}%（${project.rows || 0}/${project.totalRows || 0} 行）`;
+    progressText.textContent = `进度 ${progress}%（${dailyRowsSum}/${project.totalRows || 0} 行）`;
 
     const actions = document.createElement("div");
     actions.className = "project-card-actions";

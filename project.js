@@ -503,7 +503,12 @@ function getExportTheme(style) {
 function getProjectProgress(project) {
   const total = Math.max(0, Number(project.totalRows) || 0);
   if (!total) return 0;
-  return Math.min(100, Math.round((project.rows / total) * 100));
+  // 以 dailyStats 所有 rows 总和为分子
+  let dailyRowsSum = 0;
+  if (project.dailyStats && typeof project.dailyStats === 'object') {
+    dailyRowsSum = Object.values(project.dailyStats).reduce((sum, stat) => sum + (Number(stat.rows) || 0), 0);
+  }
+  return Math.min(100, Math.round((dailyRowsSum / total) * 100));
 }
 
 function loadProjects() {
@@ -703,8 +708,13 @@ function renderProject(project) {
   if (refs.exportStyle) {
     refs.exportStyle.value = project.exportStyle || "classic";
   }
-  refs.rowCounter.textContent = String(project.rows || 0);
-  refs.progressText.textContent = `进度 ${getProjectProgress(project)}%（${project.rows || 0}/${project.totalRows || 0} 行）`;
+  // 计算 dailyStats 所有 rows 的总和
+  let dailyRowsSum = 0;
+  if (project.dailyStats && typeof project.dailyStats === 'object') {
+    dailyRowsSum = Object.values(project.dailyStats).reduce((sum, stat) => sum + (Number(stat.rows) || 0), 0);
+  }
+  refs.rowCounter.textContent = String(dailyRowsSum);
+  refs.progressText.textContent = `进度 ${getProjectProgress(project)}%（${dailyRowsSum}/${project.totalRows || 0} 行）`;
   refs.projectTimeSpent.textContent = `累计用时 ${formatDuration(project.spentSeconds)}`;
 
   if (project.coverImage) {
