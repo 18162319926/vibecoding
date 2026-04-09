@@ -124,214 +124,6 @@ function getToday() {
   return `${y}-${m}-${d}`;
 }
 
-function getDateKeyOffset(dateKey, offsetDays) {
-  const src = String(dateKey || "");
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(src)) return "";
-  const dt = new Date(`${src}T00:00:00`);
-  if (Number.isNaN(dt.getTime())) return "";
-  dt.setDate(dt.getDate() + Number(offsetDays || 0));
-  const y = dt.getFullYear();
-  const m = String(dt.getMonth() + 1).padStart(2, "0");
-  const d = String(dt.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function makeHourlyBuckets() {
-  const buckets = {};
-  for (let hour = 0; hour < 24; hour += 1) {
-    buckets[`h${String(hour).padStart(2, "0")}`] = 0;
-  }
-  return buckets;
-}
-
-window.migrateUtcDateKeyToLocal = function migrateUtcDateKeyToLocal() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    alert("未找到本地项目数据。");
-    return;
-  }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    alert("本地项目数据损坏，无法迁移。");
-    return;
-  }
-
-  const projects = Array.isArray(parsed.projects) ? parsed.projects : [];
-  const today = getToday();
-  let movedDates = 0;
-  let movedSeconds = 0;
-  let movedRows = 0;
-
-  projects.forEach((project) => {
-    if (!project || typeof project !== "object") return;
-    if (!project.dailyStats || typeof project.dailyStats !== "object") project.dailyStats = {};
-    const stats = project.dailyStats;
-    const dateKeys = Object.keys(stats).sort();
-
-    dateKeys.forEach((dateKey) => {
-      // 只修复历史日期，禁止处理今天及未来日期，避免生成明天数据
-      if (dateKey >= today) return;
-
-      const src = stats[dateKey];
-      if (!src || typeof src !== "object") return;
-      const hourBuckets = src.hourBuckets && typeof src.hourBuckets === "object" ? src.hourBuckets : null;
-      if (!hourBuckets) return;
-
-      let earlySum = 0;
-      let totalSum = 0;
-      for (let h = 0; h < 24; h += 1) {
-        const key = `h${String(h).padStart(2, "0")}`;
-        const value = Math.max(0, Number(hourBuckets[key]) || 0);
-        totalSum += value;
-        if (h <= 7) earlySum += value;
-      }
-      if (earlySum <= 0 || totalSum <= 0) return;
-
-      const targetDate = getDateKeyOffset(dateKey, 1);
-      if (!targetDate) return;
-      // 禁止迁移到未来日期
-      if (targetDate > today) return;
-      if (!stats[targetDate] || typeof stats[targetDate] !== "object") {
-        stats[targetDate] = { rows: 0, seconds: 0, hourBuckets: makeHourlyBuckets() };
-      }
-      if (!stats[targetDate].hourBuckets || typeof stats[targetDate].hourBuckets !== "object") {
-        stats[targetDate].hourBuckets = makeHourlyBuckets();
-      }
-
-      const srcSeconds = Math.max(0, Number(src.seconds) || 0);
-      const srcRows = Math.max(0, Number(src.rows) || 0);
-      const movedSec = Math.min(srcSeconds, Math.round((srcSeconds * earlySum) / totalSum));
-      const movedRow = Math.min(srcRows, Math.round((srcRows * earlySum) / totalSum));
-
-      for (let h = 0; h <= 7; h += 1) {
-        const key = `h${String(h).padStart(2, "0")}`;
-        const amount = Math.max(0, Number(hourBuckets[key]) || 0);
-        if (!amount) continue;
-        hourBuckets[key] = Math.max(0, Number(hourBuckets[key]) || 0) - amount;
-        stats[targetDate].hourBuckets[key] = Math.max(0, Number(stats[targetDate].hourBuckets[key]) || 0) + amount;
-      }
-
-      src.seconds = srcSeconds - movedSec;
-      src.rows = srcRows - movedRow;
-      stats[targetDate].seconds = Math.max(0, Number(stats[targetDate].seconds) || 0) + movedSec;
-      stats[targetDate].rows = Math.max(0, Number(stats[targetDate].rows) || 0) + movedRow;
-
-      movedDates += 1;
-      movedSeconds += movedSec;
-      movedRows += movedRow;
-    });
-
-    const todayEntry = stats[today] && typeof stats[today] === "object" ? stats[today] : null;
-    project.todayRows = Math.max(0, Number(todayEntry?.rows) || 0);
-    project.todaySeconds = Math.max(0, Number(todayEntry?.seconds) || 0);
-    project.lastDate = today;
-
-    const nextTimeBuckets = makeHourlyBuckets();
-    if (todayEntry && todayEntry.hourBuckets && typeof todayEntry.hourBuckets === "object") {
-      for (let h = 0; h < 24; h += 1) {
-        const key = `h${String(h).padStart(2, "0")}`;
-        nextTimeBuckets[key] = Math.max(0, Number(todayEntry.hourBuckets[key]) || 0);
-      }
-    }
-    project.timeBuckets = nextTimeBuckets;
-    project.updatedAt = Date.now();
-  });
-
-  parsed.projects = projects;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-  state.projects = projects.map(normalizeProject).filter((project) => !isLegacyStarterProject(project));
-  renderAll();
-  scheduleCloudPush();
-
-  alert(`UTC 错位迁移完成：处理 ${movedDates} 个日期片段，迁移 seconds ${movedSeconds}，迁移 rows ${movedRows}。`);
-};
-
-window.rollbackFutureDailyStats = function rollbackFutureDailyStats() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    alert("未找到本地项目数据。");
-    return;
-  }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    alert("本地项目数据损坏，无法回滚。");
-    return;
-  }
-
-  const today = getToday();
-  const projects = Array.isArray(parsed.projects) ? parsed.projects : [];
-  let rollbackDays = 0;
-  let rollbackSeconds = 0;
-  let rollbackRows = 0;
-
-  projects.forEach((project) => {
-    if (!project || typeof project !== "object") return;
-    if (!project.dailyStats || typeof project.dailyStats !== "object") return;
-    const stats = project.dailyStats;
-    const futureKeys = Object.keys(stats).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k) && k > today);
-    if (!futureKeys.length) return;
-
-    if (!stats[today] || typeof stats[today] !== "object") {
-      stats[today] = { rows: 0, seconds: 0, hourBuckets: makeHourlyBuckets() };
-    }
-    if (!stats[today].hourBuckets || typeof stats[today].hourBuckets !== "object") {
-      stats[today].hourBuckets = makeHourlyBuckets();
-    }
-
-    futureKeys.forEach((fk) => {
-      const src = stats[fk];
-      if (!src || typeof src !== "object") {
-        delete stats[fk];
-        return;
-      }
-      const sec = Math.max(0, Number(src.seconds) || 0);
-      const row = Math.max(0, Number(src.rows) || 0);
-      stats[today].seconds = Math.max(0, Number(stats[today].seconds) || 0) + sec;
-      stats[today].rows = Math.max(0, Number(stats[today].rows) || 0) + row;
-      rollbackSeconds += sec;
-      rollbackRows += row;
-
-      const hb = src.hourBuckets && typeof src.hourBuckets === "object" ? src.hourBuckets : {};
-      for (let h = 0; h < 24; h += 1) {
-        const key = `h${String(h).padStart(2, "0")}`;
-        const amount = Math.max(0, Number(hb[key]) || 0);
-        if (!amount) continue;
-        stats[today].hourBuckets[key] = Math.max(0, Number(stats[today].hourBuckets[key]) || 0) + amount;
-      }
-
-      delete stats[fk];
-      rollbackDays += 1;
-    });
-
-    project.todayRows = Math.max(0, Number(stats[today].rows) || 0);
-    project.todaySeconds = Math.max(0, Number(stats[today].seconds) || 0);
-    project.lastDate = today;
-
-    const nextTimeBuckets = makeHourlyBuckets();
-    const hbToday = stats[today].hourBuckets && typeof stats[today].hourBuckets === "object" ? stats[today].hourBuckets : {};
-    for (let h = 0; h < 24; h += 1) {
-      const key = `h${String(h).padStart(2, "0")}`;
-      nextTimeBuckets[key] = Math.max(0, Number(hbToday[key]) || 0);
-    }
-    project.timeBuckets = nextTimeBuckets;
-    project.updatedAt = Date.now();
-  });
-
-  parsed.projects = projects;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-  state.projects = projects.map(normalizeProject).filter((project) => !isLegacyStarterProject(project));
-  renderAll();
-  scheduleCloudPush();
-
-  alert(`已回滚未来日期数据：回滚 ${rollbackDays} 天，seconds ${rollbackSeconds}，rows ${rollbackRows}。`);
-};
-
 function ensureStatsBootstrapDate() {
   const today = getToday();
   let saved = "";
@@ -551,7 +343,7 @@ function wrapTextLines(text, maxChars = 24) {
 
 function buildExportSections(project) {
   const status = STATUS_MAP[project.status] || STATUS_MAP.active;
-  const rows = Math.max(0, Number(project.rows) || 0);
+  const rows = getProjectRowsFromDailyStats(project);
   const totalRows = Math.max(0, Number(project.totalRows) || 0);
   const progressValue = totalRows > 0 ? `${getProjectProgress(project)}%（${rows}/${totalRows} 行）` : rows > 0 ? `已织 ${rows} 行` : "";
 
@@ -979,7 +771,18 @@ async function exportProjectImage(project) {
 function getProjectProgress(project) {
   const total = Math.max(0, Number(project.totalRows) || 0);
   if (!total) return 0;
-  return Math.min(100, Math.round((project.rows / total) * 100));
+  return Math.min(100, Math.round((getProjectRowsFromDailyStats(project) / total) * 100));
+}
+
+function getProjectRowsFromDailyStats(project) {
+  if (!project || typeof project !== "object") return 0;
+  if (project.dailyStats && typeof project.dailyStats === "object") {
+    const stats = Object.values(project.dailyStats);
+    if (stats.length > 0) {
+      return stats.reduce((sum, stat) => sum + Math.max(0, Number(stat?.rows) || 0), 0);
+    }
+  }
+  return Math.max(0, Number(project.rows) || 0);
 }
 
 function classifyStorageError(error) {
@@ -1135,13 +938,8 @@ function renderDashboard() {
     meta.append(statusPill, typeText);
 
 
-    // 统一 dailyStats rows 总和为分子
-    let dailyRowsSum = 0;
-    if (project.dailyStats && typeof project.dailyStats === 'object') {
-      dailyRowsSum = Object.values(project.dailyStats).reduce((sum, stat) => sum + (Number(stat.rows) || 0), 0);
-    }
-    const total = Math.max(0, Number(project.totalRows) || 0);
-    const progress = total > 0 ? Math.min(100, Math.round((dailyRowsSum / total) * 100)) : 0;
+    const dailyRowsSum = getProjectRowsFromDailyStats(project);
+    const progress = getProjectProgress(project);
     const track = document.createElement("div");
     track.className = "progress-track";
     const fill = document.createElement("div");

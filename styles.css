@@ -1,189 +1,43 @@
-/* 桌面端：项目详情行数计数器的进度、步进值、增加步进按钮同一行 */
-@media (min-width: 500px) {
-  .project-page .counter-panel .counter-tools-row {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-    margin-bottom: 8px;
-    width: 100%;
-  }
-  .project-page .counter-panel .counter-tools-row label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 0;
-    flex: 1 1 0;
-    min-width: 0;
-  }
-  .project-page .counter-panel .counter-tools-row #stepInput {
-    width: 50px;
-    min-width: 0;
-    max-width: 100px;
-    padding: 4px 1px;
-    font-size: 1.1rem;
-    text-align: center;
-    margin: 0;
-    flex: 1 1 0;
-  }
-  .project-page .counter-panel .counter-tools-row .btn {
-    min-width: 0;
-    padding: 6px 8px;
-    font-size: 1rem;
-    border-radius: 8px;
-    flex: 1 1 0;
-  }
-  .project-page .counter-panel .counter-tools-row .project-meta {
-    margin: 0;
-    min-width: 90px;
-    flex: 1 1 0;
-  }
+/* 桌面端：项目详情计数与全局计时工具行 */
+@media (min-width: 701px) {
+  .project-page .counter-panel .counter-tools-row,
   .project-page .floating-timer-panel .timer-controls-row {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 22px;
-    margin-top: 8px;
-    margin-bottom: 8px;
+    gap: 10px;
+    margin: 8px 0;
     width: 100%;
   }
+
+  .project-page .counter-panel .counter-tools-row .project-meta {
+    margin: 0;
+    flex: 1 1 0;
+    min-width: 120px;
+  }
+
+  .project-page .counter-panel .counter-tools-row label,
   .project-page .floating-timer-panel .timer-controls-row label {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     margin: 0;
     flex: 1 1 0;
     min-width: 0;
   }
-  .project-page .floating-timer-panel .timer-controls-row #globalTimerMinutes {
-    width: 60px;
-    min-width: 0;
-    max-width: 100px;
-    padding: 4px 1px;
-    font-size: 1.1rem;
-    text-align: center;
-    margin: 0;
-    flex: 1 1 0;
-  }
+
+  .project-page .counter-panel .counter-tools-row .btn,
   .project-page .floating-timer-panel .timer-controls-row .btn {
     min-width: 0;
-    padding: 6px 12px;
-    font-size: 1rem;
-    border-radius: 8px;
     flex: 1 1 0;
   }
-}
-@media (max-width: 700px) {
-  body.project-page .counter-panel .counter-tools,
-  .project-page .counter-panel .counter-tools {
-    flex-wrap: nowrap !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 6px !important;
-    justify-content: stretch !important;
-    width: 100% !important;
-    display: flex !important;
-  }
-  body.project-page .counter-panel .counter-tools label,
-  .project-page .counter-panel .counter-tools label {
-    min-width: 0 !important;
-    margin: 0 !important;
-    flex: 1 1 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 2px !important;
-  }
-  body.project-page .counter-panel #stepInput,
-  .project-page .counter-panel #stepInput {
-    width: 44px !important;
-    min-width: 0 !important;
-    max-width: 54px !important;
-    padding: 6px 2px !important;
-    font-size: 1rem !important;
-    text-align: center !important;
-    margin-right: 0 !important;
-    margin-left: 0 !important;
-  }
-  body.project-page .counter-panel .counter-tools .btn,
-  .project-page .counter-panel .counter-tools .btn {
-    min-width: 0 !important;
-    flex: 1 1 0 !important;
-    padding: 6px 8px !important;
-    font-size: 0.98rem !important;
-    border-radius: 8px !important;
-    box-sizing: border-box !important;
-  }
-  body.project-page .floating-timer-panel .timer-controls,
-  .project-page .floating-timer-panel .timer-controls {
-    flex-direction: row !important;
-    gap: 6px !important;
-    justify-content: stretch !important;
-    align-items: center !important;
-    width: 100% !important;
-    display: flex !important;
-  }
-  body.project-page .floating-timer-panel .timer-controls .btn,
-  .project-page .floating-timer-panel .timer-controls .btn {
-    min-width: 0 !important;
-    flex: 1 1 0 !important;
-    padding: 6px 10px !important;
-    font-size: 0.98rem !important;
-    border-radius: 8px !important;
-    box-sizing: border-box !important;
-  }
-}
-@media (max-width: 700px) {
-  body.project-page .counter-panel .counter-tools,
-  .project-page .counter-panel .counter-tools {
-    flex-wrap: nowrap !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 12px !important;
-    justify-content: flex-start !important;
-    width: 100% !important;
-  }
-  body.project-page .counter-panel .counter-tools label,
-  .project-page .counter-panel .counter-tools label {
-    min-width: 0 !important;
-    margin: 0 !important;
-    flex: 0 0 auto !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 2px !important;
-  }
-  body.project-page .counter-panel #stepInput,
-  .project-page .counter-panel #stepInput {
-    width: 100px !important;
-    min-width: 0 !important;
-    max-width: 150px !important;
-    padding: 4px 1px !important;
-    font-size: 1.1rem !important;
-    text-align: center !important;
-    margin-right: 0 !important;
-    margin-left: 0 !important;
-  }
-  body.project-page .counter-panel .counter-tools .btn,
-  .project-page .counter-panel .counter-tools .btn {
-    min-width: 0 !important;
-    padding: 6px 8px !important;
-    font-size: 0.98rem !important;
-    border-radius: 8px !important;
-  }
-  body.project-page .floating-timer-panel .timer-controls,
-  .project-page .floating-timer-panel .timer-controls {
-    flex-direction: row !important;
-    gap: 12px !important;
-    justify-content: flex-start !important;
-    align-items: center !important;
-    width: 100% !important;
-  }
-  body.project-page .floating-timer-panel .timer-controls .btn,
-  .project-page .floating-timer-panel .timer-controls .btn {
-    min-width: 0 !important;
-    padding: 6px 10px !important;
-    font-size: 0.98rem !important;
-    border-radius: 8px !important;
+
+  .project-page .counter-panel .counter-tools-row #stepInput,
+  .project-page .floating-timer-panel .timer-controls-row #globalTimerMinutes {
+    width: 64px;
+    max-width: 96px;
+    min-width: 0;
+    text-align: center;
   }
 }
 body[data-report-page] .report-filter-group {
@@ -226,14 +80,6 @@ body[data-report-page] #reportFilter {
 body[data-report-page] #reportFilter:focus {
   outline: 2px solid #cf6c48;
 }
-/* 隐藏仅用于无障碍的 label */
-.visually-hidden {
-  position: absolute !important;
-  width: 1px; height: 1px;
-  padding: 0; margin: -1px;
-  overflow: hidden; clip: rect(0,0,0,0);
-  border: 0;
-}
 /* 数据统计页：周期筛选居中，报告管理靠右 */
 body[data-stats-page] .stats-toolbar-row {
   display: flex;
@@ -255,29 +101,10 @@ body[data-stats-page] #reportManageBtn {
   white-space: nowrap;
 }
 /* ========== 周报月报管理页面 ========== */
-body[data-report-page] .report-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 16px;
-}
 body[data-report-page] .report-list {
   display: flex;
   flex-direction: column;
   gap: 18px;
-}
-body[data-report-page] .report-item {
-  background: #fff8ef;
-  border-radius: 10px;
-  box-shadow: 0 1px 6px rgba(180,120,80,0.08);
-  padding: 18px 16px 12px 16px;
-  position: relative;
-}
-body[data-report-page] .report-meta {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 1.05em;
-  margin-bottom: 8px;
 }
 body[data-report-page] .report-type {
   color: #cf6c48;
@@ -292,19 +119,6 @@ body[data-report-page] .report-title {
 body[data-report-page] .report-date {
   color: #b7a48a;
   font-size: 0.98em;
-}
-body[data-report-page] .report-actions {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  display: flex;
-  gap: 8px;
-}
-body[data-report-page] .report-content {
-  margin-top: 8px;
-  color: #6d4b2c;
-  font-size: 1em;
-  white-space: pre-line;
 }
 body[data-report-page] .empty-tip {
   color: #b7a48a;
@@ -702,10 +516,6 @@ body[data-stats-page] .status-filters .btn {
     margin-top: 4px !important;
   }
 
-  /* 通用布局 */
-  .container {
-    padding: 0 8px !important;
-  }
   .card {
     margin-bottom: 8px !important;
   }
@@ -728,20 +538,6 @@ body[data-stats-page] .status-filters .btn {
     gap: 8px !important;
     margin-bottom: 10px !important;
   }
-  .project-status {
-    padding: 4px 10px !important;
-    background: #e8f8f3 !important;
-    color: #2f7d6b !important;
-    border-radius: 20px !important;
-    font-size: 0.85rem !important;
-  }
-  .progress-bar {
-    height: 10px !important;
-    background: url('data:image/svg+xml;utf8,<svg width="40" height="10" viewBox="0 0 40 10" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="10" fill="%23fbf3e8"/><path d="M0 8 Q2 6 4 8 T8 8 T12 8 T16 8 T20 8 T24 8 T28 8 T32 8 T36 8 T40 8" stroke="%23e2c9a6" stroke-width="2" fill="none"/></svg>') repeat-x !important;
-    border-radius: 5px !important;
-    margin: 8px 0 12px 0 !important;
-    overflow: hidden !important;
-  }
   .progress-fill {
     height: 100% !important;
     background: repeating-linear-gradient(135deg, #c8856b 0 7px, #ddb49f 7px 14px, #c8856b 14px 21px) !important;
@@ -760,62 +556,7 @@ body[data-stats-page] .status-filters .btn {
     content: none;
     border-radius: 5px !important;
   }
-  .progress-text {
-    font-size: 0.9rem !important;
-    color: #666 !important;
-  }
 
-  /* ==========================================
-     5. 项目操作按钮（一行、均分）
-  ========================================== */
-  .project-actions {
-    display: flex !important;
-    flex-direction: row !important;
-    gap: 10px !important;
-    margin-top: 12px !important;
-  }
-  .project-actions .btn {
-    flex: 1 !important;
-    padding: 12px 8px !important;
-    font-size: 0.95rem !important;
-    border-radius: 14px !important;
-    text-align: center !important;
-    border: none !important;
-    cursor: pointer !important;
-  }
-  .btn-primary {
-    background: #be4f27 !important;
-    color: #fff !important;
-  }
-  .btn-secondary {
-    background: #fff8ef !important;
-    color: #be4f27 !important;
-  }
-  .btn-more {
-    background: #fff !important;
-    color: #a86a3c !important;
-    border: 1px solid #e9dbc8 !important;
-  }
-
-  /* ==========================================
-     6. 底部加号按钮
-  ========================================== */
-  .add-btn {
-    position: fixed !important;
-    bottom: 24px !important;
-    right: 24px !important;
-    width: 56px !important;
-    height: 56px !important;
-    border-radius: 50% !important;
-    background: #be4f27 !important;
-    color: #fff !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 1.8rem !important;
-    box-shadow: 0 4px 16px rgba(190, 79, 39, 0.3) !important;
-    z-index: 999 !important;
-  }
 }
 
 :root {
@@ -1245,75 +986,9 @@ h3 {
 .storage-item-meta,
 .stat-card span,
 .auth-status,
-.sync-hint,
 .cover-frame-placeholder,
 .account-chip {
   font-family: "ZCOOL XiaoWei", "KaiTi", cursive;
-}
-
-body[data-storage-page] .sync-diagnostics {
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: 60;
-  margin: 0;
-  width: min(360px, calc(100vw - 24px));
-  padding: 0;
-  border-radius: 14px;
-  background: rgba(255, 252, 247, 0.94);
-  border: 1px solid var(--line);
-  box-shadow: 0 14px 30px rgba(90, 63, 44, 0.2);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-}
-
-body[data-storage-page] .sync-diagnostics details {
-  padding: 10px 12px;
-}
-
-body[data-storage-page] .sync-diagnostics details > summary {
-  cursor: pointer;
-  color: #6a4a35;
-  font-family: "ZCOOL XiaoWei", "KaiTi", cursive;
-  font-size: 0.98rem;
-  list-style: none;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-body[data-storage-page] .sync-diagnostics details > summary::-webkit-details-marker {
-  display: none;
-}
-
-body[data-storage-page] .sync-diagnostics details > summary::after {
-  content: "展开";
-  float: right;
-  color: #8b6a54;
-  font-size: 0.82rem;
-}
-
-body[data-storage-page] .sync-diagnostics details[open] > summary::after {
-  content: "收起";
-}
-
-body[data-storage-page] .sync-diagnostics-grid {
-  margin-top: 10px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 14px;
-}
-
-body[data-storage-page] .sync-diagnostics-grid p {
-  margin: 0;
-  color: #5f6670;
-}
-
-body[data-storage-page] .sync-diagnostics-grid p.full {
-  grid-column: 1 / -1;
-}
-
-body[data-storage-page] .sync-diagnostics-actions {
-  margin-top: 12px;
 }
 
 .subtitle {
@@ -1336,46 +1011,8 @@ body.homepage .hero-stats {
   margin-left: auto;
 }
 
-.stats-entry-inline {
-  margin: 0;
-  grid-column: 2;
-  grid-row: 1;
-  justify-self: end;
-  align-self: end;
-  font-size: 0.84rem;
-}
-
-.today-duration-card {
-  grid-column: 1;
-  grid-row: 2;
-}
-
-.today-rows-card {
-  grid-column: 2;
-  grid-row: 2;
-}
-
 .project-page .hero {
   align-items: flex-end;
-}
-
-.project-page .project-hero-stats {
-  width: auto;
-  grid-template-columns: minmax(210px, 1fr);
-}
-
-.project-page .project-time-card {
-  display: flex;
-  align-items: center;
-  min-height: 72px;
-  padding: 6px 18px;
-}
-
-.project-page .project-time-card strong {
-  display: block;
-  margin: 0;
-  line-height: 1.2;
-  font-size: 1.4rem;
 }
 
 .stat-card {
@@ -1416,14 +1053,6 @@ body.homepage .hero-stats {
   color: var(--accent-deep);
 }
 
-.auth-card {
-  grid-column: 1 / -1;
-}
-
-.auth-card.compact {
-  width: 100%;
-}
-
 .auth-status {
   margin: 8px 0;
   color: #55606a;
@@ -1432,11 +1061,6 @@ body.homepage .hero-stats {
 
 .auth-dialog-card {
   width: min(440px, 100%);
-}
-
-.sync-hint.inline {
-  display: inline-block;
-  margin-left: 8px;
 }
 
 .sync-state {
@@ -1469,47 +1093,6 @@ body.homepage .hero-stats {
   color: #aa2f2f;
 }
 
-.stats-entry-link {
-  display: inline-flex;
-  margin-top: 10px;
-  color: #9a4d2d;
-  text-decoration: none;
-  font-size: 0.95rem;
-}
-
-.stats-entry-link:hover {
-  text-decoration: underline;
-}
-
-.auth-inputs {
-  display: grid;
-  gap: 8px;
-}
-
-.auth-inputs input {
-  background: #fff;
-  border-radius: 10px;
-  padding: 8px 10px;
-}
-
-.auth-actions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.auth-actions .btn {
-  min-height: 38px;
-  padding: 8px 10px;
-}
-
-.sync-hint {
-  margin: 8px 0 0;
-  font-size: 0.8rem;
-  color: #7d6653;
-}
-
 .layout {
   display: grid;
   gap: 14px;
@@ -1535,10 +1118,6 @@ body.homepage .layout {
 .panel h2 {
   margin-top: 0;
   font-size: 1.4rem;
-}
-
-.projects-panel {
-  grid-column: span 12;
 }
 
 .dashboard-panel {
@@ -1702,10 +1281,6 @@ body[data-storage-page] .storage-list-panel {
   margin: 0 0 10px;
   display: inline-block;
   width: 100%;
-}
-
-.storage-item-photo-wrap {
-  position: relative;
 }
 
 .storage-item-photo {
@@ -1883,11 +1458,6 @@ body[data-storage-page] .storage-list-panel {
   margin-top: 8px;
 }
 
-.storage-item-actions-inline {
-  margin-top: 2px;
-  margin-bottom: 6px;
-}
-
 .storage-item-actions-vertical {
   margin-top: 0;
   margin-bottom: 0;
@@ -1945,69 +1515,6 @@ body[data-storage-page] .storage-list-panel {
   height: auto !important;
   overflow: visible !important;
 }
-
-.counter-panel,
-/* ...existing code... */
-@media (max-width: 700px) {
-  body.project-page .counter-tools {
-    flex-wrap: nowrap !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 6px !important;
-    justify-content: flex-start !important;
-  }
-  body.project-page .counter-tools label {
-    min-width: 0 !important;
-    margin: 0 !important;
-    flex: 0 0 auto !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 2px !important;
-  }
-  body.project-page #stepInput {
-    width: 48px !important;
-    min-width: 0 !important;
-    max-width: 60px !important;
-    padding: 6px 4px !important;
-    font-size: 1rem !important;
-    text-align: center !important;
-    margin-right: 0 !important;
-    margin-left: 0 !important;
-  }
-  body.project-page .counter-tools .btn {
-    min-width: 0 !important;
-    padding: 6px 8px !important;
-    font-size: 0.98rem !important;
-    border-radius: 8px !important;
-  }
-  body.project-page .timer-controls {
-    flex-direction: row !important;
-    gap: 6px !important;
-    justify-content: flex-start !important;
-    align-items: center !important;
-  }
-  body.project-page .timer-controls .btn {
-    min-width: 0 !important;
-    padding: 6px 10px !important;
-    font-size: 0.98rem !important;
-    border-radius: 8px !important;
-  }
-}
-
-.projects-toolbar label {
-  min-width: 220px;
-  /* flex: 1; */
-}
-
-.projects-meta {
-  margin-top: 12px;
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
 
 @media (min-width: 901px) {
   .dashboard-toolbar-desktop {
@@ -2361,8 +1868,6 @@ body.homepage .project-cards {
   display: none !important;
 }
 
-/* ...existing code... */
-
 body.homepage .fab-create-btn {
   width: 56px;
   height: 56px;
@@ -2436,24 +1941,6 @@ body.homepage .fab-create-wrap .create-menu {
   background: #fff9f2;
 }
 
-.stats-ranking-layout {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.stats-ranking-panel {
-  border: 0;
-  box-shadow: none;
-  background: transparent;
-  padding: 0;
-}
-
-.stats-ranking-panel h3 {
-  margin: 0 0 8px;
-  color: #5e4331;
-}
-
 #achievementText {
   margin-top: 12px;
 }
@@ -2499,10 +1986,6 @@ body.homepage .fab-create-wrap .create-menu {
   }
   .nav-auth > *:not(.nav-auth-trigger):not(.nav-auth-menu) {
     display: inline-flex !important;
-  }
-
-  .stats-ranking-layout {
-    grid-template-columns: 1fr;
   }
 
   .nav-auth-menu.is-open {
@@ -2551,8 +2034,7 @@ body.homepage .fab-create-wrap .create-menu {
   align-items: stretch;
 }
 
-.project-right-column .counter-panel,
-.project-right-column .notes-panel {
+.project-right-column .counter-panel {
   box-sizing: border-box;
   align-self: stretch;
   position: static;
@@ -2791,15 +2273,11 @@ textarea {
 }
 
 .btn.ghost {
-  
   color: #c96a2c;
   background: #fff6ed;
-  /* border: 1px solid #f3b37a; */
 }
 
 .btn.danger {
-  background: #fce8e7;
-  color: var(--danger);
   background: #ffe7d1;
   color: #b85a1a;
 }
@@ -2822,58 +2300,12 @@ textarea {
   font-weight: 700;
 }
 
-.counter-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: end;
-}
-
 .timer {
   text-align: center;
   font-size: clamp(2rem, 8vw, 3rem);
   letter-spacing: 0.06em;
   font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   margin: 10px 0 16px;
-}
-
-.timer-controls {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.inline-form {
-  display: flex;
-  gap: 10px;
-}
-
-.checklist {
-  list-style: none;
-  padding: 0;
-  margin: 16px 0 0;
-  display: grid;
-  gap: 8px;
-}
-
-.checklist li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border: 1px solid #efdfcb;
-  border-radius: 12px;
-  padding: 9px 10px;
-  background: #fff;
-}
-
-.checklist li.done span {
-  text-decoration: line-through;
-  color: #8d959c;
-}
-
-.checklist .item-actions {
-  display: flex;
-  gap: 6px;
 }
 
 .footer {
@@ -3138,18 +2570,8 @@ body.homepage .footer {
     font-size: 14px;
   }
 
-  .project-page .project-hero-stats {
-    width: 100%;
-    grid-template-columns: 1fr;
-  }
-
   .project-panel,
   .counter-panel,
-  .timer-panel,
-  .materials-panel,
-  .notes-panel,
-  /* 导出相关样式移除 */
-
   .project-detail-layout {
     grid-template-columns: 1fr;
   }
@@ -3231,9 +2653,6 @@ body.homepage .footer {
     aspect-ratio: auto;
   }
 
-  .inline-form,
-  .timer-controls,
-  .projects-toolbar,
   .dashboard-toolbar,
   .project-card-actions {
     flex-direction: column;
@@ -3280,10 +2699,6 @@ body.homepage .footer {
     font-size: 0.94rem;
   }
 
-  .counter-display {
-    min-width: 104px;
-  }
-
   .counter-wrap {
     gap: 8px;
   }
@@ -3292,14 +2707,6 @@ body.homepage .footer {
     min-width: 88px;
     font-size: 1.6rem;
     padding: 10px;
-  }
-
-  /* 导出相关样式移除 */
-
-  body[data-storage-page] .sync-diagnostics {
-    right: 12px;
-    bottom: max(12px, env(safe-area-inset-bottom));
-    width: calc(100vw - 24px);
   }
 
   body.homepage .fab-create-wrap {
@@ -3548,12 +2955,6 @@ body.homepage .hero.homepage-hero h1 {
   font-size: 32px;
   line-height: 1.2;
   color: #3d2b1f;
-}
-
-body.homepage .stats-entry-link {
-  color: #665a4f;
-  font-size: 14px;
-  white-space: nowrap;
 }
 
 body.homepage .layout {

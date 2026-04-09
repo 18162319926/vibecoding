@@ -538,8 +538,6 @@ function createProject(name = "我的新作品") {
     updatedAt: Date.now(),
   };
 }
-// ...existing code...
-// ...existing code...
 function normalizeProject(project) {
   const normalized = { ...project };
   const parsedUpdatedAt = Number(project.updatedAt);
@@ -1563,7 +1561,6 @@ function renderOverview() {
   } else {
     yarnUsage = computeYarnUsageForPeriod(period);
   }
-  console.log('[debug] 当前周期消耗毛线:', yarnUsage, state.yarnItems);
   if (refs.statTotalYarnUsed) {
     refs.statTotalYarnUsed.textContent = formatWeight(yarnUsage);
   } else {
@@ -2262,5 +2259,4 @@ window.generateLastWeekAndMonthReports = function generateLastWeekAndMonthReport
     reports.unshift({ type: 'month', title: `${lastMonth.start}~${lastMonth.end} 月报`, content, date: monthKey });
   }
   localStorage.setItem(REPORT_KEY, JSON.stringify(reports));
-  console.log('已生成有内容的上周周报和上月月报');
 };
