@@ -116,6 +116,31 @@ function makeId() {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function simpleStringHash(input) {
+  const text = String(input || "");
+  let hash = 5381;
+  for (let i = 0; i < text.length; i += 1) {
+    hash = ((hash << 5) + hash) ^ text.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function resolveProjectId(rawProject) {
+  const existing = String(rawProject?.id || "").trim();
+  if (existing) return existing;
+  const seed = [
+    rawProject?.createdAt,
+    rawProject?.updatedAt,
+    rawProject?.projectName,
+    rawProject?.projectType,
+    rawProject?.lastDate,
+  ]
+    .map((item) => String(item ?? "").trim())
+    .join("|");
+  if (seed.replace(/\|/g, "").trim()) return `legacy-${simpleStringHash(seed)}`;
+  return makeId();
+}
+
 function getToday() {
   const now = new Date();
   const y = now.getFullYear();
@@ -212,7 +237,7 @@ function normalizeProject(project) {
   const normalized = {
     ...createProject(project.projectName || "未命名作品"),
     ...project,
-    id: project.id || makeId(),
+    id: resolveProjectId(project),
     projectType: project.projectType || "围巾",
     status: project.status || "paused",
     totalRows: Math.max(0, Number(project.totalRows) || 0),
@@ -833,9 +858,11 @@ function loadProjects() {
     state.projects = [];
     return;
   }
+  let legacyIdPatched = false;
   try {
     const parsed = JSON.parse(saved);
     const list = Array.isArray(parsed.projects) ? parsed.projects : [];
+    legacyIdPatched = list.some((project) => !String(project?.id || "").trim());
     state.projects = list.map(normalizeProject).filter((project) => !isLegacyStarterProject(project));
   } catch {
     state.projects = [];
@@ -852,6 +879,7 @@ function loadProjects() {
     applyProgressStatus(project);
     if (before !== project.status) changed = true;
   });
+  if (legacyIdPatched) changed = true;
   if (changed) saveProjects();
 }
 

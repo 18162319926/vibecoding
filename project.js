@@ -1,45 +1,49 @@
 const STORAGE_KEY = "knit-helper-state";
 const GLOBAL_TIMER_KEY = "knit-global-timer";
 
-const refs = {
-  projectTitle: document.getElementById("projectTitle"),
-  projectForm: document.getElementById("projectForm"),
-  projectName: document.getElementById("projectName"),
-  projectType: document.getElementById("projectType"),
-  projectStatus: document.getElementById("projectStatus"),
-  totalRows: document.getElementById("totalRows"),
-  yarnInfo: document.getElementById("yarnInfo"),
-  toolsInfo: document.getElementById("toolsInfo"),
-  textDiagram: document.getElementById("textDiagram"),
-  diagramImageInput: document.getElementById("diagramImageInput"),
-  diagramImageGallery: document.getElementById("diagramImageGallery"),
-  diagramImagePlaceholder: document.getElementById("diagramImagePlaceholder"),
-  projectCoverInput: document.getElementById("projectCoverInput"),
-  projectCoverRemoveBtn: document.getElementById("projectCoverRemoveBtn"),
-  projectCoverPreview: document.getElementById("projectCoverPreview"),
-  rowCounter: document.getElementById("rowCounter"),
-  progressText: document.getElementById("progressText"),
-  projectTimeSpent: document.getElementById("projectTimeSpent"),
-  stepInput: document.getElementById("stepInput"),
-  globalTimerDisplay: document.getElementById("globalTimerDisplay"),
-  globalTimerMinutes: document.getElementById("globalTimerMinutes"),
-  globalStartBtn: document.getElementById("globalStartBtn"),
-  globalPauseBtn: document.getElementById("globalPauseBtn"),
-  globalResetBtn: document.getElementById("globalResetBtn"),
-  feedbackToast: document.getElementById("feedbackToast"),
-  authEmail: document.getElementById("authEmail"),
-  authPassword: document.getElementById("authPassword"),
-  authStatus: document.getElementById("authStatus"),
-  authDialog: document.getElementById("authDialog"),
-  closeAuthDialogBtn: document.getElementById("closeAuthDialogBtn"),
-  openLoginBtn: document.getElementById("openLoginBtn"),
-  openRegisterBtn: document.getElementById("openRegisterBtn"),
-  accountChip: document.getElementById("accountChip"),
-  loginBtn: document.getElementById("loginBtn"),
-  registerBtn: document.getElementById("registerBtn"),
-  logoutBtn: document.getElementById("logoutBtn"),
-  syncHint: document.getElementById("syncHint"),
-};
+function getRefs() {
+  return {
+    projectTitle: document.getElementById("projectTitle"),
+    projectForm: document.getElementById("projectForm"),
+    projectName: document.getElementById("projectName"),
+    projectType: document.getElementById("projectType"),
+    projectStatus: document.getElementById("projectStatus"),
+    totalRows: document.getElementById("totalRows"),
+    yarnInfo: document.getElementById("yarnInfo"),
+    toolsInfo: document.getElementById("toolsInfo"),
+    textDiagram: document.getElementById("textDiagram"),
+    diagramImageInput: document.getElementById("diagramImageInput"),
+    diagramImageGallery: document.getElementById("diagramImageGallery"),
+    diagramImagePlaceholder: document.getElementById("diagramImagePlaceholder"),
+    projectCoverInput: document.getElementById("projectCoverInput"),
+    projectCoverRemoveBtn: document.getElementById("projectCoverRemoveBtn"),
+    projectCoverPreview: document.getElementById("projectCoverPreview"),
+    rowCounter: document.getElementById("rowCounter"),
+    progressText: document.getElementById("progressText"),
+    projectTimeSpent: document.getElementById("projectTimeSpent"),
+    stepInput: document.getElementById("stepInput"),
+    globalTimerDisplay: document.getElementById("globalTimerDisplay"),
+    globalTimerMinutes: document.getElementById("globalTimerMinutes"),
+    globalStartBtn: document.getElementById("globalStartBtn"),
+    globalPauseBtn: document.getElementById("globalPauseBtn"),
+    globalResetBtn: document.getElementById("globalResetBtn"),
+    feedbackToast: document.getElementById("feedbackToast"),
+    authEmail: document.getElementById("authEmail"),
+    authPassword: document.getElementById("authPassword"),
+    authStatus: document.getElementById("authStatus"),
+    authDialog: document.getElementById("authDialog"),
+    closeAuthDialogBtn: document.getElementById("closeAuthDialogBtn"),
+    openLoginBtn: document.getElementById("openLoginBtn"),
+    openRegisterBtn: document.getElementById("openRegisterBtn"),
+    accountChip: document.getElementById("accountChip"),
+    loginBtn: document.getElementById("loginBtn"),
+    registerBtn: document.getElementById("registerBtn"),
+    logoutBtn: document.getElementById("logoutBtn"),
+    syncHint: document.getElementById("syncHint"),
+  };
+}
+
+let refs = {};
 
 const timerState = { minutes: 25, left: 25 * 60, running: false };
 const syncRuntime = { pushTimerId: null, remoteUnsubscribe: null, lastSeenCloudStamp: 0 };
@@ -86,6 +90,31 @@ function setupMobileAuthMenu() {
 
 function makeId() {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function simpleStringHash(input) {
+  const text = String(input || "");
+  let hash = 5381;
+  for (let i = 0; i < text.length; i += 1) {
+    hash = ((hash << 5) + hash) ^ text.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function resolveProjectId(rawProject) {
+  const existing = String(rawProject?.id || "").trim();
+  if (existing) return existing;
+  const seed = [
+    rawProject?.createdAt,
+    rawProject?.updatedAt,
+    rawProject?.projectName,
+    rawProject?.projectType,
+    rawProject?.lastDate,
+  ]
+    .map((item) => String(item ?? "").trim())
+    .join("|");
+  if (seed.replace(/\|/g, "").trim()) return `legacy-${simpleStringHash(seed)}`;
+  return makeId();
 }
 
 function getToday() {
@@ -173,7 +202,7 @@ function createProject(name = "我的新作品") {
 
 function normalizeProject(project) {
   const normalized = { ...createProject(project?.projectName || "未命名作品"), ...(project || {}) };
-  normalized.id = normalized.id || makeId();
+  normalized.id = resolveProjectId(project || {});
   normalized.totalRows = Math.max(0, Number(normalized.totalRows) || 0);
   normalized.rows = Math.max(0, Number(normalized.rows) || 0);
   normalized.spentSeconds = Math.max(0, Number(normalized.spentSeconds) || 0);
@@ -225,7 +254,12 @@ function loadProjects() {
   try {
     const parsed = JSON.parse(raw);
     const list = Array.isArray(parsed.projects) ? parsed.projects : [];
-    return list.map(normalizeProject);
+    const needPersistLegacyId = list.some((project) => !String(project?.id || "").trim());
+    const normalized = list.map(normalizeProject);
+    if (needPersistLegacyId) {
+      saveProjects(normalized, { scheduleCloud: false });
+    }
+    return normalized;
   } catch {
     return [];
   }
@@ -289,24 +323,27 @@ function renderDiagramImages(project) {
 }
 
 function renderProject(project) {
+  // 容错：refs 为空时重新获取
+  if (!refs.projectTitle) refs = getRefs();
+  if (!refs.projectTitle) return;
   refs.projectTitle.textContent = project.projectName || "项目详情";
-  refs.projectName.value = project.projectName || "";
-  refs.projectType.value = project.projectType || "围巾";
-  refs.projectStatus.value = project.status || "active";
-  refs.totalRows.value = project.totalRows ? String(project.totalRows) : "";
-  refs.yarnInfo.value = combinePair(project.yarnType, project.yarnRef);
-  refs.toolsInfo.value = combinePair(project.tools, project.needleSize);
-  refs.textDiagram.value = project.textDiagram || "";
+  if (refs.projectName) refs.projectName.value = project.projectName || "";
+  if (refs.projectType) refs.projectType.value = project.projectType || "围巾";
+  if (refs.projectStatus) refs.projectStatus.value = project.status || "active";
+  if (refs.totalRows) refs.totalRows.value = project.totalRows ? String(project.totalRows) : "";
+  if (refs.yarnInfo) refs.yarnInfo.value = combinePair(project.yarnType, project.yarnRef);
+  if (refs.toolsInfo) refs.toolsInfo.value = combinePair(project.tools, project.needleSize);
+  if (refs.textDiagram) refs.textDiagram.value = project.textDiagram || "";
   const rows = getProjectRowsFromDailyStats(project);
-  refs.rowCounter.textContent = String(rows);
-  refs.progressText.textContent = `进度 ${getProjectProgress(project)}%（${rows}/${project.totalRows || 0} 行）`;
-  refs.projectTimeSpent.textContent = `累计用时 ${formatDuration(project.spentSeconds)}`;
+  if (refs.rowCounter) refs.rowCounter.textContent = String(rows);
+  if (refs.progressText) refs.progressText.textContent = `进度 ${getProjectProgress(project)}%（${rows}/${project.totalRows || 0} 行）`;
+  if (refs.projectTimeSpent) refs.projectTimeSpent.textContent = `累计用时 ${formatDuration(project.spentSeconds)}`;
 
-  if (project.coverImage) {
+  if (project.coverImage && refs.projectCoverPreview) {
     refs.projectCoverPreview.src = project.coverImage;
     refs.projectCoverPreview.classList.add("show");
     if (refs.projectCoverRemoveBtn) refs.projectCoverRemoveBtn.hidden = false;
-  } else {
+  } else if (refs.projectCoverPreview) {
     refs.projectCoverPreview.classList.remove("show");
     refs.projectCoverPreview.removeAttribute("src");
     if (refs.projectCoverRemoveBtn) refs.projectCoverRemoveBtn.hidden = true;
@@ -398,8 +435,16 @@ function formatSyncErrorMessage(error, fallback = "请稍后重试") {
 }
 
 function setAuthNav(user) {
+  if (!refs.accountChip) return;
+  if (window.cloudSync && window.cloudSync.isAuthResolved && !window.cloudSync.isAuthResolved()) {
+    refs.accountChip.textContent = "正在检测登录状态...";
+    if (refs.openLoginBtn) refs.openLoginBtn.hidden = true;
+    if (refs.openRegisterBtn) refs.openRegisterBtn.hidden = true;
+    if (refs.logoutBtn) refs.logoutBtn.hidden = true;
+    return;
+  }
   const loggedIn = Boolean(user && user.email);
-  if (refs.accountChip) refs.accountChip.textContent = loggedIn ? `当前账号：${user.email}` : "未登录";
+  refs.accountChip.textContent = loggedIn ? `当前账号：${user.email}` : "未登录";
   if (refs.openLoginBtn) refs.openLoginBtn.hidden = loggedIn;
   if (refs.openRegisterBtn) refs.openRegisterBtn.hidden = loggedIn;
   if (refs.logoutBtn) refs.logoutBtn.hidden = !loggedIn;
@@ -648,6 +693,7 @@ function getProjectIdFromUrl() {
 }
 
 function init() {
+  refs = getRefs();
   setupMobileAuthMenu();
   const projectId = getProjectIdFromUrl();
   const projects = loadProjects();
