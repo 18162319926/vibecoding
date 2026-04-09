@@ -2012,11 +2012,7 @@ function init() {
     persistWithCelebration(before);
   });
 
-  document.querySelector("[data-action='resetRows']").addEventListener("click", () => {
-    project.rows = 0;
-    project.todayRows = 0;
-    persist();
-  });
+  // 已删除“行数清零”按钮，无需绑定事件
 
   if (refs.materialForm && refs.materialInput) {
     refs.materialForm.addEventListener("submit", (event) => {
