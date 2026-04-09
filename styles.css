@@ -1,3 +1,54 @@
+/* 仪表盘底部：页脚与新增项目按钮同排 */
+/* 仪表盘底部：页脚居中，新增按钮靠右 */
+.footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  max-width: 1320px;
+  margin: 8px auto 0 auto;
+  padding: 0 8px;
+  gap: 10px;
+  position: relative;
+}
+.footer-row .footer {
+  margin: 0;
+  font-size: 1.02rem;
+  color: #a86a3c;
+  background: none;
+  box-shadow: none;
+  border: none;
+  padding: 0;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+}
+.footer-row .fab-create-wrap {
+  margin: 0;
+  position: static;
+  box-shadow: none;
+}
+@media (max-width: 700px) {
+  .footer-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 0 4px;
+    position: static;
+  }
+  .footer-row .footer {
+    position: static;
+    left: auto;
+    transform: none;
+    text-align: center;
+    font-size: 0.98rem;
+    margin-bottom: 2px;
+  }
+  .footer-row .fab-create-wrap {
+    align-self: flex-end;
+  }
+}
 /* 桌面端：项目详情计数与全局计时工具行 */
 @media (min-width: 701px) {
   .project-page .counter-panel .counter-tools-row,
@@ -601,10 +652,7 @@ textarea {
   overflow-wrap: anywhere;
 }
 
-body.homepage {
-  height: 100vh;
-  overflow: hidden;
-}
+
 
 
 .top-nav {
@@ -1102,7 +1150,7 @@ body.homepage .hero-stats {
 }
 
 body.homepage .layout {
-  max-height: calc(100vh - 155px);
+  max-height: calc(100vh - 190px);
   overflow: hidden;
   align-content: start;
 }
@@ -2960,7 +3008,7 @@ body.homepage .hero.homepage-hero h1 {
 body.homepage .layout {
   grid-template-columns: repeat(12, 1fr);
   gap: 32px;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 body.homepage .dashboard-panel {
