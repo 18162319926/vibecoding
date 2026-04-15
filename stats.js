@@ -2163,6 +2163,13 @@ window.generateLastWeekAndMonthReports = function generateLastWeekAndMonthReport
   const REPORT_KEY = 'knit-reports';
   const reports = JSON.parse(localStorage.getItem(REPORT_KEY)) || [];
 
+  function toLocalDateKey(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
   // 获取所有项目数据
   const projects = (function() {
     try {
@@ -2179,8 +2186,8 @@ window.generateLastWeekAndMonthReports = function generateLastWeekAndMonthReport
     const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
     const start = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 6);
     return {
-      start: start.toISOString().slice(0, 10),
-      end: end.toISOString().slice(0, 10)
+      start: toLocalDateKey(start),
+      end: toLocalDateKey(end)
     };
   }
   function getLastMonthRange() {
@@ -2189,8 +2196,8 @@ window.generateLastWeekAndMonthReports = function generateLastWeekAndMonthReport
     const start = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1);
     const end = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0);
     return {
-      start: start.toISOString().slice(0, 10),
-      end: end.toISOString().slice(0, 10)
+      start: toLocalDateKey(start),
+      end: toLocalDateKey(end)
     };
   }
   function sumStatsInRange(start, end) {
