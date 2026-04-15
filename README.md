@@ -5,7 +5,13 @@
 
 ---
 
+
 ## 主要功能
+### 0. 报告管理（周报/月报/自定义）
+- 自动生成上周/上月统计报告，支持自定义新建、编辑、删除
+- 支持按周报、月报筛选浏览，历史报告自动保留
+- 支持内容编辑、周期统计、导出等
+
 
 ### 1. 项目管理
 - 新建、编辑、删除编织项目
@@ -54,6 +60,8 @@
 ├── storage-account.js      # 仓库页账号菜单逻辑
 ├── cloud-sync.js           # 账号认证与云同步（Supabase）
 ├── supabase-config.js      # Supabase 云端配置
+├── report.html             # 报告管理页（周报/月报/自定义报告）
+├── report.js               # 报告页逻辑（自动生成、筛选、编辑、删除等）
 ├── stats.js                # 统计页逻辑与数据修复脚本
 ├── styles.css              # 全局样式表
 ├── tesseract.min.js        # OCR 依赖（可选，图片识别）
@@ -67,6 +75,15 @@
 ```
 
 ### 主要文件说明
+- `stats.js`：数据统计、历史修复脚本
+- `styles.css`：全站样式，含响应式布局、表单、卡片、弹窗等
+- `tesseract.min.js`：图片 OCR 识别库（可选，主流程不依赖）
+- `.vscode/`：本地开发配置、任务、思维导图等
+...existing code...
+  
+- `report.html`/`report.js`：报告管理页及其逻辑，支持自动生成/筛选/编辑/删除周报、月报和自定义报告
+  
+...existing code...
 - `index.html`/`project.html`/`yarn.html`/`swatch.html`/`stats.html`：各功能页面入口，结构清晰，移动端友好
 - `script.js`：首页及全局通用 JS 逻辑（如导航、账号菜单、状态管理等）
 - `project.js`：项目详情页的表单、进度、计时等核心逻辑
@@ -94,8 +111,8 @@
 
 ## 快速开始
 1. 克隆本仓库到本地
-2. 直接用浏览器打开 `index.html` 或任意页面
-3. 如需云同步，配置 `supabase-config.js` 并注册账号
+2. 直接用浏览器打开 `index.html`、`report.html` 或任意页面
+3. 如需云同步，需先配置 `supabase-config.js` 并注册账号
 
 ---
 
