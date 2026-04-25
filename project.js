@@ -28,25 +28,12 @@ function getRefs() {
     globalPauseBtn: document.getElementById("globalPauseBtn"),
     globalResetBtn: document.getElementById("globalResetBtn"),
     feedbackToast: document.getElementById("feedbackToast"),
-    authEmail: document.getElementById("authEmail"),
-    authPassword: document.getElementById("authPassword"),
-    authStatus: document.getElementById("authStatus"),
-    authDialog: document.getElementById("authDialog"),
-    closeAuthDialogBtn: document.getElementById("closeAuthDialogBtn"),
-    openLoginBtn: document.getElementById("openLoginBtn"),
-    openRegisterBtn: document.getElementById("openRegisterBtn"),
-    accountChip: document.getElementById("accountChip"),
-    loginBtn: document.getElementById("loginBtn"),
-    registerBtn: document.getElementById("registerBtn"),
-    logoutBtn: document.getElementById("logoutBtn"),
-    syncHint: document.getElementById("syncHint"),
   };
 }
 
 let refs = {};
 
 const timerState = { minutes: 25, left: 25 * 60, running: false };
-const syncRuntime = { pushTimerId: null, remoteUnsubscribe: null, lastSeenCloudStamp: 0 };
 const runtimeWarnings = { timerStorageWarned: false };
 
 let globalTimerId = null;
@@ -257,7 +244,7 @@ function loadProjects() {
     const needPersistLegacyId = list.some((project) => !String(project?.id || "").trim());
     const normalized = list.map(normalizeProject);
     if (needPersistLegacyId) {
-      saveProjects(normalized, { scheduleCloud: false });
+      saveProjects(normalized);
     }
     return normalized;
   } catch {
@@ -265,11 +252,9 @@ function loadProjects() {
   }
 }
 
-function saveProjects(projects, options = {}) {
+function saveProjects(projects) {
   const saved = safeSetLocalStorage(STORAGE_KEY, JSON.stringify({ projects }));
-  if (!saved) return false;
-  if (options.scheduleCloud !== false) scheduleCloudPush(projects);
-  return true;
+  return saved;
 }
 
 function recordProjectRows(project, rows) {
@@ -406,198 +391,16 @@ function showFeedback(message) {
   setTimeout(() => refs.feedbackToast.classList.remove("show"), 1600);
 }
 
-function setSyncHint(text) {
-  if (!refs.syncHint) return;
-  const raw = String(text || "").trim();
-  let icon = "☁️";
-  let cls = "sync-state-idle";
-  if (/失败|错误|不可用/.test(raw)) {
-    icon = "❌";
-    cls = "sync-state-error";
-  } else if (/正在|监听|同步中/.test(raw)) {
-    icon = "🔄";
-    cls = "sync-state-syncing";
-  } else if (/已同步|已初始化/.test(raw)) {
-    icon = "✅";
-    cls = "sync-state-ok";
-  }
-  refs.syncHint.className = `sync-state ${cls}`;
-  refs.syncHint.textContent = `${icon} ${raw || "离线模式"}`;
-}
-
-function formatSyncErrorMessage(error, fallback = "请稍后重试") {
-  const raw = String(error?.message || "").trim();
-  const text = raw.toLowerCase();
-  if (!raw) return fallback;
-  if (text.includes("network") || text.includes("fetch") || text.includes("timeout")) return "网络波动，稍后自动重试";
-  if (text.includes("auth") || text.includes("token") || text.includes("permission") || text.includes("unauthorized")) return "登录状态异常，请重新登录";
-  return fallback;
-}
-
-function setAuthNav(user) {
-  if (!refs.accountChip) return;
-  if (window.cloudSync && window.cloudSync.isAuthResolved && !window.cloudSync.isAuthResolved()) {
-    refs.accountChip.textContent = "正在检测登录状态...";
-    if (refs.openLoginBtn) refs.openLoginBtn.hidden = true;
-    if (refs.openRegisterBtn) refs.openRegisterBtn.hidden = true;
-    if (refs.logoutBtn) refs.logoutBtn.hidden = true;
-    return;
-  }
-  const loggedIn = Boolean(user && user.email);
-  refs.accountChip.textContent = loggedIn ? `当前账号：${user.email}` : "未登录";
-  if (refs.openLoginBtn) refs.openLoginBtn.hidden = loggedIn;
-  if (refs.openRegisterBtn) refs.openRegisterBtn.hidden = loggedIn;
-  if (refs.logoutBtn) refs.logoutBtn.hidden = !loggedIn;
-}
-
-function openAuthDialog(mode) {
-  if (!refs.authDialog) return;
-  refs.authDialog.hidden = false;
-  if (mode === "register" && refs.authStatus) refs.authStatus.textContent = "注册后将自动登录并开启云同步";
-}
-
-function closeAuthDialog() {
-  if (!refs.authDialog) return;
-  refs.authDialog.hidden = true;
-}
-
-function replaceProjectsInPlace(target, next) {
-  target.splice(0, target.length, ...next);
-}
-
-function scheduleCloudPush(projects) {
-  if (!window.cloudSync || !window.cloudSync.isReady() || !window.cloudSync.getCurrentUser()) return;
-  if (syncRuntime.pushTimerId) clearTimeout(syncRuntime.pushTimerId);
-  syncRuntime.pushTimerId = setTimeout(async () => {
-    const stamp = Date.now();
-    syncRuntime.lastSeenCloudStamp = Math.max(syncRuntime.lastSeenCloudStamp, stamp);
-    try {
-      await window.cloudSync.pushState({ projects, timer: timerState, clientUpdatedAt: stamp });
-      setSyncHint("已同步到云端");
-    } catch (error) {
-      setSyncHint(`云同步失败：${formatSyncErrorMessage(error)}`);
-    }
-  }, 700);
-}
-
-function applyCloudPayload(payload, projects, onRemoteApplied) {
-  if (!payload || typeof payload !== "object") return;
-  const stamp = Number(payload.clientUpdatedAt) || 0;
-  if (stamp && stamp <= syncRuntime.lastSeenCloudStamp) return;
-  let changed = false;
-  if (Array.isArray(payload.projects)) {
-    replaceProjectsInPlace(projects, payload.projects.map(normalizeProject));
-    changed = true;
-  }
-  if (payload.timer && typeof payload.timer === "object") {
-    timerState.minutes = Math.max(1, Number(payload.timer.minutes) || timerState.minutes);
-    timerState.left = Math.max(0, Number(payload.timer.left) || timerState.left);
-    timerState.running = false;
-    saveTimerState({ scheduleCloud: false });
-    renderTimerState();
-    changed = true;
-  }
-  if (!changed) return;
-  syncRuntime.lastSeenCloudStamp = Math.max(syncRuntime.lastSeenCloudStamp, stamp);
-  saveProjects(projects, { scheduleCloud: false });
-  if (typeof onRemoteApplied === "function") onRemoteApplied();
-  setSyncHint("已从云端同步");
-}
-
-function setupCloudSync(projects, onRemoteApplied) {
-  if (!window.cloudSync) return;
-  if (typeof window.cloudSync.ensureSyncStarted === "function") void window.cloudSync.ensureSyncStarted();
-  setAuthNav(window.cloudSync.getCurrentUser());
-
-  document.querySelectorAll("#openLoginBtn").forEach((btn) => {
-    btn.onclick = null;
-    btn.addEventListener("click", () => openAuthDialog("login"));
-  });
-  document.querySelectorAll("#openRegisterBtn").forEach((btn) => {
-    btn.onclick = null;
-    btn.addEventListener("click", () => openAuthDialog("register"));
-  });
-  if (refs.closeAuthDialogBtn) refs.closeAuthDialogBtn.addEventListener("click", closeAuthDialog);
-  if (refs.authDialog) refs.authDialog.addEventListener("click", (event) => {
-    if (event.target === refs.authDialog) closeAuthDialog();
-  });
-
-  if (refs.logoutBtn) {
-    refs.logoutBtn.onclick = async () => {
-      try {
-        await window.cloudSync.signOut();
-        setSyncHint("已退出登录");
-      } catch (error) {
-        setSyncHint(`退出失败：${formatSyncErrorMessage(error)}`);
-      }
-    };
-  }
-
-  window.cloudSync.bindAuthUI({
-    emailInput: refs.authEmail,
-    passwordInput: refs.authPassword,
-    statusEl: refs.authStatus,
-    loginBtn: refs.loginBtn,
-    registerBtn: refs.registerBtn,
-    logoutBtn: refs.logoutBtn,
-    onUserChanged: async (user) => {
-      setAuthNav(user);
-      if (typeof syncRuntime.remoteUnsubscribe === "function") {
-        syncRuntime.remoteUnsubscribe();
-        syncRuntime.remoteUnsubscribe = null;
-      }
-      if (!user) {
-        setSyncHint("离线模式");
-        return;
-      }
-      closeAuthDialog();
-      setSyncHint("正在同步云端...");
-      try {
-        const remote = await window.cloudSync.pullState();
-        if (remote) {
-          applyCloudPayload(remote, projects, onRemoteApplied);
-        } else {
-          scheduleCloudPush(projects);
-          setSyncHint("云端已初始化");
-        }
-      } catch (error) {
-        setSyncHint(`拉取云端失败：${formatSyncErrorMessage(error)}`);
-      }
-      syncRuntime.remoteUnsubscribe = window.cloudSync.watchRemoteState(
-        (payload) => applyCloudPayload(payload, projects, onRemoteApplied),
-        (error) => setSyncHint(`监听同步失败：${formatSyncErrorMessage(error)}`)
-      );
-    },
-  });
-
-  if (refs.syncHint) {
-    refs.syncHint.addEventListener("click", async () => {
-      if (!window.cloudSync || !window.cloudSync.getCurrentUser()) {
-        setSyncHint("离线模式");
-        return;
-      }
-      try {
-        const remote = await window.cloudSync.pullState();
-        if (remote) applyCloudPayload(remote, projects, onRemoteApplied);
-        scheduleCloudPush(projects);
-      } catch (error) {
-        setSyncHint(`拉取云端失败：${formatSyncErrorMessage(error)}`);
-      }
-    });
-  }
-}
-
-function saveTimerState(options = {}) {
+function saveTimerState() {
   safeSetLocalStorage(GLOBAL_TIMER_KEY, JSON.stringify(timerState), {
     onError(error, meta) {
       if (runtimeWarnings.timerStorageWarned) return;
       runtimeWarnings.timerStorageWarned = true;
       const notice = meta.isQuota ? "本地临时保存受限，计时将继续运行" : "本地保存暂不可用，计时将继续运行";
-      setSyncHint(notice);
+      showFeedback(notice);
       console.warn("timer state persistence skipped", error);
     },
   });
-  if (options.scheduleCloud) scheduleCloudPush(options.projects || []);
 }
 
 function loadTimerState() {
@@ -623,12 +426,12 @@ function renderTimerState() {
   refs.globalTimerDisplay.textContent = `${min}:${sec}`;
 }
 
-function bindGlobalTimer(getProject, persist, projects) {
+function bindGlobalTimer(getProject, persist) {
   if (!refs.globalTimerMinutes || !refs.globalStartBtn || !refs.globalPauseBtn || !refs.globalResetBtn) return;
   refs.globalTimerMinutes.addEventListener("change", () => {
     timerState.minutes = Math.max(1, Number(refs.globalTimerMinutes.value) || 25);
     if (!timerState.running) timerState.left = timerState.minutes * 60;
-    saveTimerState({ scheduleCloud: true, projects });
+    saveTimerState();
     renderTimerState();
   });
 
@@ -641,7 +444,7 @@ function bindGlobalTimer(getProject, persist, projects) {
         timerState.running = false;
         clearInterval(globalTimerId);
         globalTimerId = null;
-        saveTimerState({ scheduleCloud: true, projects });
+        saveTimerState();
         renderTimerState();
         return;
       }
@@ -662,7 +465,7 @@ function bindGlobalTimer(getProject, persist, projects) {
       saveTimerState();
       renderTimerState();
     }, 1000);
-    saveTimerState({ scheduleCloud: true, projects });
+    saveTimerState();
   });
 
   refs.globalPauseBtn.addEventListener("click", () => {
@@ -671,7 +474,7 @@ function bindGlobalTimer(getProject, persist, projects) {
       clearInterval(globalTimerId);
       globalTimerId = null;
     }
-    saveTimerState({ scheduleCloud: true, projects });
+    saveTimerState();
     renderTimerState();
   });
 
@@ -682,7 +485,7 @@ function bindGlobalTimer(getProject, persist, projects) {
       globalTimerId = null;
     }
     timerState.left = timerState.minutes * 60;
-    saveTimerState({ scheduleCloud: true, projects });
+    saveTimerState();
     renderTimerState();
   });
 }
@@ -714,7 +517,7 @@ function init() {
     const index = projects.findIndex((item) => item.id === project.id);
     if (index < 0) return false;
     projects[index] = project;
-    const saved = saveProjects(projects, { scheduleCloud: options.scheduleCloud !== false });
+    const saved = saveProjects(projects);
     if (!saved) {
       if (!options.quiet) showFeedback("保存失败：本地存储空间不足");
       return false;
@@ -846,18 +649,7 @@ function init() {
 
   loadTimerState();
   renderTimerState();
-  bindGlobalTimer(() => project, persist, projects);
-
-  setupCloudSync(projects, () => {
-    const updated = projects.find((item) => item.id === projectId);
-    if (!updated) {
-      alert("该项目已在其他设备被删除，正在返回首页。");
-      window.location.href = "index.html";
-      return;
-    }
-    project = updated;
-    renderProject(project);
-  });
+  bindGlobalTimer(() => project, persist);
 }
 
 init();

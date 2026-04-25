@@ -39,8 +39,8 @@
 - 统计页可查看进度、用时等汇总信息
 
 ### 6. 账户与同步
-- 支持本地账号注册、登录、登出
-- 支持云端同步（需配置 Supabase）
+- 当前为纯本地模式（无账号系统、无云同步）
+- 所有数据保存在浏览器本地存储（localStorage）
 
 ---
 
@@ -58,8 +58,6 @@
 ├── project.js              # 项目详情页逻辑
 ├── storage.js              # 毛线/小样仓库页逻辑
 ├── storage-account.js      # 仓库页账号菜单逻辑
-├── cloud-sync.js           # 账号认证与云同步（Supabase）
-├── supabase-config.js      # Supabase 云端配置
 ├── report.html             # 报告管理页（周报/月报/自定义报告）
 ├── report.js               # 报告页逻辑（自动生成、筛选、编辑、删除等）
 ├── stats.js                # 统计页逻辑与数据修复脚本
@@ -87,10 +85,8 @@
 - `index.html`/`project.html`/`yarn.html`/`swatch.html`/`stats.html`：各功能页面入口，结构清晰，移动端友好
 - `script.js`：首页及全局通用 JS 逻辑（如导航、账号菜单、状态管理等）
 - `project.js`：项目详情页的表单、进度、计时等核心逻辑
-- `storage.js`：毛线和小样仓库的增删改查、图片上传、同步等逻辑
+- `storage.js`：毛线和小样仓库的增删改查、图片上传等逻辑
 - `storage-account.js`：仓库页的账号菜单、移动端适配
-- `cloud-sync.js`：Supabase 账号认证、数据同步、状态监听
-- `supabase-config.js`：云端参数配置（需手动填写 Supabase 项目地址和密钥）
 - `stats.js`：数据统计、历史修复脚本
 - `styles.css`：全站样式，含响应式布局、表单、卡片、弹窗等
 - `tesseract.min.js`：图片 OCR 识别库（可选，主流程不依赖）
@@ -103,7 +99,7 @@
 ## 技术栈
 - 原生 JavaScript
 - HTML5 + CSS3（响应式布局，移动端友好）
-- Supabase（可选，云同步）
+- 浏览器本地存储（localStorage）
 
 ---
 
@@ -111,8 +107,14 @@
 
 ## 快速开始
 1. 克隆本仓库到本地
-2. 直接用浏览器打开 `index.html`、`report.html` 或任意页面
-3. 如需云同步，需先配置 `supabase-config.js` 并注册账号
+2. 直接打开 `index.html` 开始使用
+3. 移动端可将网页添加到主屏幕，获得更接近 App 的体验
+
+数据说明：
+- 项目数据保存在 `knit-helper-state`
+- 计时器数据保存在 `knit-global-timer`
+- 毛线仓库数据保存在 `knit-yarn-storage`
+- 小样仓库数据保存在 `knit-swatch-storage`
 
 ---
 
